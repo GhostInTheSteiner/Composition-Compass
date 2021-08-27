@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:stretchColumns="1">
+    <TableRow>
+        <TextView
+            android:text="Artist"
+            android:gravity="right"
+            android:padding="3dip" />
+        <EditText
+            android:id="@+id/artist"
+            android:padding="3dip" />
+
+    </TableRow>
+
+    <TableRow>
+        <TextView
+            android:text="Genre"
+            android:gravity="right"
+            android:padding="3dip" />
+        <EditText
+            android:id="@+id/genre"
+            android:padding="3dip" />
+
+    </TableRow>
+
+    <TableRow>
+        <TextView
+            android:text="Track"
+            android:gravity="right"
+            android:padding="3dip" />
+        <EditText
+            android:id="@+id/track"
+            android:padding="3dip" />
+
+    </TableRow>
+
+
+    <TableRow>
+        <TextView
+            android:text="Search Query"
+            android:gravity="right"
+            android:padding="3dip" />
+        <EditText
+            android:id="@+id/searchQuery"
+            android:padding="3dip" />
+
+    </TableRow>
+
+
+    <TableRow>
+        <TextView
+            android:text="Source"
+            android:gravity="right"
+            android:padding="3dip" />
+        <Spinner
+            android:id="@+id/source"
+            />
+
+    </TableRow>
+    <TableRow>
+        <TextView
+            android:text="Mode"
+            android:gravity="right"
+            android:padding="3dip" />
+        <Spinner
+            android:id="@+id/mode"
+            />
+
+    </TableRow>
+
+    <TableRow>
+        <TextView
+            android:text="Info"
+            android:gravity="right"
+            android:padding="3dip" />
+
+        <TextView
+            android:layout_width="339dp"
+            android:layout_span="2"
+            android:id="@+id/info"
+            android:gravity="right"
+            android:text="0%"
+            />
+    </TableRow>
+
+    <TableRow>
+
+        <Button
+            android:layout_width="339dp"
+            android:layout_span="2"
+            android:text="Download"
+            android:onClick="download"
+        />
+    </TableRow>
+
+    <TableRow>
+
+        <Button
+            android:layout_width="339dp"
+            android:layout_span="2"
+            android:text="Update YoutubeDL"
+            android:onClick="updateYoutubeDL" />
+    </TableRow>
+
+</TableLayout>
