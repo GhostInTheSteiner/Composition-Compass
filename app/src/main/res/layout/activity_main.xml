@@ -9,6 +9,7 @@
             android:gravity="right"
             android:padding="3dip" />
         <EditText
+            android:text="digital daggers"
             android:id="@+id/artist"
             android:padding="3dip" />
 
@@ -20,6 +21,7 @@
             android:gravity="right"
             android:padding="3dip" />
         <EditText
+            android:text="electro"
             android:id="@+id/genre"
             android:padding="3dip" />
 
@@ -31,6 +33,7 @@
             android:gravity="right"
             android:padding="3dip" />
         <EditText
+            android:text="just beneath the flames"
             android:id="@+id/track"
             android:padding="3dip" />
 
@@ -81,7 +84,22 @@
             android:layout_span="2"
             android:id="@+id/info"
             android:gravity="right"
-            android:text="0%"
+            android:text="Successfully started!"
+            />
+    </TableRow>
+
+    <TableRow>
+        <TextView
+            android:text="Error"
+            android:gravity="right"
+            android:padding="3dip" />
+
+        <TextView
+            android:layout_width="339dp"
+            android:layout_span="2"
+            android:id="@+id/error"
+            android:gravity="right"
+            android:text="-"
             />
     </TableRow>
 

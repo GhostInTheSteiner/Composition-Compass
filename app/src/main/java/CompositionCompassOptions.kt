@@ -17,13 +17,21 @@ class CompositionCompassOptions {
         get() = options[::downloadDirectory.name] as String
         set(value) { options[::downloadDirectory.name] = value as Object }
 
+    var rootDirectory: String
+        get() = options[::rootDirectory.name] as String
+        set(value) { options[::rootDirectory.name] = value as Object }
+
+    var archiveDirectory: String
+        get() = options[::archiveDirectory.name] as String
+        set(value) { options[::archiveDirectory.name] = value as Object }
+
     var maxParallelDownloads: Int
         get() = options[::maxParallelDownloads.name] as Int
         set(value) { options[::maxParallelDownloads.name] = value as Object }
 
-    var rootDirectory: String
-        get() = options[::rootDirectory.name] as String
-        set(value) { options[::rootDirectory.name] = value as Object }
+    var exceptions: String
+        get() = options[::exceptions.name] as String
+        set(value) { options[::exceptions.name] = value as Object }
 
 
     constructor(filePath: String) {
@@ -43,8 +51,12 @@ class CompositionCompassOptions {
         val rootDirectory_ = configFile.parent
 
         options_[::rootDirectory.name] = rootDirectory_ as Object
-        options_[::maxParallelDownloads.name] = 10 as Object
         options_[::downloadDirectory.name] = "$rootDirectory_/download" as Object
+        options_[::archiveDirectory.name] = rootDirectory_ as Object
+
+        options_[::maxParallelDownloads.name] = 100 as Object
+        options_[::exceptions.name] = "<insert_exceptions_here>" as Object
+
         options_[::spotifyClientSecret.name] = "Sono me, dare no me?" as Object
         options_[::spotifyClientId.name] = "Sono me, dare no me?" as Object
 
@@ -58,7 +70,13 @@ class CompositionCompassOptions {
             val key = splitted.first()
             val value = splitted.drop(1).joinToString("=")
 
-            options[key] = value as Object
+            val number = value.toIntOrNull()
+
+            if (number == null)
+                options[key] = value as Object
+
+            else
+                options[key] = number as Object
         }
     }
 

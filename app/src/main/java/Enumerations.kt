@@ -5,7 +5,8 @@ enum class Fields(val viewName: String) {
     Info("info"),
     Mode("mode"),
     Source("source"),
-    SearchQuery("searchQuery")
+    SearchQuery("searchQuery"),
+    Error("error")
 }
 
 enum class DownloadMode() {

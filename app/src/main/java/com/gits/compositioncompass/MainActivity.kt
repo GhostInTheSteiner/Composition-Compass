@@ -27,6 +27,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var queryParameters: List<TextView>
     private lateinit var info: TextView
+    private lateinit var error: TextView
     private lateinit var genre: EditText
     private lateinit var artist: EditText
     private lateinit var track: EditText
@@ -66,6 +67,7 @@ class MainActivity : AppCompatActivity() {
         views = mutableMapOf()
 
         info = getView(Fields.Info)
+        error = getView(Fields.Error)
         artist = getView(Fields.Artist)
         track = getView(Fields.Track)
         genre = getView(Fields.Genre)
@@ -210,18 +212,22 @@ class MainActivity : AppCompatActivity() {
                         DownloadMode.SpecificTracks -> serviceQuery.getSpecificTracks()
                     }
 
-                runOnUiThread { info.text = tracks.map { it.name + " - " + it.artists.map { it.name }.joinToString(", ") } .joinToString(System.lineSeparator()) }
+                val searchQueries = tracks.map { it.name + " " + it.artists.map { it.name }.joinToString(" ") }
+
+                composition.youtube.download(
+                    searchQueries,
+                    onUpdate = { runOnUiThread { info.text = "Progress: " + it.progress.toString() + "%" } },
+                    onFailure = { runOnUiThread { error.text = it.message } }
+                )
+
+                runOnUiThread { info.text = "Download completed! Files were stored in ${composition.options.downloadDirectory}" }
             }
         }
     }
 
     fun download_(view: View) {
         val job = GlobalScope.launch {
-            composition.youtube.download(
-                listOf("JABBERWOCKY Photomaton"),
-                onUpdate = { info.text = it.progress.toString() },
-                onFailure = { info.text = it.message }
-            )
+
         }
     }
 }

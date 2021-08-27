@@ -14,7 +14,7 @@ class DownloadStatus {
         this.progress = 0.0
     }
 
-    fun addJob(track: String, progress: Float) {
+    fun updateJob(track: String, progress: Float) {
         jobs[track] = progress
     }
 
@@ -32,6 +32,6 @@ class DownloadStatus {
             return 0.0
 
         else
-            return "%.2f".format(done.toDouble() / total).toDouble()
+            return "%.2f".format(done.toDouble() / total).toDouble() * 100
     }
 }

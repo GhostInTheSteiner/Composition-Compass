@@ -1,12 +1,8 @@
 import android.app.Application
-import android.os.Environment
 import com.yausername.ffmpeg.FFmpeg
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.joinAll
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.newSingleThreadContext
+import kotlinx.coroutines.*
 import java.io.File
 
 class YoutubeDownloader {
@@ -33,30 +29,30 @@ class YoutubeDownloader {
         var j = -1
 
         tracks.forEachIndexed() { index, track ->
-            if (index % 10 == 0) {
+            if (index % options.maxParallelDownloads == 0) {
                 listGrouped.add(mutableListOf())
                 j++
             }
 
+            status.updateJob(track, 0.0F)
             listGrouped[j].add(track)
         }
 
         listGrouped.forEach {
-            val jobs = it.map { track ->
-
-                GlobalScope.launch(newSingleThreadContext("youtubedl-download")) {
-                    startDownload(
-                        track,
-                        onUpdate = { track, progress ->
-                            status.addJob(track, progress)
-                            onUpdate(status)
-                        },
-                        onFailure = { exception ->
-                            onFailure(exception)
-                    })
+            val jobs =
+                it.map { track ->
+                    GlobalScope.launch(newSingleThreadContext("youtubedl-download")) {
+                        startDownload(
+                            track,
+                            onUpdate = { track, progress ->
+                                status.updateJob(track, progress)
+                                onUpdate(status)
+                            },
+                            onFailure = { exception ->
+                                onFailure(exception)
+                            })
+                    }
                 }
-
-            }
 
             jobs.joinAll()
         }
@@ -68,20 +64,27 @@ class YoutubeDownloader {
 
     private fun startDownload(track: String, onUpdate: (String, Float) -> Unit, onFailure: (Exception) -> Unit) {
         try {
-            val request = YoutubeDLRequest("Photomaton jabberwocky")
+            val request = YoutubeDLRequest(track)
 
-            val youtubeDLDir =
-                File(Environment.getExternalStorageDirectory().absolutePath + "/youtubedl-download")
+            val downloadDir = File(options.downloadDirectory)
+            val archiveDir = File(options.archiveDirectory)
 
-            youtubeDLDir.mkdirs()
+            downloadDir.mkdirs()
+            archiveDir.mkdirs()
+
+            request.addOption("--extract-audio")
+            request.addOption("--ignore-errors")
 
             request.addOption("--default-search", "ytsearch")
-            request.addOption("-o", youtubeDLDir.absolutePath.toString() + "/%(title)s.%(ext)s")
-            request.addOption("--extract-audio")
+            request.addOption("--output", downloadDir.absolutePath + "/%(title)s.%(ext)s")
+            request.addOption("--download-archive", archiveDir.absolutePath + "/downloaded.txt")
+            request.addOption("--match-filter", "duration < 600")
+            request.addOption("--match-title", "^((?!(${options.exceptions})).)*$")
+            //for meta-data keep in mind that adding it might break the CarPlayer in Tasker!
 
             dl.execute(request) { progress, etaInSeconds -> onUpdate(track, progress) }
         } catch (e: Exception) {
-            println(e.message)
+            onFailure(e)
         }
     }
 }

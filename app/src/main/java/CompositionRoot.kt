@@ -3,8 +3,7 @@ import android.os.Environment
 
 class CompositionRoot {
 
-    private val options: CompositionCompassOptions
-
+    val options: CompositionCompassOptions
     var query: IQuery //replaceable
     val youtube: YoutubeDownloader
 
