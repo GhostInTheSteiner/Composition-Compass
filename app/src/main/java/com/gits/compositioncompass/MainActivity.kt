@@ -1,6 +1,7 @@
 package com.gits.compositioncompass
 
 import CompositionRoot
+import QuerySource
 import DownloadMode
 import Fields
 import IFileQuery
@@ -62,6 +63,8 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        views = mutableMapOf()
+
         info = getView(Fields.Info)
         artist = getView(Fields.Artist)
         track = getView(Fields.Track)
@@ -83,15 +86,17 @@ class MainActivity : AppCompatActivity() {
         )
 
         source.adapter = getSpinnerAdapter(
-            SpinnerItem(DownloadMode.SimilarTracks, "Spotify"),
-            SpinnerItem(DownloadMode.SpecificTracks, "LastFM"),
-            SpinnerItem(DownloadMode.SpecificTracks, "YouTube"),
-            SpinnerItem(DownloadMode.SpecificTracks, "File")
+            SpinnerItem(QuerySource.Spotify, "Spotify"),
+            SpinnerItem(QuerySource.LastFM, "LastFM"),
+            SpinnerItem(QuerySource.YouTube, "YouTube"),
+            SpinnerItem(QuerySource.File, "File")
         )
 
         //because Google's implementation for the gui-xml is incomplete...
-        mode.registerEventHandler(onItemSelected = this::mode_OnItemSelected)
-        source.registerEventHandler(onItemSelected = this::source_OnItemSelected)
+        mode.registerEventHandler<Spinner>(spinner_onItemSelected = this::mode_OnItemSelected)
+        source.registerEventHandler<Spinner>(spinner_onItemSelected = this::source_OnItemSelected)
+
+        queryParameters.forEach { it.registerEventHandler<EditText>(editText_onFocusChange = this::queryParameters_OnFocusChange) }
     }
 
 
@@ -115,26 +120,20 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun mode_OnItemSelected(view: Spinner) {
-
+    fun mode_OnItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+        //is there even anything to do here?
     }
 
-    fun source_OnItemSelected(view: Spinner) {
+    fun source_OnItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
         disableQueryParameters()
 
+        composition.changeQuery((source.selectedItem as SpinnerItem).id as QuerySource)
         composition.query.supportedFields.forEach { views[it]!!.isEnabled = true }
     }
 
-    private fun disableQueryParameters() {
-        queryParameters.forEach { it.isEnabled = false }
-    }
+    fun queryParameters_OnFocusChange(v: View?, hasFocus: Boolean) {
 
-    //queryCombo_onChange(view: View)
-    //  disableAllFields()
-    //
-    //  query = Spotify | LastFM | Youtube | File
-    //
-    //  query.SupportedFields.map { it.Field }.foreach { it.enable })
+    }
 
     //formatExclusiveFields(view: View)
     //  val exclusiveIDs = query.ExclusiveFields.map { it.Field.id }
@@ -142,6 +141,12 @@ class MainActivity : AppCompatActivity() {
     //  if (exclusiveIDs.contains(view.id))
     //      query.ExclusiveFields.filter { it.Field.id != view.id }.forEach { it.Field.disable }
     //      show "Only of the the following fields may be set: " + query.ExclusiveFields
+
+
+    private fun disableQueryParameters() {
+        queryParameters.forEach { it.isEnabled = false }
+    }
+
 
 
 

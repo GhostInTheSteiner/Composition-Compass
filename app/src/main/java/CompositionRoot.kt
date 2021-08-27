@@ -3,12 +3,26 @@ import android.os.Environment
 
 class CompositionRoot {
 
+    private val options: CompositionCompassOptions
+
     var query: IQuery //replaceable
     val youtube: YoutubeDownloader
 
     private constructor(options: CompositionCompassOptions, application: Application) {
+        this.options = options
+
         youtube = YoutubeDownloader(options, application)
         query = SpotifyQuery(options) //default query
+    }
+
+    fun changeQuery(source: QuerySource) {
+        query =
+            when(source) {
+                QuerySource.Spotify -> SpotifyQuery(options)
+                QuerySource.LastFM -> LastFMQuery(options)
+                QuerySource.YouTube -> YouTubeQuery(options)
+                QuerySource.File -> FileQuery(options)
+            }
     }
 
     companion object {

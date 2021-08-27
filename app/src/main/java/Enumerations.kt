@@ -17,6 +17,9 @@ enum class DownloadMode() {
     SpecificArtists,
 }
 
-enum class DataSource() {
-    Spotify
+enum class QuerySource() {
+    Spotify,
+    LastFM,
+    YouTube,
+    File
 }

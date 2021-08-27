@@ -39,7 +39,7 @@
 
     <TableRow>
         <TextView
-            android:text="Search Query"
+            android:text="Search"
             android:gravity="right"
             android:padding="3dip" />
         <EditText
@@ -88,20 +88,20 @@
     <TableRow>
 
         <Button
+            android:onClick="download"
             android:layout_width="339dp"
             android:layout_span="2"
             android:text="Download"
-            android:onClick="download"
         />
     </TableRow>
 
     <TableRow>
 
         <Button
+            android:onClick="updateYoutubeDL"
             android:layout_width="339dp"
             android:layout_span="2"
-            android:text="Update YoutubeDL"
-            android:onClick="updateYoutubeDL" />
+            android:text="Update YoutubeDL"/>
     </TableRow>
 
 </TableLayout>
