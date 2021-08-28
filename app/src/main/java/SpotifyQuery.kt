@@ -96,7 +96,7 @@ class SpotifyQuery: IStreamingServiceQuery {
 
         val recommendations = api.browse.getRecommendations(artistSeeds, genreSeeds, trackSeeds)
 
-        return listOf(TargetDirectory(options.rootDirectory + "/" + DownloadFolder.Downloads, recommendations.tracks))
+        return listOf(TargetDirectory(options.rootDirectory + "/" + DownloadFolder.Downloads.folderName, recommendations.tracks))
     }
 
     override suspend fun getSimilarAlbums(): List<TargetDirectory> {

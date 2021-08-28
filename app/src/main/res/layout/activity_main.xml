@@ -90,6 +90,7 @@
     <TableRow>
 
         <Button
+            android:id="@+id/download"
             android:onClick="download"
             android:layout_width="339dp"
             android:layout_span="2"
@@ -118,6 +119,8 @@
             android:id="@+id/info"
             android:gravity="center"
             android:text="Successfully started!"
+            android:textColor="@color/white"
+            android:background="@color/cardview_dark_background"
             />
     </TableRow>
 
@@ -133,6 +136,8 @@
             android:id="@+id/error"
             android:gravity="left"
             android:text="-"
+            android:background="@color/cardview_dark_background"
+            android:textColor="@color/white"
             />
     </TableRow>
 

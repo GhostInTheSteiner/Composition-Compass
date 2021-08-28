@@ -38,8 +38,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var searchQuery: EditText
     private lateinit var mode: Spinner
     private lateinit var source: Spinner
+    private lateinit var jobsDownload: List<Job>
+    private lateinit var download: Button
 
-    private lateinit var views: MutableMap<Fields, View>
+    private lateinit var fieldViews: MutableMap<Fields, View>
+
+    private lateinit var cancelLabel: String
+    private lateinit var downloadLabel: String
 
     private lateinit var composition: CompositionRoot
     private lateinit var binding: ActivityMainBinding
@@ -48,6 +53,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         composition = CompositionRoot.getInstance(application)
+
+        jobsDownload = listOf()
 
         requestPerms()
         prepareView()
@@ -68,7 +75,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        views = mutableMapOf()
+        fieldViews = mutableMapOf()
 
         info = getView(Fields.Info)
         error = getView(Fields.Error)
@@ -77,6 +84,8 @@ class MainActivity : AppCompatActivity() {
         album = getView(Fields.Album)
         genre = getView(Fields.Genre)
         searchQuery = getView(Fields.SearchQuery)
+
+        download = findViewById(R.id.download)
 
         queryParameters = listOf(info, artist, track, album, genre, searchQuery)
 
@@ -103,25 +112,30 @@ class MainActivity : AppCompatActivity() {
 
         composition.changeQueryMode((mode.selectedItem as SpinnerItem).id as QueryMode)
 
+        cancelLabel = "Cancel"
+        downloadLabel = "Download"
+
+        download.text = downloadLabel
+
         resetStatusMessages()
     }
 
     private fun getSpinnerAdapter(vararg entries: SpinnerItem): ArrayAdapter<SpinnerItem> =
         ArrayAdapter(this, android.R.layout.simple_spinner_item, entries)
 
-
     fun<T> getView(field: Fields): T where T: View {
         val id = getResources().getIdentifier(field.viewName, "id", applicationContext.getPackageName());
         val control = findViewById<T>(id)
 
-        views[field] = control
+        fieldViews[field] = control
         return control
     }
 
     fun updateYoutubeDL(view: View) {
         GlobalScope.launch(CoroutineExceptionHandler()) {
+            resetStatusMessages()
             info.text = "Update in progress..."
-            composition.youtube.update();
+            composition.downloader.update();
             info.text = "Update completed!"
         }
     }
@@ -146,7 +160,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         composition.changeQuerySource(source)
-        composition.query.supportedFields.forEach { views[it]!!.isEnabled = true }
+        composition.query.supportedFields.forEach { fieldViews[it]!!.isEnabled = true }
     }
 
     private fun disableQueryParameters() {
@@ -166,18 +180,33 @@ class MainActivity : AppCompatActivity() {
             val required = composition.query.requiredFields
             val supported = composition.query.supportedFields
 
-            val requiredFields = required.map { it.map { views[it]!! } }
-            val supportedFields = supported.map { views[it]!! }
+            val requiredFields = required.map { it.map { fieldViews[it]!! } }
+            val supportedFields = supported.map { fieldViews[it]!! }
 
-            if (requiredFields.any { it.all { it.hasUserContent() } })
-                info.text = "All required fields were set, starting download..."
+            if (download.text.equals(cancelLabel)) {
+                jobsDownload.forEach { it.cancel() }
+                composition.downloader.cancel()
+                download.text = downloadLabel
+                resetStatusMessages()
+                info.text = "Download has been cancelled!"
+                return
+            }
+
+            else if (requiredFields.any { it.all { it.hasUserContent() } }) {
+                //pass => start download
+            }
             else {
                 info.text =
                     "One of the following field-combinations is required:" + System.lineSeparator() + System.lineSeparator()
-                required.map { it.map { it.viewName }.joinToString(", ") }
+                    required.map { it.map { it.viewName }.joinToString(", ") }
                     .joinToString(" or" + System.lineSeparator())
+
                 return
             }
+
+            download.text = this.cancelLabel
+
+            info.text = "All required fields were set, initiating download..."
 
             if (composition.query is IFileQuery) {
                 val fileQuery = composition.query as IFileQuery
@@ -188,7 +217,7 @@ class MainActivity : AppCompatActivity() {
                 val serviceQuery = composition.query as IStreamingServiceQuery
 
                 //call only the addX() methods whose corresponding fields are (enabled + set)!
-                GlobalScope.launch(CoroutineExceptionHandler()) {
+                jobsDownload += GlobalScope.launch(CoroutineExceptionHandler()) {
                     serviceQuery.clear()
                     serviceQuery.prepare()
 
@@ -197,32 +226,36 @@ class MainActivity : AppCompatActivity() {
                             (supportedFields.filter { it.id == R.id.artist }.first() as TextView)
                         val artists = getTextViewValues(artistView)
 
+                        runOnUiThread { info.text = "Fetching data from source..." }
+
                         supportedFields.forEach {
                             if (it.isEnabled && it.hasUserContent()) {
-                                when (it.id) {
-                                    R.id.artist -> launch(CoroutineExceptionHandler()) {
-                                        getTextViewValues(it as TextView).forEachIndexed { i, it ->
-                                            serviceQuery.addArtist(
-                                                it
-                                            )
+                                jobsDownload +=
+                                    when (it.id) {
+                                        R.id.artist -> launch(CoroutineExceptionHandler()) {
+                                            getTextViewValues(it as TextView).forEachIndexed { i, it ->
+                                                serviceQuery.addArtist(
+                                                    it
+                                                )
+                                            }
                                         }
-                                    }
-                                    R.id.track -> launch(CoroutineExceptionHandler()) {
-                                        getTextViewValues(it as TextView).forEachIndexed { i, it ->
-                                            serviceQuery.addTrack(
-                                                it,
-                                                artists[i]
-                                            )
+                                        R.id.track -> launch(CoroutineExceptionHandler()) {
+                                            getTextViewValues(it as TextView).forEachIndexed { i, it ->
+                                                serviceQuery.addTrack(
+                                                    it,
+                                                    artists[i]
+                                                )
+                                            }
                                         }
-                                    }
-                                    R.id.genre -> launch(CoroutineExceptionHandler()) {
-                                        getTextViewValues(it as TextView).forEachIndexed { i, it ->
-                                            serviceQuery.addGenre(
-                                                it
-                                            )
+                                        R.id.genre -> launch(CoroutineExceptionHandler()) {
+                                            getTextViewValues(it as TextView).forEachIndexed { i, it ->
+                                                serviceQuery.addGenre(
+                                                    it
+                                                )
+                                            }
                                         }
+                                        else -> Job()
                                     }
-                                }
                             }
                         }
                     }
@@ -237,7 +270,9 @@ class MainActivity : AppCompatActivity() {
                             QueryMode.Specified -> serviceQuery.getSpecified()
                         }
 
-                    composition.youtube.download(
+                    runOnUiThread { info.text = "Fetching tracks from YouTube..." }
+
+                    composition.downloader.start(
                         directories,
                         onUpdate = {
                             runOnUiThread {
@@ -252,12 +287,14 @@ class MainActivity : AppCompatActivity() {
                             }
                         }
                     )
+
+                    runOnUiThread {
+                        info.text = "Download completed! Files were stored in ${composition.options.rootDirectory}"
+                        download.text = downloadLabel
+                    }
                 }
             }
-            runOnUiThread {
-                info.text =
-                    "Download completed! Files were stored in ${composition.options.rootDirectory}"
-            }
+
         }
         catch (e: Exception) {
             printError(e)

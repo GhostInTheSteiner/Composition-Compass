@@ -1,17 +1,16 @@
 import android.app.Application
 import android.os.Environment
-import javax.sql.DataSource
 
 class CompositionRoot {
 
     val options: CompositionCompassOptions
     var query: IQuery //replaceable
-    val youtube: YoutubeDownloader
+    val downloader: YoutubeDownloader
 
     private constructor(options: CompositionCompassOptions, application: Application) {
         this.options = options
 
-        youtube = YoutubeDownloader(options, application)
+        downloader = YoutubeDownloader(options, application)
         query = SpotifyQuery(options) //default query
     }
 

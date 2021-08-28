@@ -6,7 +6,6 @@ import com.yausername.youtubedl_android.YoutubeDLRequest
 import kotlinx.coroutines.*
 import java.io.File
 import kotlin.io.path.Path
-import kotlin.io.path.absolutePathString
 import kotlin.io.path.name
 
 class YoutubeDownloader {
@@ -14,6 +13,7 @@ class YoutubeDownloader {
     private var options: CompositionCompassOptions
     private var dl: YoutubeDL
     private var ffmpeg: FFmpeg
+    private var jobs: List<Job>
 
     constructor(options: CompositionCompassOptions, application: Application) {
         this.options = options
@@ -24,9 +24,11 @@ class YoutubeDownloader {
 
         ffmpeg = FFmpeg.getInstance()
         ffmpeg.init(application)
+
+        jobs = listOf()
     }
 
-    suspend fun download(directories: List<TargetDirectory>, onUpdate: (DownloadStatus) -> Unit, onFailure: (String, Exception) -> Unit) {
+    suspend fun start(directories: List<TargetDirectory>, onUpdate: (DownloadStatus) -> Unit, onFailure: (String, Exception) -> Unit) {
 
         val status = DownloadStatus()
         val tracksGrouped: MutableList<MutableList<Pair<String, Track>>> = mutableListOf()
@@ -50,7 +52,7 @@ class YoutubeDownloader {
         }
 
         tracksGrouped.forEach {
-            val jobs =
+            jobs =
                 it.map { trackPair ->
 
                     val trackName = trackPair.second.name
@@ -61,7 +63,7 @@ class YoutubeDownloader {
                         trackPair.second.artists.map { it.name }.joinToString(" ")
 
                     GlobalScope.launch(newSingleThreadContext("youtubedl-download")) {
-                        startDownload(
+                        runYoutubeDL(
                             searchQuery,
                             directory,
                             onUpdate = { progress ->
@@ -78,11 +80,11 @@ class YoutubeDownloader {
         }
     }
     
-    suspend fun update() {
+    fun update() {
         dl.updateYoutubeDL(application);
     }
 
-    private fun startDownload(searchQuery: String, directory: String, onUpdate: (Float) -> Unit, onFailure: (Exception) -> Unit) {
+    private fun runYoutubeDL(searchQuery: String, directory: String, onUpdate: (Float) -> Unit, onFailure: (Exception) -> Unit) {
         try {
             val request = YoutubeDLRequest(searchQuery)
 
@@ -114,5 +116,9 @@ class YoutubeDownloader {
         } catch (e: Exception) {
             onFailure(e)
         }
+    }
+
+    fun cancel() {
+        jobs.forEach { it.cancel() }
     }
 }
