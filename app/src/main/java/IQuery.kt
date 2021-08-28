@@ -2,8 +2,9 @@ import com.adamratzman.spotify.models.Track
 
 interface IQuery {
     val requiredFields: List<Fields>
-    val exclusiveFields: List<Fields>
     val supportedFields: List<Fields>
+
+    fun changeMode(mode: QueryMode)
 
     //clears all query contents
     fun clear()
@@ -24,9 +25,7 @@ interface IStreamingServiceQuery: IQuery {
     suspend fun getSimilarArtists(): List<Track>
 
     //Only for the comma-separated keywords
-    suspend fun getSpecificTracks(): List<Track>
-    suspend fun getSpecificAlbums(): List<Track>
-    suspend fun getSpecificArtists(): List<Track>
+    suspend fun getSpecified(): List<Track>
 }
 
 interface IYoutubeQuery: IQuery {

@@ -15,9 +15,15 @@ class SpotifyQuery: IStreamingServiceQuery {
     private var addedGenres: MutableList<String>
     private lateinit var api: SpotifyAppApi
 
-    override val requiredFields: List<Fields> get() = listOf(Fields.Genre, Fields.Track, Fields.Artist)
-    override val exclusiveFields: List<Fields> get() = listOf()
-    override val supportedFields: List<Fields> get() = listOf(Fields.Genre, Fields.Track, Fields.Artist)
+    private var mode: QueryMode
+
+    override val requiredFields: List<Fields> get() = when (mode) {
+        QueryMode.Specified -> listOf(Fields.Artist)
+        else                -> listOf(Fields.Genre, Fields.Track, Fields.Artist)
+    }
+
+    override val supportedFields: List<Fields> get() =
+        listOf(Fields.Genre, Fields.Track, Fields.Artist, Fields.Album)
 
     constructor(options: CompositionCompassOptions) {
         this.options = options
@@ -25,6 +31,12 @@ class SpotifyQuery: IStreamingServiceQuery {
         this.addedArtists = mutableListOf()
         this.addedTracks = mutableListOf()
         this.addedGenres = mutableListOf()
+
+        mode = QueryMode.SimilarTracks
+    }
+
+    override fun changeMode(mode: QueryMode) {
+        this.mode = mode
     }
 
     //needs to be called before any other functions!
@@ -92,15 +104,7 @@ class SpotifyQuery: IStreamingServiceQuery {
         TODO("Not yet implemented")
     }
 
-    override suspend fun getSpecificTracks(): List<Track> {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun getSpecificAlbums(): List<Track> {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun getSpecificArtists(): List<Track> {
+    override suspend fun getSpecified(): List<Track> {
         TODO("Not yet implemented")
     }
 

@@ -2,7 +2,7 @@ package com.gits.compositioncompass
 
 import CompositionRoot
 import QuerySource
-import DownloadMode
+import QueryMode
 import Fields
 import IFileQuery
 import IStreamingServiceQuery
@@ -31,6 +31,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var genre: EditText
     private lateinit var artist: EditText
     private lateinit var track: EditText
+    private lateinit var album: EditText
     private lateinit var searchQuery: EditText
     private lateinit var mode: Spinner
     private lateinit var source: Spinner
@@ -70,21 +71,20 @@ class MainActivity : AppCompatActivity() {
         error = getView(Fields.Error)
         artist = getView(Fields.Artist)
         track = getView(Fields.Track)
+        album = getView(Fields.Album)
         genre = getView(Fields.Genre)
         searchQuery = getView(Fields.SearchQuery)
 
-        queryParameters = listOf(info, artist, track, genre, searchQuery)
+        queryParameters = listOf(info, artist, track, album, genre, searchQuery)
 
         mode = getView(Fields.Mode)
         source = getView(Fields.Source)
 
         mode.adapter = getSpinnerAdapter(
-            SpinnerItem(DownloadMode.SimilarTracks, "Similar Tracks"),
-            SpinnerItem(DownloadMode.SimilarArtists, "Similar Artists"),
-            SpinnerItem(DownloadMode.SimilarAlbums, "Similar Albums"),
-            SpinnerItem(DownloadMode.SpecificTracks, "Specified Tracks"),
-            SpinnerItem(DownloadMode.SpecificAlbums, "Specified Albums"),
-            SpinnerItem(DownloadMode.SpecificArtists, "Specified Artists")
+            SpinnerItem(QueryMode.SimilarTracks, "Similar Tracks"),
+            SpinnerItem(QueryMode.SimilarArtists, "Similar Artists"),
+            SpinnerItem(QueryMode.SimilarAlbums, "Similar Albums"),
+            SpinnerItem(QueryMode.Specified, "Specified")
         )
 
         source.adapter = getSpinnerAdapter(
@@ -98,9 +98,10 @@ class MainActivity : AppCompatActivity() {
         mode.registerEventHandler<Spinner>(spinner_onItemSelected = this::mode_OnItemSelected)
         source.registerEventHandler<Spinner>(spinner_onItemSelected = this::source_OnItemSelected)
 
-        queryParameters.forEach { it.registerEventHandler<EditText>(editText_onFocusChange = this::queryParameters_OnFocusChange) }
-    }
+        composition.changeQueryMode((mode.selectedItem as SpinnerItem).id as QueryMode)
 
+        resetStatusMessages()
+    }
 
     private fun getSpinnerAdapter(vararg entries: SpinnerItem): ArrayAdapter<SpinnerItem> =
         ArrayAdapter(this, android.R.layout.simple_spinner_item, entries)
@@ -123,27 +124,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun mode_OnItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-        //is there even anything to do here?
+        composition.changeQueryMode((mode.selectedItem as SpinnerItem).id as QueryMode)
     }
 
     fun source_OnItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
         disableQueryParameters()
 
-        composition.changeQuery((source.selectedItem as SpinnerItem).id as QuerySource)
+        composition.changeQuerySource((source.selectedItem as SpinnerItem).id as QuerySource)
         composition.query.supportedFields.forEach { views[it]!!.isEnabled = true }
     }
-
-    fun queryParameters_OnFocusChange(v: View?, hasFocus: Boolean) {
-
-    }
-
-    //formatExclusiveFields(view: View)
-    //  val exclusiveIDs = query.ExclusiveFields.map { it.Field.id }
-    //
-    //  if (exclusiveIDs.contains(view.id))
-    //      query.ExclusiveFields.filter { it.Field.id != view.id }.forEach { it.Field.disable }
-    //      show "Only of the the following fields may be set: " + query.ExclusiveFields
-
 
     private fun disableQueryParameters() {
         queryParameters.forEach { it.isEnabled = false }
@@ -156,16 +145,19 @@ class MainActivity : AppCompatActivity() {
         textView.text.toString().split(";").filter { it.length > 0 }
 
     fun download(view: View) {
+        resetStatusMessages()
 
-        val requiredFields = composition.query.requiredFields.map { views[it]!! }
-        val supportedFields = composition.query.supportedFields.map { views[it]!! }
+        val required = composition.query.requiredFields
+        val supported = composition.query.supportedFields
+
+        val requiredFields = required.map { views[it]!! }
+        val supportedFields = supported.map { views[it]!! }
 
         if (requiredFields.all { it.hasUserContent() })
             info.text = "All required fields were set, starting download..."
 
         else {
-            info.text = "The following required fields are missing: " +
-                            requiredFields.filter { !it.hasUserContent() }.joinToString(", ")
+            info.text = "The following required fields are missing: " + required.filter { !views[it]!!.hasUserContent() }.joinToString(", ")
             return
         }
 
@@ -200,16 +192,14 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                val selectedMode = (mode.selectedItem as SpinnerItem).id as DownloadMode
+                val selectedMode = (mode.selectedItem as SpinnerItem).id as QueryMode
 
                 val tracks =
                     when (selectedMode) {
-                        DownloadMode.SimilarTracks -> serviceQuery.getSimilarTracks()
-                        DownloadMode.SimilarAlbums -> serviceQuery.getSimilarAlbums()
-                        DownloadMode.SimilarArtists -> serviceQuery.getSimilarArtists()
-                        DownloadMode.SpecificArtists -> serviceQuery.getSpecificArtists()
-                        DownloadMode.SpecificAlbums -> serviceQuery.getSpecificAlbums()
-                        DownloadMode.SpecificTracks -> serviceQuery.getSpecificTracks()
+                        QueryMode.SimilarTracks -> serviceQuery.getSimilarTracks()
+                        QueryMode.SimilarAlbums -> serviceQuery.getSimilarAlbums()
+                        QueryMode.SimilarArtists -> serviceQuery.getSimilarArtists()
+                        QueryMode.Specified -> serviceQuery.getSpecified()
                     }
 
                 val searchQueries = tracks.map { it.name + " " + it.artists.map { it.name }.joinToString(" ") }
@@ -217,7 +207,10 @@ class MainActivity : AppCompatActivity() {
                 composition.youtube.download(
                     searchQueries,
                     onUpdate = { runOnUiThread { info.text = "Progress: " + it.progress.toString() + "%" } },
-                    onFailure = { runOnUiThread { error.text = it.message } }
+                    onFailure = { track, exception -> runOnUiThread {
+                        error.text = error.text.toString() + "[" + track + "]" + System.lineSeparator() +
+                        exception.message + System.lineSeparator() + System.lineSeparator()
+                    }}
                 )
 
                 runOnUiThread { info.text = "Download completed! Files were stored in ${composition.options.downloadDirectory}" }
@@ -225,9 +218,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun download_(view: View) {
-        val job = GlobalScope.launch {
-
-        }
+    fun resetStatusMessages() {
+        info.text = ""
+        error.text = ""
     }
 }

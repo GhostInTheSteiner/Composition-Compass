@@ -1,5 +1,6 @@
 import android.app.Application
 import android.os.Environment
+import javax.sql.DataSource
 
 class CompositionRoot {
 
@@ -14,7 +15,7 @@ class CompositionRoot {
         query = SpotifyQuery(options) //default query
     }
 
-    fun changeQuery(source: QuerySource) {
+    fun changeQuerySource(source: QuerySource) {
         query =
             when(source) {
                 QuerySource.Spotify -> SpotifyQuery(options)
@@ -22,6 +23,10 @@ class CompositionRoot {
                 QuerySource.YouTube -> YouTubeQuery(options)
                 QuerySource.File -> FileQuery(options)
             }
+    }
+
+    fun changeQueryMode(mode: QueryMode) {
+        query.changeMode(mode)
     }
 
     companion object {

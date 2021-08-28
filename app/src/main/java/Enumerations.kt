@@ -6,16 +6,15 @@ enum class Fields(val viewName: String) {
     Mode("mode"),
     Source("source"),
     SearchQuery("searchQuery"),
-    Error("error")
+    Error("error"),
+    Album("album")
 }
 
-enum class DownloadMode() {
+enum class QueryMode() {
     SimilarTracks,
     SimilarAlbums,
     SimilarArtists,
-    SpecificTracks,
-    SpecificAlbums,
-    SpecificArtists,
+    Specified
 }
 
 enum class QuerySource() {

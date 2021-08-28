@@ -22,7 +22,7 @@ class YoutubeDownloader {
         ffmpeg.init(application)
     }
 
-    suspend fun download(tracks: List<String>, onUpdate: (DownloadStatus) -> Unit, onFailure: (Exception) -> Unit) {
+    suspend fun download(tracks: List<String>, onUpdate: (DownloadStatus) -> Unit, onFailure: (String, Exception) -> Unit) {
 
         val status = DownloadStatus()
         val listGrouped: MutableList<MutableList<String>> = mutableListOf()
@@ -48,8 +48,8 @@ class YoutubeDownloader {
                                 status.updateJob(track, progress)
                                 onUpdate(status)
                             },
-                            onFailure = { exception ->
-                                onFailure(exception)
+                            onFailure = { track, exception ->
+                                onFailure(track, exception)
                             })
                     }
                 }
@@ -62,7 +62,7 @@ class YoutubeDownloader {
         dl.updateYoutubeDL(application);
     }
 
-    private fun startDownload(track: String, onUpdate: (String, Float) -> Unit, onFailure: (Exception) -> Unit) {
+    private fun startDownload(track: String, onUpdate: (String, Float) -> Unit, onFailure: (String, Exception) -> Unit) {
         try {
             val request = YoutubeDLRequest(track)
 
@@ -84,7 +84,7 @@ class YoutubeDownloader {
 
             dl.execute(request) { progress, etaInSeconds -> onUpdate(track, progress) }
         } catch (e: Exception) {
-            onFailure(e)
+            onFailure(track, e)
         }
     }
 }

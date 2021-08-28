@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    xmlns:android="http://schemas.android.com/apk/res/android">
 <TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -14,15 +18,14 @@
             android:padding="3dip" />
 
     </TableRow>
-
+    
     <TableRow>
         <TextView
-            android:text="Genre"
+            android:text="Album"
             android:gravity="right"
             android:padding="3dip" />
         <EditText
-            android:text="electro"
-            android:id="@+id/genre"
+            android:id="@+id/album"
             android:padding="3dip" />
 
     </TableRow>
@@ -39,6 +42,17 @@
 
     </TableRow>
 
+    <TableRow>
+        <TextView
+            android:text="Genre"
+            android:gravity="right"
+            android:padding="3dip" />
+        <EditText
+            android:text="electro"
+            android:id="@+id/genre"
+            android:padding="3dip" />
+
+    </TableRow>
 
     <TableRow>
         <TextView
@@ -74,6 +88,25 @@
     </TableRow>
 
     <TableRow>
+
+        <Button
+            android:onClick="download"
+            android:layout_width="339dp"
+            android:layout_span="2"
+            android:text="Download"
+            />
+    </TableRow>
+
+    <TableRow>
+
+        <Button
+            android:onClick="updateYoutubeDL"
+            android:layout_width="339dp"
+            android:layout_span="2"
+            android:text="Update YoutubeDL"/>
+    </TableRow>
+
+    <TableRow>
         <TextView
             android:text="Info"
             android:gravity="right"
@@ -83,7 +116,7 @@
             android:layout_width="339dp"
             android:layout_span="2"
             android:id="@+id/info"
-            android:gravity="right"
+            android:gravity="center"
             android:text="Successfully started!"
             />
     </TableRow>
@@ -98,28 +131,10 @@
             android:layout_width="339dp"
             android:layout_span="2"
             android:id="@+id/error"
-            android:gravity="right"
+            android:gravity="center"
             android:text="-"
             />
     </TableRow>
 
-    <TableRow>
-
-        <Button
-            android:onClick="download"
-            android:layout_width="339dp"
-            android:layout_span="2"
-            android:text="Download"
-        />
-    </TableRow>
-
-    <TableRow>
-
-        <Button
-            android:onClick="updateYoutubeDL"
-            android:layout_width="339dp"
-            android:layout_span="2"
-            android:text="Update YoutubeDL"/>
-    </TableRow>
-
 </TableLayout>
+</ScrollView>
