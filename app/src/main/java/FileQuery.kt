@@ -1,16 +1,16 @@
 class FileQuery(options: CompositionCompassOptions) : IQuery {
-    override val requiredFields: List<Fields> get() = listOf()
+    override val requiredFields: List<List<Fields>> get() = listOf()
     override val supportedFields: List<Fields> get() = listOf()
     override fun changeMode(mode: QueryMode) {
-        TODO("Not yet implemented")
+        //TODO
     }
 
     override fun clear() {
-        TODO("Not yet implemented")
+        //TODO
     }
 
     override suspend fun prepare() {
-        TODO("Not yet implemented")
+        //TODO
     }
 
 }

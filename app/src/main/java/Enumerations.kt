@@ -17,6 +17,14 @@ enum class QueryMode() {
     Specified
 }
 
+enum class DownloadFolder(val folderName: String) {
+    Downloads("downloads"),
+    Playlists("playlists"),
+    Artists("artists"),
+    Albums("albums"),
+    Genres("genres")
+}
+
 enum class QuerySource() {
     Spotify,
     LastFM,

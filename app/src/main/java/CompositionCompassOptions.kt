@@ -13,10 +13,6 @@ class CompositionCompassOptions {
         get() = options[::spotifyClientSecret.name] as String
         set(value) { options[::spotifyClientSecret.name] = value as Object }
 
-    var downloadDirectory: String
-        get() = options[::downloadDirectory.name] as String
-        set(value) { options[::downloadDirectory.name] = value as Object }
-
     var rootDirectory: String
         get() = options[::rootDirectory.name] as String
         set(value) { options[::rootDirectory.name] = value as Object }
@@ -51,7 +47,6 @@ class CompositionCompassOptions {
         val rootDirectory_ = configFile.parent
 
         options_[::rootDirectory.name] = rootDirectory_ as Object
-        options_[::downloadDirectory.name] = "$rootDirectory_/download" as Object
         options_[::archiveDirectory.name] = rootDirectory_ as Object
 
         options_[::maxParallelDownloads.name] = 100 as Object

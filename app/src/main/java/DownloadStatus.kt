@@ -1,3 +1,5 @@
+import com.adamratzman.spotify.models.Track
+import com.adamratzman.spotify.utils.Language
 import kotlinx.coroutines.yield
 import java.text.DecimalFormat
 import kotlin.math.round
@@ -7,20 +9,20 @@ class DownloadStatus {
     var progress: Double
         get() = calcProgress()
 
-    private var jobs: MutableMap<String, Float>
+    private var jobs: MutableMap<Pair<String, Track>, Float>
 
     constructor() {
-        this.jobs = mutableMapOf<String, Float>()
+        this.jobs = mutableMapOf()
         this.progress = 0.0
     }
 
-    fun updateJob(track: String, progress: Float) {
+    fun updateJob(track: Pair<String, Track>, progress: Float) {
         jobs[track] = progress
     }
 
     fun getJobs() = sequence {
         jobs.forEach {
-            yield(it)
+            yield(Language.it)
         }
     }
 

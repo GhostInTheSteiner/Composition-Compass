@@ -1,10 +1,7 @@
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
-import android.widget.AdapterView
-import android.widget.Button
-import android.widget.EditText
-import android.widget.Spinner
+import android.widget.*
 import androidx.core.widget.addTextChangedListener
 
 fun View.hasUserContent(): Boolean {
@@ -12,6 +9,19 @@ fun View.hasUserContent(): Boolean {
         return (this as EditText).length() > 0
 
     return false
+}
+
+fun<T> Spinner.getItem(filter: (T) -> Boolean): T? {
+    for (i in 1..this.adapter.count) {
+        if (filter(adapter.getItem((i-1)) as T))
+            return adapter.getItem(i-1) as T
+    }
+
+    return null
+}
+
+fun<T> Spinner.setSelection(item: T) {
+    this.setSelection((this.adapter as ArrayAdapter<T>).getPosition(item))
 }
 
 fun<T> View.registerEventHandler(

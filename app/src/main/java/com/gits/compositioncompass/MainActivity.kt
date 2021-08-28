@@ -20,7 +20,10 @@ import hasUserContent
 import kotlinx.coroutines.*
 import SpinnerItem
 import android.widget.*
+import getItem
 import registerEventHandler
+import setSelection
+import java.lang.Exception
 
 
 class MainActivity : AppCompatActivity() {
@@ -116,7 +119,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun updateYoutubeDL(view: View) {
-        GlobalScope.launch {
+        GlobalScope.launch(CoroutineExceptionHandler()) {
             info.text = "Update in progress..."
             composition.youtube.update();
             info.text = "Update completed!"
@@ -130,7 +133,19 @@ class MainActivity : AppCompatActivity() {
     fun source_OnItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
         disableQueryParameters()
 
-        composition.changeQuerySource((source.selectedItem as SpinnerItem).id as QuerySource)
+        val source = (source.selectedItem as SpinnerItem).id as QuerySource
+
+        if (source in listOf(QuerySource.YouTube, QuerySource.File)) {
+            val item = mode.getItem<SpinnerItem> { it.id as QueryMode == QueryMode.Specified }
+            mode.setSelection(item)
+            mode.isEnabled = false
+        }
+
+        else {
+            mode.isEnabled = true
+        }
+
+        composition.changeQuerySource(source)
         composition.query.supportedFields.forEach { views[it]!!.isEnabled = true }
     }
 
@@ -145,78 +160,125 @@ class MainActivity : AppCompatActivity() {
         textView.text.toString().split(";").filter { it.length > 0 }
 
     fun download(view: View) {
-        resetStatusMessages()
+        try {
+            resetStatusMessages()
 
-        val required = composition.query.requiredFields
-        val supported = composition.query.supportedFields
+            val required = composition.query.requiredFields
+            val supported = composition.query.supportedFields
 
-        val requiredFields = required.map { views[it]!! }
-        val supportedFields = supported.map { views[it]!! }
+            val requiredFields = required.map { it.map { views[it]!! } }
+            val supportedFields = supported.map { views[it]!! }
 
-        if (requiredFields.all { it.hasUserContent() })
-            info.text = "All required fields were set, starting download..."
+            if (requiredFields.any { it.all { it.hasUserContent() } })
+                info.text = "All required fields were set, starting download..."
+            else {
+                info.text =
+                    "One of the following field-combinations is required:" + System.lineSeparator() + System.lineSeparator()
+                required.map { it.map { it.viewName }.joinToString(", ") }
+                    .joinToString(" or" + System.lineSeparator())
+                return
+            }
 
-        else {
-            info.text = "The following required fields are missing: " + required.filter { !views[it]!!.hasUserContent() }.joinToString(", ")
-            return
-        }
+            if (composition.query is IFileQuery) {
+                val fileQuery = composition.query as IFileQuery
+            } else if (composition.query is IYoutubeQuery) {
+                val youtubeQuery = composition.query as IYoutubeQuery
+            } else if (composition.query is IStreamingServiceQuery) {
 
-        if (composition.query is IFileQuery) {
-            val fileQuery = composition.query as IFileQuery
-        }
+                val serviceQuery = composition.query as IStreamingServiceQuery
 
-        else if (composition.query is IYoutubeQuery) {
-            val youtubeQuery = composition.query as IYoutubeQuery
-        }
+                //call only the addX() methods whose corresponding fields are (enabled + set)!
+                GlobalScope.launch(CoroutineExceptionHandler()) {
+                    serviceQuery.clear()
+                    serviceQuery.prepare()
 
-        else if (composition.query is IStreamingServiceQuery) {
+                    runBlocking {
+                        val artistView =
+                            (supportedFields.filter { it.id == R.id.artist }.first() as TextView)
+                        val artists = getTextViewValues(artistView)
 
-            val serviceQuery = composition.query as IStreamingServiceQuery
-
-            //call only the addX() methods whose corresponding fields are (enabled + set)!
-            GlobalScope.launch {
-                serviceQuery.clear()
-                serviceQuery.prepare()
-
-                runBlocking {
-                    val artist = (supportedFields.filter { it.id == R.id.artist }.first() as TextView).text.toString()
-
-                    supportedFields.forEach {
-                        if (it.isEnabled && it.hasUserContent()) {
-                            when (it.id) {
-                                R.id.artist -> getTextViewValues(it as TextView).forEach { launch { serviceQuery.addArtist(it) } }
-                                R.id.track -> getTextViewValues(it as TextView).forEach { launch { serviceQuery.addTrack(it, artist) } }
-                                R.id.genre -> getTextViewValues(it as TextView).forEach { launch { serviceQuery.addGenre(it) } }
+                        supportedFields.forEach {
+                            if (it.isEnabled && it.hasUserContent()) {
+                                when (it.id) {
+                                    R.id.artist -> launch(CoroutineExceptionHandler()) {
+                                        getTextViewValues(it as TextView).forEachIndexed { i, it ->
+                                            serviceQuery.addArtist(
+                                                it
+                                            )
+                                        }
+                                    }
+                                    R.id.track -> launch(CoroutineExceptionHandler()) {
+                                        getTextViewValues(it as TextView).forEachIndexed { i, it ->
+                                            serviceQuery.addTrack(
+                                                it,
+                                                artists[i]
+                                            )
+                                        }
+                                    }
+                                    R.id.genre -> launch(CoroutineExceptionHandler()) {
+                                        getTextViewValues(it as TextView).forEachIndexed { i, it ->
+                                            serviceQuery.addGenre(
+                                                it
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
+
+                    val selectedMode = (mode.selectedItem as SpinnerItem).id as QueryMode
+
+                    val directories =
+                        when (selectedMode) {
+                            QueryMode.SimilarTracks -> serviceQuery.getSimilarTracks()
+                            QueryMode.SimilarAlbums -> serviceQuery.getSimilarAlbums()
+                            QueryMode.SimilarArtists -> serviceQuery.getSimilarArtists()
+                            QueryMode.Specified -> serviceQuery.getSpecified()
+                        }
+
+                    composition.youtube.download(
+                        directories,
+                        onUpdate = {
+                            runOnUiThread {
+                                info.text = "Progress: " + it.progress.toString() + "%"
+                            }
+                        },
+                        onFailure = { track, exception ->
+                            runOnUiThread {
+                                error.text =
+                                    error.text.toString() + "[" + track + "]" + System.lineSeparator() +
+                                            exception.message + System.lineSeparator() + System.lineSeparator()
+                            }
+                        }
+                    )
                 }
-
-                val selectedMode = (mode.selectedItem as SpinnerItem).id as QueryMode
-
-                val tracks =
-                    when (selectedMode) {
-                        QueryMode.SimilarTracks -> serviceQuery.getSimilarTracks()
-                        QueryMode.SimilarAlbums -> serviceQuery.getSimilarAlbums()
-                        QueryMode.SimilarArtists -> serviceQuery.getSimilarArtists()
-                        QueryMode.Specified -> serviceQuery.getSpecified()
-                    }
-
-                val searchQueries = tracks.map { it.name + " " + it.artists.map { it.name }.joinToString(" ") }
-
-                composition.youtube.download(
-                    searchQueries,
-                    onUpdate = { runOnUiThread { info.text = "Progress: " + it.progress.toString() + "%" } },
-                    onFailure = { track, exception -> runOnUiThread {
-                        error.text = error.text.toString() + "[" + track + "]" + System.lineSeparator() +
-                        exception.message + System.lineSeparator() + System.lineSeparator()
-                    }}
-                )
-
-                runOnUiThread { info.text = "Download completed! Files were stored in ${composition.options.downloadDirectory}" }
+            }
+            runOnUiThread {
+                info.text =
+                    "Download completed! Files were stored in ${composition.options.rootDirectory}"
             }
         }
+        catch (e: Exception) {
+            printError(e)
+        }
     }
+
+    fun CoroutineExceptionHandler() =
+        CoroutineExceptionHandler { context, throwable -> printError(throwable) }
+
+    fun printError(e: Throwable) {
+        runOnUiThread { error.text = getErrorMessage(e.message ?: "Unknown cause", e.stackTraceToString()) }
+    }
+
+    fun printError(e: Exception) {
+        runOnUiThread { error.text = getErrorMessage(e.message ?: "Unknown cause", e.stackTraceToString()) }
+    }
+
+    fun getErrorMessage(message: String, trace: String) =
+        "Download failed: " + System.lineSeparator() + System.lineSeparator() +
+        message + System.lineSeparator() +
+        trace
 
     fun resetStatusMessages() {
         info.text = ""

@@ -1,11 +1,7 @@
 import com.adamratzman.spotify.SpotifyAppApi
-import com.adamratzman.spotify.models.Artist
-import com.adamratzman.spotify.models.PagingObject
-import com.adamratzman.spotify.models.RecommendationResponse
-import com.adamratzman.spotify.models.Track
+import com.adamratzman.spotify.models.*
 import com.adamratzman.spotify.spotifyAppApi
 import com.adamratzman.spotify.utils.Market
-import java.lang.Exception
 
 class SpotifyQuery: IStreamingServiceQuery {
 
@@ -13,13 +9,14 @@ class SpotifyQuery: IStreamingServiceQuery {
     private var addedArtists: MutableList<Artist>
     private var addedTracks: MutableList<Track>
     private var addedGenres: MutableList<String>
+    private var addedAlbums: MutableList<Album>
     private lateinit var api: SpotifyAppApi
 
     private var mode: QueryMode
 
-    override val requiredFields: List<Fields> get() = when (mode) {
-        QueryMode.Specified -> listOf(Fields.Artist)
-        else                -> listOf(Fields.Genre, Fields.Track, Fields.Artist)
+    override val requiredFields: List<List<Fields>> get() = when (mode) {
+        QueryMode.Specified -> listOf(listOf(Fields.Artist), listOf(Fields.Genre), listOf(Fields.Track), listOf(Fields.Album))
+        else                -> listOf(listOf(Fields.Genre, Fields.Track, Fields.Artist))
     }
 
     override val supportedFields: List<Fields> get() =
@@ -31,6 +28,7 @@ class SpotifyQuery: IStreamingServiceQuery {
         this.addedArtists = mutableListOf()
         this.addedTracks = mutableListOf()
         this.addedGenres = mutableListOf()
+        this.addedAlbums = mutableListOf()
 
         mode = QueryMode.SimilarTracks
     }
@@ -82,29 +80,34 @@ class SpotifyQuery: IStreamingServiceQuery {
     }
 
 
+    override suspend fun addAlbum(name: String, artist: String) {
+        //TODO
+    }
+
+
     override suspend fun addGenre(name: String) {
         addedGenres.add(name)
     }
 
-    override suspend fun getSimilarTracks(): List<Track> {
+    override suspend fun getSimilarTracks(): List<TargetDirectory> {
         val genreSeeds = addedGenres
         val artistSeeds = addedArtists.map { it.id }
         val trackSeeds = addedTracks.map { it.id }
 
         val recommendations = api.browse.getRecommendations(artistSeeds, genreSeeds, trackSeeds)
 
-        return recommendations.tracks
+        return listOf(TargetDirectory(options.rootDirectory + "/" + DownloadFolder.Downloads, recommendations.tracks))
     }
 
-    override suspend fun getSimilarAlbums(): List<Track> {
+    override suspend fun getSimilarAlbums(): List<TargetDirectory> {
         TODO("Not yet implemented")
     }
 
-    override suspend fun getSimilarArtists(): List<Track> {
+    override suspend fun getSimilarArtists(): List<TargetDirectory> {
         TODO("Not yet implemented")
     }
 
-    override suspend fun getSpecified(): List<Track> {
+    override suspend fun getSpecified(): List<TargetDirectory> {
         TODO("Not yet implemented")
     }
 

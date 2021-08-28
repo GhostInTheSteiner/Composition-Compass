@@ -1,7 +1,6 @@
-import com.adamratzman.spotify.models.Track
-
 interface IQuery {
-    val requiredFields: List<Fields>
+    //check if all fields of any group are set
+    val requiredFields: List<List<Fields>>
     val supportedFields: List<Fields>
 
     fun changeMode(mode: QueryMode)
@@ -17,15 +16,16 @@ interface IQuery {
 interface IStreamingServiceQuery: IQuery {
     suspend fun addArtist(name: String)
     suspend fun addTrack(name: String, artist: String)
+    suspend fun addAlbum(name: String, artist: String)
     suspend fun addGenre(name: String) //might not work for LastFM!
 
     //Similar results to the comma-separated keywords
-    suspend fun getSimilarTracks(): List<Track>
-    suspend fun getSimilarAlbums(): List<Track>
-    suspend fun getSimilarArtists(): List<Track>
+    suspend fun getSimilarTracks(): List<TargetDirectory> //contains only one group
+    suspend fun getSimilarAlbums(): List<TargetDirectory>
+    suspend fun getSimilarArtists(): List<TargetDirectory>
 
     //Only for the comma-separated keywords
-    suspend fun getSpecified(): List<Track>
+    suspend fun getSpecified(): List<TargetDirectory> //contains only one group
 }
 
 interface IYoutubeQuery: IQuery {

@@ -18,7 +18,7 @@
             android:padding="3dip" />
 
     </TableRow>
-    
+
     <TableRow>
         <TextView
             android:text="Album"
@@ -131,7 +131,7 @@
             android:layout_width="339dp"
             android:layout_span="2"
             android:id="@+id/error"
-            android:gravity="center"
+            android:gravity="left"
             android:text="-"
             />
     </TableRow>
