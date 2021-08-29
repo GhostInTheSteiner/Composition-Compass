@@ -1,5 +1,4 @@
 import android.app.Application
-import com.adamratzman.spotify.models.Track
 import com.yausername.ffmpeg.FFmpeg
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
@@ -28,39 +27,37 @@ class YoutubeDownloader {
         jobs = listOf()
     }
 
-    suspend fun start(directories: List<TargetDirectory>, onUpdate: (DownloadStatus) -> Unit, onFailure: (String, Exception) -> Unit) {
+    suspend fun start(targetDirectories: List<TargetDirectory>, onUpdate: (DownloadStatus) -> Unit, onFailure: (String, Exception) -> Unit) {
 
         val status = DownloadStatus()
-        val tracksGrouped: MutableList<MutableList<Pair<String, Track>>> = mutableListOf()
-        var j = -1
+        val queriesGrouped: MutableList<MutableList<Pair<String, SearchQuery>>> = mutableListOf()
+        var indexGroup = -1
+        var indexTotal = 0
 
-        directories.forEachIndexed() { index, directory ->
-            directory.tracks.forEach { track ->
-                if (index % options.maxParallelDownloads == 0) {
-                    tracksGrouped.add(mutableListOf())
-                    j++
+        targetDirectories.forEach() { directory ->
+            directory.searchQueries.forEach { search ->
+                if (indexTotal % options.maxParallelDownloads == 0) {
+                    queriesGrouped.add(mutableListOf())
+                    indexGroup++
                 }
 
-                //use a sufficiently unique key: download path + track name
-                var key = Pair(directory.path, track)
+                //use a sufficiently unique key: download path + search
+                var key = Pair(directory.targetPath, search)
 
                 status.updateJob(key, 0.0F)
 
-                //group (to allow for maxParallelDownloads) and flatten directories
-                tracksGrouped[j].add(key)
+                //group (to allow for maxParallelDownloads) and flatten
+                queriesGrouped[indexGroup].add(key)
+                indexTotal++
             }
         }
 
-        tracksGrouped.forEach {
+        queriesGrouped.forEach {
             jobs =
                 it.map { trackPair ->
 
-                    val trackName = trackPair.second.name
+                    val searchQuery = trackPair.second.toString()
                     val directory = trackPair.first
-
-                    val searchQuery =
-                        trackPair.second.name + " " +
-                        trackPair.second.artists.map { it.name }.joinToString(" ")
 
                     GlobalScope.launch(newSingleThreadContext("youtubedl-download")) {
                         runYoutubeDL(
@@ -71,7 +68,7 @@ class YoutubeDownloader {
                                 onUpdate(status)
                             },
                             onFailure = { exception ->
-                                onFailure(trackName, exception)
+                                onFailure(searchQuery, exception)
                             })
                     }
                 }
@@ -86,6 +83,7 @@ class YoutubeDownloader {
 
     private fun runYoutubeDL(searchQuery: String, directory: String, onUpdate: (Float) -> Unit, onFailure: (Exception) -> Unit) {
         try {
+
             val request = YoutubeDLRequest(searchQuery)
 
             val archiveDir = File(options.archiveDirectory)
@@ -102,23 +100,26 @@ class YoutubeDownloader {
             request.addOption("--match-title", "^((?!(${options.exceptions})).)*$")
             //for meta-data keep in mind that adding it might break the CarPlayer in Tasker!
 
-            val directoryName = Path(directory).name
+            val directoryNames = directory.split("/").reversed().take(2)
 
-            //expect URL for playlists
-            if (directoryName !in listOf(DownloadFolder.Playlists.folderName))
+            if (directoryNames.any { it == DownloadFolder.Playlists.folderName } ) { }
+                //pass => search with URL
+            else
                 request.addOption("--default-search", "ytsearch")
 
-            //also fetch already downloaded tracks
-            if (directoryName !in listOf(DownloadFolder.Playlists.folderName, DownloadFolder.Artists.folderName, DownloadFolder.Albums.folderName))
+            if (directoryNames.any { it in listOf(DownloadFolder.Playlists.folderName, DownloadFolder.Artists.folderName, DownloadFolder.Albums.folderName)}) { }
+                //pass => redownloads allowed
+            else
                 request.addOption("--download-archive", archiveDir.absolutePath + "/downloaded.txt")
 
             dl.execute(request) { progress, etaInSeconds -> onUpdate(progress) }
+
         } catch (e: Exception) {
             onFailure(e)
         }
     }
 
-    fun cancel() {
+    suspend fun cancel() {
         jobs.forEach { it.cancel() }
     }
 }

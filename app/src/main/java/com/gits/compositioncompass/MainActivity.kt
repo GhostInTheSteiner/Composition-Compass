@@ -40,10 +40,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var source: Spinner
     private lateinit var jobsDownload: List<Job>
     private lateinit var download: Button
+    private lateinit var update: Button
 
     private lateinit var fieldViews: MutableMap<Fields, View>
 
-    private lateinit var cancelLabel: String
+    private lateinit var downloadingLabel: String
     private lateinit var downloadLabel: String
 
     private lateinit var composition: CompositionRoot
@@ -86,6 +87,7 @@ class MainActivity : AppCompatActivity() {
         searchQuery = getView(Fields.SearchQuery)
 
         download = findViewById(R.id.download)
+        update = findViewById(R.id.update)
 
         queryParameters = listOf(info, artist, track, album, genre, searchQuery)
 
@@ -112,7 +114,7 @@ class MainActivity : AppCompatActivity() {
 
         composition.changeQueryMode((mode.selectedItem as SpinnerItem).id as QueryMode)
 
-        cancelLabel = "Cancel"
+        downloadingLabel = "Downloading..."
         downloadLabel = "Download"
 
         download.text = downloadLabel
@@ -183,16 +185,7 @@ class MainActivity : AppCompatActivity() {
             val requiredFields = required.map { it.map { fieldViews[it]!! } }
             val supportedFields = supported.map { fieldViews[it]!! }
 
-            if (download.text.equals(cancelLabel)) {
-                jobsDownload.forEach { it.cancel() }
-                composition.downloader.cancel()
-                download.text = downloadLabel
-                resetStatusMessages()
-                info.text = "Download has been cancelled!"
-                return
-            }
-
-            else if (requiredFields.any { it.all { it.hasUserContent() } }) {
+            if (requiredFields.any { it.all { it.hasUserContent() } }) {
                 //pass => start download
             }
             else {
@@ -204,7 +197,9 @@ class MainActivity : AppCompatActivity() {
                 return
             }
 
-            download.text = this.cancelLabel
+            download.isEnabled = false
+            update.isEnabled = false
+            download.text = this.downloadingLabel
 
             info.text = "All required fields were set, initiating download..."
 
@@ -276,21 +271,30 @@ class MainActivity : AppCompatActivity() {
                         directories,
                         onUpdate = {
                             runOnUiThread {
-                                info.text = "Progress: " + it.progress.toString() + "%"
+                                info.text =
+                                    "Progress: " + it.progress + "%" + System.lineSeparator() + System.lineSeparator() +
+                                    "Storing in the following locations:" + System.lineSeparator()  + System.lineSeparator() +
+                                    directories.map { "\"${it.targetPath}\"" }.joinToString(System.lineSeparator())
                             }
                         },
-                        onFailure = { track, exception ->
+                        onFailure = { searchQuery, exception ->
                             runOnUiThread {
                                 error.text =
-                                    error.text.toString() + "[" + track + "]" + System.lineSeparator() +
+                                    error.text.toString() + "[" + searchQuery + "]" + System.lineSeparator() +
                                             exception.message + System.lineSeparator() + System.lineSeparator()
                             }
                         }
                     )
 
                     runOnUiThread {
-                        info.text = "Download completed! Files were stored in ${composition.options.rootDirectory}"
+                        info.text =
+                            "Download completed!" + System.lineSeparator() + System.lineSeparator()
+                            "Files were stored in:" + System.lineSeparator() + System.lineSeparator() +
+                            directories.map { "\"${it.targetPath}\"" }.joinToString(System.lineSeparator())
+
                         download.text = downloadLabel
+                        download.isEnabled = true
+                        update.isEnabled = true
                     }
                 }
             }
@@ -316,6 +320,10 @@ class MainActivity : AppCompatActivity() {
         "Download failed: " + System.lineSeparator() + System.lineSeparator() +
         message + System.lineSeparator() +
         trace
+
+    fun closeApp() {
+        finishAndRemoveTask()
+    }
 
     fun resetStatusMessages() {
         info.text = ""

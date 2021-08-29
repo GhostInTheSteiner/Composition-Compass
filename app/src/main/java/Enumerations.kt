@@ -18,11 +18,11 @@ enum class QueryMode() {
 }
 
 enum class DownloadFolder(val folderName: String) {
-    Downloads("downloads"),
-    Playlists("playlists"),
-    Artists("artists"),
-    Albums("albums"),
-    Genres("genres")
+    Stations("Stations"),
+    Playlists("Playlists"),
+    Artists("Artists"),
+    Albums("Albums"),
+    Genres("Genres")
 }
 
 enum class QuerySource() {

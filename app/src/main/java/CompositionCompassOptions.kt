@@ -29,6 +29,14 @@ class CompositionCompassOptions {
         get() = options[::exceptions.name] as String
         set(value) { options[::exceptions.name] = value as Object }
 
+    var samplesSimilarArtists: Int
+        get() = options[::samplesSimilarArtists.name] as Int
+        set(value) { options[::samplesSimilarArtists.name] = value as Object }
+
+    var samplesSimilarAlbums: Int
+        get() = options[::samplesSimilarAlbums.name] as Int
+        set(value) { options[::samplesSimilarAlbums.name] = value as Object }
+
 
     constructor(filePath: String) {
         configFile = File(filePath)
@@ -48,6 +56,9 @@ class CompositionCompassOptions {
 
         options_[::rootDirectory.name] = rootDirectory_ as Object
         options_[::archiveDirectory.name] = rootDirectory_ as Object
+
+        options_[::samplesSimilarArtists.name] = 1000 as Object
+        options_[::samplesSimilarAlbums.name] = 1000 as Object
 
         options_[::maxParallelDownloads.name] = 100 as Object
         options_[::exceptions.name] = "<insert_exceptions_here>" as Object

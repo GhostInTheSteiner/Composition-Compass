@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <ScrollView
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
@@ -6,12 +7,16 @@
 <TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:stretchColumns="1">
+    android:layout_margin="20px"
+    android:stretchColumns="1"
+    android:shrinkColumns="0"
+    >
     <TableRow>
         <TextView
             android:text="Artist"
             android:gravity="right"
-            android:padding="3dip" />
+            android:padding="3dip"
+            style="@style/margin_labels"/>
         <EditText
             android:text="digital daggers"
             android:id="@+id/artist"
@@ -23,7 +28,9 @@
         <TextView
             android:text="Album"
             android:gravity="right"
-            android:padding="3dip" />
+            android:padding="3dip"
+            style="@style/margin_labels"/>
+
         <EditText
             android:id="@+id/album"
             android:padding="3dip" />
@@ -32,6 +39,7 @@
 
     <TableRow>
         <TextView
+            style="@style/margin_labels"
             android:text="Track"
             android:gravity="right"
             android:padding="3dip" />
@@ -44,6 +52,7 @@
 
     <TableRow>
         <TextView
+            style="@style/margin_labels"
             android:text="Genre"
             android:gravity="right"
             android:padding="3dip" />
@@ -56,6 +65,7 @@
 
     <TableRow>
         <TextView
+            style="@style/margin_labels"
             android:text="Search"
             android:gravity="right"
             android:padding="3dip" />
@@ -68,6 +78,7 @@
 
     <TableRow>
         <TextView
+            style="@style/margin_labels"
             android:text="Source"
             android:gravity="right"
             android:padding="3dip" />
@@ -78,6 +89,7 @@
     </TableRow>
     <TableRow>
         <TextView
+            style="@style/margin_labels"
             android:text="Mode"
             android:gravity="right"
             android:padding="3dip" />
@@ -92,29 +104,51 @@
         <Button
             android:id="@+id/download"
             android:onClick="download"
-            android:layout_width="339dp"
             android:layout_span="2"
-            android:text="Download"
+            android:text="「 Download 」"
+
             />
     </TableRow>
 
     <TableRow>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_span="2">
+        <Button
+            android:layout_width="0dp"
+            android:layout_weight="0.5"
+            android:layout_height="wrap_content"
+            android:maxWidth="350px"
+            android:layout_marginRight="10px"
+            android:id="@+id/update"
+            android:onClick="updateYoutubeDL"
+            android:textSize="12dp"
+            android:text="Update YoutubeDL"
+            />
 
         <Button
-            android:onClick="updateYoutubeDL"
-            android:layout_width="339dp"
-            android:layout_span="2"
-            android:text="Update YoutubeDL"/>
+            android:layout_width="0dp"
+            android:layout_weight="0.5"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10px"
+            android:id="@+id/close"
+            android:onClick="closeApp"
+            android:textSize="12dp"
+            android:text="Close App"/>
+        </LinearLayout>
     </TableRow>
 
     <TableRow>
         <TextView
+            style="@style/margin_labels"
             android:text="Info"
             android:gravity="right"
             android:padding="3dip" />
 
         <TextView
-            android:layout_width="339dp"
             android:layout_span="2"
             android:id="@+id/info"
             android:gravity="center"
@@ -126,12 +160,12 @@
 
     <TableRow>
         <TextView
+            style="@style/margin_labels"
             android:text="Error"
             android:gravity="right"
             android:padding="3dip" />
 
         <TextView
-            android:layout_width="339dp"
             android:layout_span="2"
             android:id="@+id/error"
             android:gravity="left"

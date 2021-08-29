@@ -1,5 +1,3 @@
-import com.adamratzman.spotify.models.Track
-
 class LastFMQuery : IStreamingServiceQuery {
     override val requiredFields: List<List<Fields>> get() = when (QueryMode.SimilarTracks) {
         QueryMode.Specified -> listOf(listOf(Fields.Artist), listOf(Fields.Genre))
