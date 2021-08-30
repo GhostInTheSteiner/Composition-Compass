@@ -3,6 +3,7 @@ import com.adamratzman.spotify.models.*
 import com.adamratzman.spotify.spotifyAppApi
 import com.adamratzman.spotify.utils.Market
 import kotlinx.coroutines.*
+import java.lang.Exception
 import kotlin.math.roundToInt
 
 class SpotifyQuery: IStreamingServiceQuery {
@@ -17,7 +18,7 @@ class SpotifyQuery: IStreamingServiceQuery {
     private var mode: QueryMode
 
     override val requiredFields: List<List<Fields>> get() = when (mode) {
-        QueryMode.Specified -> listOf(listOf(Fields.Artist), listOf(Fields.Genre), listOf(Fields.Track), listOf(Fields.Album))
+        QueryMode.Specified -> listOf(listOf(Fields.Artist), listOf(Fields.Artist, Fields.Track), listOf(Fields.Artist, Fields.Album))
         else                -> listOf(listOf(Fields.Genre, Fields.Track, Fields.Artist))
     }
 
@@ -56,34 +57,41 @@ class SpotifyQuery: IStreamingServiceQuery {
         val results = api.search.searchAllTypes("$name $artist", market = Market.DE)
         val tracksCount = results.tracks?.count() ?: 0
 
-        var tracksMatching = listOf<Track?>()
-
         if (tracksCount > 0) {
             val tracks: PagingObject<Track> = results.tracks!!
 
-            tracksMatching = tracks.filter {
+            val tracksMatching = tracks.filter {
                 it!!.name.contains(name, true) &&
-                it.artists.filter { it.name.contains(artist, true) }.count() > 0
+                it.artists.any { it.name.contains(artist, true) }
             }
 
             val trackMatching = tracksMatching.first()
 
             if (trackMatching != null) {
                 addedTracks.add(trackMatching)
-                //return true
             }
-
-            //else
-                //return false
         }
-
-        //else
-            //return false
     }
 
 
     override suspend fun addAlbum(name: String, artist: String) {
-        //TODO
+        val results = api.search.searchAllTypes("$name $artist", market = Market.DE)
+        val albumsCount = results.albums?.count() ?: 0
+
+        if (albumsCount > 0) {
+            val albums: PagingObject<SimpleAlbum> = results.albums!!
+
+            val albumsMatching = albums.filter {
+                it!!.name.contains(name, true) &&
+                it.artists.any { it.name.contains(artist, true) }
+            }
+
+            val albumMatching = albumsMatching.first()
+
+            if (albumMatching != null) {
+                addedAlbums.add(albumMatching.toFullAlbum()!!)
+            }
+        }
     }
 
 
@@ -131,9 +139,7 @@ class SpotifyQuery: IStreamingServiceQuery {
         }}}
 
         //get top artist tracks
-
         val artistOccurrencesSorted = artistOccurrences.toList().sortedByDescending { (id, occurences) -> occurences }
-
         val topArtistIds = artistOccurrencesSorted.take(5).map { it.first }
         var topArtistFolders = listOf<Pair<String, List<Track>>>() //folders (with artist name) -> tracks
 
@@ -182,7 +188,37 @@ class SpotifyQuery: IStreamingServiceQuery {
     }
 
     override suspend fun getSpecified(): List<TargetDirectory> {
-        TODO("Not yet implemented")
+        val artistsDefined = addedArtists.count() > 0
+        val tracksDefined = addedTracks.count() > 0
+        val albumsDefined = addedAlbums.count() > 0
+
+        var targetDirectories = listOf<TargetDirectory>()
+
+        if (artistsDefined && albumsDefined) {
+            targetDirectories =
+                addedAlbums.map {
+                    TargetDirectory(
+                        getPath() it.name,
+                        it.tracks.map {
+                            SearchQuery(it!!.name, it.artists.map { it.name })
+                })}
+        }
+        else if (artistsDefined && tracksDefined) {
+            targetDirectories =
+                addedArtists.mapIndexed { i, artist ->
+                    TargetDirectory(getPath(DownloadFolder.Artists.folderName + "/" + artist.name))
+                    val track = addedTracks[i]
+
+                }
+            api.search.searchAllTypes(addedArtists[0].name + " " + addedTracks[0].name).tracks.first()
+        }
+        else if (artistsDefined) {
+            api.artists.getArtistTopTracks(addedArtists[0].id)
+        }
+        else
+            throw Exception("Required field 'artist' not found!")
+
+        return targetDirectories
     }
 
     override fun clear() {
