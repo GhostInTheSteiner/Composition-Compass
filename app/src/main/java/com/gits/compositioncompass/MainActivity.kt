@@ -19,29 +19,33 @@ import androidx.core.content.ContextCompat
 import hasUserContent
 import kotlinx.coroutines.*
 import SpinnerItem
+import android.content.SharedPreferences
 import android.widget.*
 import getItem
 import registerEventHandler
 import setSelection
 import java.lang.Exception
+import java.util.prefs.Preferences
 
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var queryParameters: List<TextView>
+    private lateinit var queryParameters: List<MultiAutoCompleteTextView>
     private lateinit var info: TextView
     private lateinit var error: TextView
-    private lateinit var genre: EditText
-    private lateinit var artist: EditText
-    private lateinit var track: EditText
-    private lateinit var album: EditText
-    private lateinit var searchQuery: EditText
+    private lateinit var genre: MultiAutoCompleteTextView
+    private lateinit var artist: MultiAutoCompleteTextView
+    private lateinit var track: MultiAutoCompleteTextView
+    private lateinit var album: MultiAutoCompleteTextView
+    private lateinit var searchQuery: MultiAutoCompleteTextView
     private lateinit var mode: Spinner
     private lateinit var source: Spinner
-    private lateinit var jobsDownload: List<Job>
     private lateinit var download: Button
     private lateinit var update: Button
 
+    private lateinit var preferences: SharedPreferences
+    private lateinit var preferencesEditor: SharedPreferences.Editor
+    private lateinit var jobsDownload: List<Job>
     private lateinit var fieldViews: MutableMap<Fields, View>
 
     private lateinit var downloadingLabel: String
@@ -56,6 +60,9 @@ class MainActivity : AppCompatActivity() {
         composition = CompositionRoot.getInstance(application)
 
         jobsDownload = listOf()
+
+        preferences = applicationContext.getSharedPreferences("composition-compass", 0)
+        preferencesEditor = preferences.edit()
 
         requestPerms()
         prepareView()
@@ -89,7 +96,16 @@ class MainActivity : AppCompatActivity() {
         download = findViewById(R.id.download)
         update = findViewById(R.id.update)
 
-        queryParameters = listOf(info, artist, track, album, genre, searchQuery)
+        queryParameters = listOf(artist, track, album, genre, searchQuery)
+
+        queryParameters.forEach {
+            //load last inouts
+            it.setText(preferences.getString(it.id.toString(), ""))
+
+            //register event handler for autocomplete feature
+            it.setTokenizer(MultiAutoCompleteTextView.CommaTokenizer())
+            it.registerEventHandler(editText_afterChanged = { _ -> queryParameters_AfterChanged(it) })
+        }
 
         mode = getView(Fields.Mode)
         source = getView(Fields.Source)
@@ -109,8 +125,8 @@ class MainActivity : AppCompatActivity() {
         )
 
         //because Google's implementation for the gui-xml is incomplete...
-        mode.registerEventHandler<Spinner>(spinner_onItemSelected = this::mode_OnItemSelected)
-        source.registerEventHandler<Spinner>(spinner_onItemSelected = this::source_OnItemSelected)
+        mode.registerEventHandler(spinner_onItemSelected = this::mode_OnItemSelected)
+        source.registerEventHandler(spinner_onItemSelected = this::source_OnItemSelected)
 
         composition.changeQueryMode((mode.selectedItem as SpinnerItem).id as QueryMode)
 
@@ -119,11 +135,15 @@ class MainActivity : AppCompatActivity() {
 
         download.text = downloadLabel
 
-        resetStatusMessages()
+        resetFormatting()
     }
 
     private fun getSpinnerAdapter(vararg entries: SpinnerItem): ArrayAdapter<SpinnerItem> =
-        ArrayAdapter(this, android.R.layout.simple_spinner_item, entries)
+        ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, entries)
+
+    private fun getAutocompleteAdapter(entries: List<String>): ArrayAdapter<String> =
+        ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, entries)
+
 
     fun<T> getView(field: Fields): T where T: View {
         val id = getResources().getIdentifier(field.viewName, "id", applicationContext.getPackageName());
@@ -135,34 +155,81 @@ class MainActivity : AppCompatActivity() {
 
     fun updateYoutubeDL(view: View) {
         GlobalScope.launch(CoroutineExceptionHandler()) {
-            resetStatusMessages()
+            resetFormatting()
             info.text = "Update in progress..."
             composition.downloader.update();
             info.text = "Update completed!"
         }
     }
 
-    fun mode_OnItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-        composition.changeQueryMode((mode.selectedItem as SpinnerItem).id as QueryMode)
+    fun queryParameters_AfterChanged(view: MultiAutoCompleteTextView) {
+        GlobalScope.launch(CoroutineExceptionHandler()) {
+
+            composition.query.prepare()
+
+            var suggestions = listOf<String>()
+
+            when (val query = composition.query) {
+                is IStreamingServiceQuery -> {
+
+                    //take last value from field
+                    val valuesCurrent = view.text.toString().split(",").map { it.trim() }
+                    val valuesArtist = artist.text.toString().split(",").map { it.trim() }
+
+                    val valuesCurrentLatest = valuesCurrent.last()
+                    val valuesCurrentLatest_Artist =
+                        if (valuesArtist.count() < valuesCurrent.count()) ""
+                        else valuesArtist[valuesCurrent.count()-1]
+
+                    try {
+                        suggestions =
+                            when (view.id) {
+                                R.id.track -> query.searchTrack(valuesCurrentLatest, valuesCurrentLatest_Artist).map { it.name }
+                                R.id.album -> query.searchAlbum(valuesCurrentLatest, valuesCurrentLatest_Artist).map { it.name }
+                                R.id.artist -> query.searchArtist(valuesCurrentLatest).map { it.name }
+                                R.id.genre -> query.searchGenre(valuesCurrentLatest)
+                                else -> suggestions
+                            }
+                    }
+                    catch(e: Exception) {
+                        //ignore
+                    }
+                }
+            }
+
+            runOnUiThread { view.setAdapter(getAutocompleteAdapter(suggestions)) }
+        }
+
+        queryParameters.forEach { preferencesEditor.putString(it.id.toString(), it.text.toString()) }
+        preferencesEditor.apply()
     }
 
-    fun source_OnItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+    fun mode_OnItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) = updateState()
+    fun source_OnItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) = updateState()
+
+    fun updateState() {
+        //disable all fields
         disableQueryParameters()
 
+        //set query source
         val source = (source.selectedItem as SpinnerItem).id as QuerySource
+        composition.changeQuerySource(source)
 
+        //set query mode
+        composition.changeQueryMode((mode.selectedItem as SpinnerItem).id as QueryMode)
+
+        //enable supported fields
+        composition.query.supportedFields.forEach { fieldViews[it]!!.isEnabled = true }
+
+        //enable mode spinner only if supported
         if (source in listOf(QuerySource.YouTube, QuerySource.File)) {
             val item = mode.getItem<SpinnerItem> { it.id as QueryMode == QueryMode.Specified }
             mode.setSelection(item)
             mode.isEnabled = false
         }
 
-        else {
+        else
             mode.isEnabled = true
-        }
-
-        composition.changeQuerySource(source)
-        composition.query.supportedFields.forEach { fieldViews[it]!!.isEnabled = true }
     }
 
     private fun disableQueryParameters() {
@@ -173,14 +240,15 @@ class MainActivity : AppCompatActivity() {
 
 
     fun getTextViewValues(textView: TextView) =
-        textView.text.toString().split(";").filter { it.length > 0 }
+        textView.text.toString().split(",").map { it.trim() }.filter { it.length > 0 }
 
     fun download(view: View) {
         try {
-            resetStatusMessages()
+            resetFormatting()
 
             val required = composition.query.requiredFields
             val supported = composition.query.supportedFields
+            val entered = supported.filter { fieldViews[it]!!.hasUserContent() }
 
             val requiredFields = required.map { it.map { fieldViews[it]!! } }
             val supportedFields = supported.map { fieldViews[it]!! }
@@ -216,6 +284,11 @@ class MainActivity : AppCompatActivity() {
                     serviceQuery.clear()
                     serviceQuery.prepare()
 
+                    var artistSuccess = true
+                    var trackSuccess = true
+                    var albumSuccess = true
+                    var genreSuccess = true
+
                     runBlocking {
                         val artistView =
                             (supportedFields.filter { it.id == R.id.artist }.first() as TextView)
@@ -229,24 +302,22 @@ class MainActivity : AppCompatActivity() {
                                     when (it.id) {
                                         R.id.artist -> launch(CoroutineExceptionHandler()) {
                                             getTextViewValues(it as TextView).forEachIndexed { i, it ->
-                                                serviceQuery.addArtist(
-                                                    it
-                                                )
+                                                artistSuccess = artistSuccess && serviceQuery.addArtist(it)
                                             }
                                         }
                                         R.id.track -> launch(CoroutineExceptionHandler()) {
                                             getTextViewValues(it as TextView).forEachIndexed { i, it ->
-                                                serviceQuery.addTrack(
-                                                    it,
-                                                    artists[i]
-                                                )
+                                                trackSuccess = trackSuccess && serviceQuery.addTrack(it, artists[i])
+                                            }
+                                        }
+                                        R.id.album -> launch(CoroutineExceptionHandler()) {
+                                            getTextViewValues(it as TextView).forEachIndexed { i, it ->
+                                                albumSuccess = albumSuccess && serviceQuery.addAlbum(it, artists[i])
                                             }
                                         }
                                         R.id.genre -> launch(CoroutineExceptionHandler()) {
                                             getTextViewValues(it as TextView).forEachIndexed { i, it ->
-                                                serviceQuery.addGenre(
-                                                    it
-                                                )
+                                                genreSuccess = genreSuccess && serviceQuery.addGenre(it)
                                             }
                                         }
                                         else -> Job()
@@ -254,6 +325,11 @@ class MainActivity : AppCompatActivity() {
                             }
                         }
                     }
+
+                    if (!artistSuccess) { runOnUiThread { info.text = "Artist not found!"; unlockDownload(); }; return@launch }
+                    if (!trackSuccess) { runOnUiThread { info.text = "Track not found!"; unlockDownload(); }; return@launch }
+                    if (!albumSuccess) { runOnUiThread { info.text = "Album not found!"; unlockDownload(); }; return@launch }
+                    if (!genreSuccess) { runOnUiThread { info.text = "Genre not found!"; unlockDownload(); }; return@launch }
 
                     val selectedMode = (mode.selectedItem as SpinnerItem).id as QueryMode
 
@@ -281,20 +357,18 @@ class MainActivity : AppCompatActivity() {
                             runOnUiThread {
                                 error.text =
                                     error.text.toString() + "[" + searchQuery + "]" + System.lineSeparator() +
-                                            exception.message + System.lineSeparator() + System.lineSeparator()
+                                    exception.message + System.lineSeparator() + System.lineSeparator()
                             }
                         }
                     )
 
                     runOnUiThread {
                         info.text =
-                            "Download completed!" + System.lineSeparator() + System.lineSeparator()
+                            "Download completed!" + System.lineSeparator() + System.lineSeparator() +
                             "Files were stored in:" + System.lineSeparator() + System.lineSeparator() +
                             directories.map { "\"${it.targetPath}\"" }.joinToString(System.lineSeparator())
 
-                        download.text = downloadLabel
-                        download.isEnabled = true
-                        update.isEnabled = true
+                        unlockDownload()
                     }
                 }
             }
@@ -306,7 +380,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun CoroutineExceptionHandler() =
-        CoroutineExceptionHandler { context, throwable -> printError(throwable) }
+        CoroutineExceptionHandler { context, throwable -> unlockDownload(); printError(throwable) }
+
+    fun unlockDownload() {
+        download.text = downloadLabel
+        download.isEnabled = true
+        update.isEnabled = true
+    }
 
     fun printError(e: Throwable) {
         runOnUiThread { error.text = getErrorMessage(e.message ?: "Unknown cause", e.stackTraceToString()) }
@@ -317,16 +397,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun getErrorMessage(message: String, trace: String) =
-        "Download failed: " + System.lineSeparator() + System.lineSeparator() +
-        message + System.lineSeparator() +
+        "The following error occured ;(" + System.lineSeparator() + System.lineSeparator() +
+        message + System.lineSeparator() + System.lineSeparator() +
         trace
 
     fun closeApp() {
         finishAndRemoveTask()
     }
 
-    fun resetStatusMessages() {
+    fun resetFormatting() {
         info.text = ""
         error.text = ""
+
+        queryParameters.forEach { it.getBackground().clearColorFilter() }
     }
 }

@@ -24,7 +24,7 @@ fun<T> Spinner.setSelection(item: T) {
     this.setSelection((this.adapter as ArrayAdapter<T>).getPosition(item))
 }
 
-fun<T> View.registerEventHandler(
+fun View.registerEventHandler(
     button_onClick: (view: View) -> Unit = { },
     spinner_onNothingSelected: (parent: AdapterView<*>?) -> Unit = { },
     spinner_onItemSelected: (parent: AdapterView<*>?, view: View?, position: Int, id: Long) -> Unit = { a,b,c,d -> },
@@ -41,7 +41,7 @@ fun<T> View.registerEventHandler(
         is EditText -> { this.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) { }
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { }
-            override fun afterTextChanged(s: Editable?) { afterTextChanged(s) }
+            override fun afterTextChanged(s: Editable?) { editText_afterChanged(s) }
         })}
 
         is Button -> { this.setOnClickListener(button_onClick) }

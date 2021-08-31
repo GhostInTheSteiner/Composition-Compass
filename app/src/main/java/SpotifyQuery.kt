@@ -1,4 +1,5 @@
 import com.adamratzman.spotify.SpotifyAppApi
+import com.adamratzman.spotify.SpotifyAppApiBuilder
 import com.adamratzman.spotify.models.*
 import com.adamratzman.spotify.spotifyAppApi
 import com.adamratzman.spotify.utils.Market
@@ -8,13 +9,14 @@ import kotlin.math.roundToInt
 
 class SpotifyQuery: IStreamingServiceQuery {
 
-    private var options: CompositionCompassOptions
     private var addedArtists: MutableList<Artist>
     private var addedTracks: MutableList<Track>
     private var addedGenres: MutableList<String>
     private var addedAlbums: MutableList<Album>
-    private lateinit var api: SpotifyAppApi
 
+    private var api: SpotifyAppApi?
+    private var apiBuilder: SpotifyAppApiBuilder
+    private var options: CompositionCompassOptions
     private var mode: QueryMode
 
     override val requiredFields: List<List<Fields>> get() = when (mode) {
@@ -22,8 +24,10 @@ class SpotifyQuery: IStreamingServiceQuery {
         else                -> listOf(listOf(Fields.Genre, Fields.Track, Fields.Artist))
     }
 
-    override val supportedFields: List<Fields> get() =
-        listOf(Fields.Genre, Fields.Track, Fields.Artist, Fields.Album)
+    override val supportedFields: List<Fields> get() = when (mode) {
+        QueryMode.Specified -> listOf(Fields.Track, Fields.Artist, Fields.Album)
+        else                -> listOf(Fields.Track, Fields.Artist, Fields.Genre)
+    }
 
     constructor(options: CompositionCompassOptions) {
         this.options = options
@@ -34,6 +38,9 @@ class SpotifyQuery: IStreamingServiceQuery {
         this.addedAlbums = mutableListOf()
 
         mode = QueryMode.SimilarTracks
+
+        api = null
+        apiBuilder = spotifyAppApi(options.spotifyClientId, options.spotifyClientSecret)
     }
 
     override fun changeMode(mode: QueryMode) {
@@ -42,19 +49,65 @@ class SpotifyQuery: IStreamingServiceQuery {
 
     //needs to be called before any other functions!
     override suspend fun prepare() {
-        api = spotifyAppApi(options.spotifyClientId, options.spotifyClientSecret).build()
+        api = api ?: apiBuilder.build()
     }
 
-    override suspend fun addArtist(name: String) {
-        val artists = api.search.searchArtist(name)
+    override suspend fun searchArtist(name: String): List<Artist> {
+        val list = mutableListOf<Artist>()
+        val albums = api!!.search.searchAllTypes(name, 10, market = Market.DE).artists
 
-        if (artists.count() > 0)
+        if (albums != null)
+            albums!!.forEach {
+                if (it != null)
+                    list += it!!
+            }
+
+        return list.toList()
+    }
+
+    override suspend fun searchTrack(name: String, artist: String): List<Track> {
+        val list = mutableListOf<Track>()
+        val tracks = api!!.search.searchAllTypes(name + " " + artist, 10, market = Market.DE).tracks
+
+        if (tracks != null)
+            tracks!!.forEach {
+                if (it != null)
+                    list += it!!
+            }
+
+        return list.toList()
+    }
+
+    override suspend fun searchAlbum(name: String, artist: String): List<Album> {
+        val list = mutableListOf<Album>()
+        val albums = api!!.search.searchAllTypes(name + " " + artist, 10, market = Market.DE).albums
+
+        if (albums != null)
+            albums!!.forEach {
+                if (it != null)
+                    list += it.toFullAlbum()!!
+            }
+
+        return list.toList()
+    }
+
+    override suspend fun searchGenre(name: String): List<String> =
+        api!!.browse.getAvailableGenreSeeds().filter { it.contains(name) }
+
+    override suspend fun addArtist(name: String) : Boolean {
+        val artists = api!!.search.searchArtist(name)
+
+        if (artists.count() > 0) {
             addedArtists.add(artists.get(0))
+            return true
+        }
+
+        return false
     }
 
 
-    override suspend fun addTrack(name: String, artist: String) {
-        val results = api.search.searchAllTypes("$name $artist", market = Market.DE)
+    override suspend fun addTrack(name: String, artist: String) : Boolean {
+        val results = api!!.search.searchAllTypes("$name $artist", market = Market.DE)
         val tracksCount = results.tracks?.count() ?: 0
 
         if (tracksCount > 0) {
@@ -69,13 +122,16 @@ class SpotifyQuery: IStreamingServiceQuery {
 
             if (trackMatching != null) {
                 addedTracks.add(trackMatching)
+                return true
             }
         }
+
+        return false
     }
 
 
-    override suspend fun addAlbum(name: String, artist: String) {
-        val results = api.search.searchAllTypes("$name $artist", market = Market.DE)
+    override suspend fun addAlbum(name: String, artist: String) : Boolean {
+        val results = api!!.search.searchAllTypes("$name $artist", market = Market.DE)
         val albumsCount = results.albums?.count() ?: 0
 
         if (albumsCount > 0) {
@@ -90,13 +146,17 @@ class SpotifyQuery: IStreamingServiceQuery {
 
             if (albumMatching != null) {
                 addedAlbums.add(albumMatching.toFullAlbum()!!)
+                return true
             }
         }
+
+        return false
     }
 
 
-    override suspend fun addGenre(name: String) {
+    override suspend fun addGenre(name: String) : Boolean {
         addedGenres.add(name)
+        return true
     }
 
     override suspend fun getSimilarTracks(): List<TargetDirectory> {
@@ -111,7 +171,7 @@ class SpotifyQuery: IStreamingServiceQuery {
         val subFolderName = artistNames + " (" + listOf(trackNames, genreNames).joinToString("; ") + ")"
         val path = getPath(DownloadFolder.Stations, subFolderName)
 
-        val recommendations = api.browse.getRecommendations(artistSeeds, genreSeeds, trackSeeds)
+        val recommendations = api!!.browse.getRecommendations(artistSeeds, genreSeeds, trackSeeds)
         val queries = recommendations.tracks.map { SearchQuery(it.name, it.artists.map { it.name } ) }
 
         return listOf(TargetDirectory(path, queries))
@@ -122,7 +182,42 @@ class SpotifyQuery: IStreamingServiceQuery {
     }
 
     override suspend fun getSimilarAlbums(): List<TargetDirectory> {
-        TODO("Not yet implemented")
+        //get recommendations
+        var recommendations = getRecommendations(options.samplesSimilarAlbums)
+
+        //get occurences
+        val albumOccurrences = mutableMapOf<String, Int>()
+
+        recommendations.forEach { it.tracks.forEach {
+            var currentOccurences = albumOccurrences.get(it.album.id) ?: 0
+            albumOccurrences[it.album.id] = ++currentOccurences
+        }}
+
+        //get top album tracks
+        val albumOccurrencesSorted = albumOccurrences.toList().sortedByDescending { (id, occurences) -> occurences }
+        val topAlbumIds = albumOccurrencesSorted.take(5).map { it.first }
+
+        var jobs = listOf<Deferred<Pair<String, PagingObject<SimpleTrack>>>>()
+
+        runBlocking {
+            jobs = topAlbumIds.map { async {
+                val album = api!!.albums.getAlbum(it)!!
+                Pair(album.name, album.tracks)
+            }
+        }}
+
+        val topAlbumFolders = jobs.map { it.await() }
+        val targetDirectories = mutableListOf<TargetDirectory>()
+
+        //set download paths (one folder for each album)
+        topAlbumFolders.forEach { (albumFolder, tracks) ->
+            val path = getPath(DownloadFolder.Albums, albumFolder)
+            val searchQueries = tracks.map { SearchQuery(it!!.name, it.artists.map { it.name }) }
+
+            targetDirectories += TargetDirectory(path, searchQueries)
+        }
+
+        return targetDirectories
     }
 
     override suspend fun getSimilarArtists(): List<TargetDirectory> {
@@ -141,23 +236,19 @@ class SpotifyQuery: IStreamingServiceQuery {
         //get top artist tracks
         val artistOccurrencesSorted = artistOccurrences.toList().sortedByDescending { (id, occurences) -> occurences }
         val topArtistIds = artistOccurrencesSorted.take(5).map { it.first }
-        var topArtistFolders = listOf<Pair<String, List<Track>>>() //folders (with artist name) -> tracks
 
         var jobs = listOf<Deferred<Pair<String, List<Track>>>>()
 
         runBlocking {
-            jobs = topArtistIds.map { async { Pair(api.artists.getArtist(it)!!.name, api.artists.getArtistTopTracks(it)) } }
+            jobs = topArtistIds.map { async { Pair(api!!.artists.getArtist(it)!!.name, api!!.artists.getArtistTopTracks(it)) } }
         }
 
-        topArtistFolders = jobs.map { it.await() }
-
+        val topArtistFolders = jobs.map { it.await() }
         val targetDirectories = mutableListOf<TargetDirectory>()
 
         //set download paths (one folder for each artist)
         topArtistFolders.forEach { (artistFolder, tracks) ->
-            val subFolderName = artistFolder //artist-name
-            val path = getPath(DownloadFolder.Artists, subFolderName)
-
+            val path = getPath(DownloadFolder.Artists, artistFolder)
             val searchQueries = tracks.map { SearchQuery(it.name, it.artists.map { it.name }) }
 
             targetDirectories += TargetDirectory(path, searchQueries)
@@ -179,7 +270,7 @@ class SpotifyQuery: IStreamingServiceQuery {
 
         runBlocking {
             for (i in 1..amount)
-                jobs += async { api.browse.getRecommendations(artistSeeds, genreSeeds, trackSeeds) }
+                jobs += async { api!!.browse.getRecommendations(artistSeeds, genreSeeds, trackSeeds) }
         }
 
         recommendations = jobs.map { it.await() }
@@ -194,26 +285,46 @@ class SpotifyQuery: IStreamingServiceQuery {
 
         var targetDirectories = listOf<TargetDirectory>()
 
-        if (artistsDefined && albumsDefined) {
+        if (artistsDefined && albumsDefined) { //fetch specified albums (whole albums)
             targetDirectories =
-                addedAlbums.map {
+                addedAlbums.map { album ->
                     TargetDirectory(
-                        getPath() it.name,
-                        it.tracks.map {
-                            SearchQuery(it!!.name, it.artists.map { it.name })
-                })}
+                        getPath(
+                            DownloadFolder.Albums,
+                            album.name),
+                        album.tracks.map { track ->
+                            SearchQuery(
+                                track!!.name,
+                                track.artists.map { it.name })})}
+
         }
-        else if (artistsDefined && tracksDefined) {
+        else if (artistsDefined && tracksDefined) { //fetch specified tracks (single tracks)
             targetDirectories =
                 addedArtists.mapIndexed { i, artist ->
-                    TargetDirectory(getPath(DownloadFolder.Artists.folderName + "/" + artist.name))
-                    val track = addedTracks[i]
+                    TargetDirectory(
+                        getPath(
+                            DownloadFolder.Artists,
+                            artist.name),
+                        listOf(
+                            SearchQuery(
+                                addedTracks[i].name,
+                                listOf(artist.name))))}
 
-                }
-            api.search.searchAllTypes(addedArtists[0].name + " " + addedTracks[0].name).tracks.first()
         }
-        else if (artistsDefined) {
-            api.artists.getArtistTopTracks(addedArtists[0].id)
+        else if (artistsDefined) { //fetch specified artists (top tracks for each artist)
+            //api!!.artists.getArtistTopTracks(addedArtists[0].id)
+
+            targetDirectories =
+                addedArtists.map { artist ->
+                    TargetDirectory(
+                        getPath(
+                            DownloadFolder.Artists,
+                            artist.name),
+                        api!!.artists.getArtistTopTracks(artist.id).map { track ->
+                            SearchQuery(
+                                track.name,
+                                track.artists.map { it.name })})}
+
         }
         else
             throw Exception("Required field 'artist' not found!")

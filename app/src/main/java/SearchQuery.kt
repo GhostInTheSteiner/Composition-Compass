@@ -11,6 +11,6 @@ class SearchQuery(
     }
 
     override fun toString(): String {
-        return listOf(track, artists.joinToString(" "), album, album, genre, playlist).joinToString(", ")
+        return listOf(track, artists.joinToString(" "), album, album, genre, playlist).filter { it.length > 0 }.joinToString(", ")
     }
 }

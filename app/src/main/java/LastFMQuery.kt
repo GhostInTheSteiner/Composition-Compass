@@ -1,3 +1,7 @@
+import com.adamratzman.spotify.models.Album
+import com.adamratzman.spotify.models.Artist
+import com.adamratzman.spotify.models.Track
+
 class LastFMQuery : IStreamingServiceQuery {
     override val requiredFields: List<List<Fields>> get() = when (QueryMode.SimilarTracks) {
         QueryMode.Specified -> listOf(listOf(Fields.Artist), listOf(Fields.Genre))
@@ -12,19 +16,35 @@ class LastFMQuery : IStreamingServiceQuery {
         this.mode = QueryMode.SimilarTracks
     }
 
-    override suspend fun addArtist(name: String) {
+    override suspend fun searchArtist(name: String): List<Artist> {
         TODO("Not yet implemented")
     }
 
-    override suspend fun addTrack(name: String, artist: String) {
+    override suspend fun searchTrack(name: String, artist: String): List<Track> {
         TODO("Not yet implemented")
     }
 
-    override suspend fun addAlbum(name: String, artist: String) {
+    override suspend fun searchAlbum(name: String, artist: String): List<Album> {
         TODO("Not yet implemented")
     }
 
-    override suspend fun addGenre(name: String) {
+    override suspend fun searchGenre(name: String): List<String> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun addArtist(name: String) : Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun addTrack(name: String, artist: String) : Boolean  {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun addAlbum(name: String, artist: String) : Boolean  {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun addGenre(name: String) : Boolean  {
         TODO("Not yet implemented")
     }
 
