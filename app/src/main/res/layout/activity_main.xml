@@ -3,18 +3,23 @@
     android:layout_height="wrap_content"
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:maxWidth="@dimen/activity_horizontal_margin">
+
     <TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_margin="20px"
         android:stretchColumns="1">
-        <TableRow>
+
+        <TableRow
+            android:id="@+id/rowArtists" >
+
             <TextView
+                android:id="@+id/artistLabel"
                 android:text="Artists"
                 android:gravity="right"
                 android:padding="3dip"
                 style="@style/margin_labels"/>
-            <MultiAutoCompleteTextView
+            <com.gits.compositioncompass.InstantMultiAutoCompleteTextView
                 android:maxWidth="@dimen/activity_horizontal_margin"
                 android:hint="Artist 1, Artist 2 ..."
                 android:id="@+id/artist"
@@ -22,14 +27,17 @@
 
         </TableRow>
 
-        <TableRow>
+        <TableRow
+            android:id="@+id/rowAlbums" >
+
             <TextView
+                android:id="@+id/albumLabel"
                 android:text="Albums"
                 android:gravity="right"
                 android:padding="3dip"
                 style="@style/margin_labels"/>
 
-            <MultiAutoCompleteTextView
+            <com.gits.compositioncompass.InstantMultiAutoCompleteTextView
                 android:maxWidth="@dimen/activity_horizontal_margin"
                 android:hint="Album 1, Album 2, ..."
                 android:id="@+id/album"
@@ -37,26 +45,31 @@
 
         </TableRow>
 
-        <TableRow>
+        <TableRow
+            android:id="@+id/rowTracks" >
             <TextView
+                android:id="@+id/trackLabel"
                 style="@style/margin_labels"
-                android:text="Track"
+                android:text="Tracks"
                 android:gravity="right"
                 android:padding="3dip" />
-            <MultiAutoCompleteTextView
+            <com.gits.compositioncompass.InstantMultiAutoCompleteTextView
                 android:hint="Title 1, Title 2, ..."
                 android:id="@+id/track"
                 android:padding="3dip" />
 
         </TableRow>
 
-        <TableRow>
+        <TableRow
+            android:id="@+id/rowGenres" >
+
             <TextView
+                android:id="@+id/genreLabel"
                 style="@style/margin_labels"
-                android:text="Genre"
+                android:text="Genres"
                 android:gravity="right"
                 android:padding="3dip" />
-            <MultiAutoCompleteTextView
+            <com.gits.compositioncompass.InstantMultiAutoCompleteTextView
                 android:maxWidth="@dimen/activity_horizontal_margin"
                 android:hint="Genre 1, Genre 2, ..."
                 android:id="@+id/genre"
@@ -64,13 +77,16 @@
 
         </TableRow>
 
-        <TableRow>
+        <TableRow
+            android:id="@+id/rowSearch" >
+
             <TextView
+                android:id="@+id/searchQueryLabel"
                 style="@style/margin_labels"
                 android:text="Search"
                 android:gravity="right"
                 android:padding="3dip" />
-            <MultiAutoCompleteTextView
+            <com.gits.compositioncompass.InstantMultiAutoCompleteTextView
                 android:maxWidth="@dimen/activity_horizontal_margin"
                 android:hint="Seach Query or URL"
                 android:id="@+id/searchQuery"
@@ -79,7 +95,9 @@
         </TableRow>
 
 
-        <TableRow>
+        <TableRow
+            android:id="@+id/rowSource" >
+
             <TextView
                 style="@style/margin_labels"
                 android:text="Source"
@@ -90,7 +108,9 @@
                 />
 
         </TableRow>
-        <TableRow>
+        <TableRow
+            android:id="@+id/rowMode" >
+
             <TextView
                 style="@style/margin_labels"
                 android:text="Mode"

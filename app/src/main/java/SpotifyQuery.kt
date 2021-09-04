@@ -14,6 +14,10 @@ class SpotifyQuery: IStreamingServiceQuery {
     private var addedGenres: MutableList<String>
     private var addedAlbums: MutableList<Album>
 
+    private var listTracks: List<Track>
+    private var listAlbums: List<Album>
+    private var listGenres: List<String>
+
     private var api: SpotifyAppApi?
     private var apiBuilder: SpotifyAppApiBuilder
     private var options: CompositionCompassOptions
@@ -37,6 +41,10 @@ class SpotifyQuery: IStreamingServiceQuery {
         this.addedGenres = mutableListOf()
         this.addedAlbums = mutableListOf()
 
+        this.listAlbums = listOf()
+        this.listTracks = listOf()
+        this.listGenres = listOf()
+
         mode = QueryMode.SimilarTracks
 
         api = null
@@ -50,19 +58,26 @@ class SpotifyQuery: IStreamingServiceQuery {
     //needs to be called before any other functions!
     override suspend fun prepare() {
         api = api ?: apiBuilder.build()
+
+        listGenres =
+            if (listGenres.count() == 0) api!!.browse.getAvailableGenreSeeds()
+            else listGenres
     }
 
     override suspend fun searchArtist(name: String): List<Artist> {
-        val list = mutableListOf<Artist>()
-        val albums = api!!.search.searchAllTypes(name, 10, market = Market.DE).artists
+        val listArtists = mutableListOf<Artist>()
+        val artists =
+            if (name == "") null
+            else api!!.search.searchArtist(name)
 
-        if (albums != null)
-            albums!!.forEach {
-                if (it != null)
-                    list += it!!
+        if (artists != null)
+            artists!!.forEach {
+                if (it != null) {
+                    listArtists += it!!
+                }
             }
 
-        return list.toList()
+        return listArtists.toList()
     }
 
     override suspend fun searchTrack(name: String, artist: String): List<Track> {
@@ -89,6 +104,8 @@ class SpotifyQuery: IStreamingServiceQuery {
             }
 
         return list.toList()
+
+        return listAlbums
     }
 
     override suspend fun searchGenre(name: String): List<String> =
