@@ -186,15 +186,20 @@ class MainActivity : AppCompatActivity() {
                     //take last value from field
                     val valuesCurrent = view.text.toString().split(",").map { it.trim() }
                     val valuesArtist = artist.text.toString().split(",").map { it.trim() }
+                    val valuesAlbum = album.text.toString().split(",").map { it.trim() }
 
                     val valuesCurrentLatest = valuesCurrent.last()
                     val valuesCurrentLatest_Artist =
                         if (valuesArtist.count() < valuesCurrent.count()) ""
                         else valuesArtist[valuesCurrent.count()-1]
 
+                    val valuesCurrentLatest_Album =
+                        if (valuesAlbum.count() < valuesCurrent.count()) ""
+                        else valuesAlbum[valuesCurrent.count()-1]
+
                     suggestions =
                         when (view.id) {
-                            R.id.track -> query.searchTrack(valuesCurrentLatest, valuesCurrentLatest_Artist).map { it.name }
+                            R.id.track -> query.searchTrack(valuesCurrentLatest, valuesCurrentLatest_Artist, valuesCurrentLatest_Album).map { it.name }
                             R.id.album -> query.searchAlbum(valuesCurrentLatest, valuesCurrentLatest_Artist).map { it.name }
                             R.id.artist -> query.searchArtist(valuesCurrentLatest).map { it.name }
                             R.id.genre -> query.searchGenre(valuesCurrentLatest)
@@ -202,6 +207,8 @@ class MainActivity : AppCompatActivity() {
                         }
                 }
             }
+
+            suggestions = suggestions.distinct()
 
             runOnUiThread { view.setAdapter(getAutocompleteAdapter(suggestions)) }
         }

@@ -9,13 +9,13 @@ import kotlin.math.roundToInt
 
 class SpotifyQuery: IStreamingServiceQuery {
 
-    private var addedArtists: MutableList<Artist>
-    private var addedTracks: MutableList<Track>
+    private var addedArtists: MutableList<ArtistItem>
+    private var addedTracks: MutableList<TrackItem>
     private var addedGenres: MutableList<String>
-    private var addedAlbums: MutableList<Album>
+    private var addedAlbums: MutableList<AlbumItem>
 
-    private var listTracks: List<Track>
-    private var listAlbums: List<Album>
+    private var listTracks: List<TrackItem>
+    private var listAlbums: List<AlbumItem>
     private var listGenres: List<String>
 
     private var api: SpotifyAppApi?
@@ -64,8 +64,8 @@ class SpotifyQuery: IStreamingServiceQuery {
             else listGenres
     }
 
-    override suspend fun searchArtist(name: String): List<Artist> {
-        val listArtists = mutableListOf<Artist>()
+    override suspend fun searchArtist(name: String): List<ArtistItem> {
+        val list = mutableListOf<ArtistItem>()
         val artists =
             if (name == "") null
             else api!!.search.searchArtist(name)
@@ -73,49 +73,63 @@ class SpotifyQuery: IStreamingServiceQuery {
         if (artists != null)
             artists!!.forEach {
                 if (it != null) {
-                    listArtists += it!!
+                    list += ArtistItem(it!!.id, it.name, it.popularity)
                 }
             }
 
-        return listArtists.toList()
+        list.sortByDescending { it.popularity }
+
+        return list.toList()
     }
 
-    override suspend fun searchTrack(name: String, artist: String): List<Track> {
-        val list = mutableListOf<Track>()
-        val tracks = api!!.search.searchAllTypes(name + " " + artist, 10, market = Market.DE).tracks
+    override suspend fun searchTrack(name: String, artist: String, album: String): List<TrackItem> {
+        val list = mutableListOf<TrackItem>()
+        val searchString = listOf(name, artist, album).filter { it.length > 0 }.joinToString(" ")
+        val tracks = api!!.search.searchAllTypes(searchString, 10, market = Market.DE).tracks
 
         if (tracks != null)
             tracks!!.forEach {
                 if (it != null)
-                    list += it!!
+                    list += TrackItem(it.id, it.name, it.popularity, it.artists.map { ArtistItem(it.id, it.name) })
             }
+
+        list.sortByDescending { it.popularity }
 
         return list.toList()
     }
 
-    override suspend fun searchAlbum(name: String, artist: String): List<Album> {
-        val list = mutableListOf<Album>()
+    override suspend fun searchAlbum(name: String, artist: String): List<AlbumItem> {
+        val list = mutableListOf<AlbumItem>()
         val albums = api!!.search.searchAllTypes(name + " " + artist, 10, market = Market.DE).albums
 
         if (albums != null)
             albums!!.forEach {
-                if (it != null)
-                    list += it.toFullAlbum()!!
+                if (it != null) {
+                    val fullAlbum = it.toFullAlbum()
+                    val popularity = fullAlbum?.popularity ?: 0
+                    val tracks =
+                        fullAlbum!!.tracks.map {
+                            TrackItem(it!!.id, it.name, it.popularity ?: 0, it.artists.map {
+                                ArtistItem(it.id, it.name) }) }
+
+                    list += AlbumItem(it.id, it.name, popularity, tracks)
+                }
             }
 
-        return list.toList()
+        list.sortByDescending { it.popularity }
 
-        return listAlbums
+        return list.toList()
     }
 
     override suspend fun searchGenre(name: String): List<String> =
-        api!!.browse.getAvailableGenreSeeds().filter { it.contains(name) }
+        api!!.browse.getAvailableGenreSeeds().filter { it.contains(name) }.sortedBy { it }
 
     override suspend fun addArtist(name: String) : Boolean {
         val artists = api!!.search.searchArtist(name)
 
         if (artists.count() > 0) {
-            addedArtists.add(artists.get(0))
+            val artist = artists.get(0)
+            addedArtists.add(ArtistItem(artist.id, artist.name, artist.popularity))
             return true
         }
 
@@ -128,7 +142,10 @@ class SpotifyQuery: IStreamingServiceQuery {
         val tracksCount = results.tracks?.count() ?: 0
 
         if (tracksCount > 0) {
-            val tracks: PagingObject<Track> = results.tracks!!
+            val tracks: List<TrackItem> =
+                results.tracks!!.map {
+                    TrackItem(it!!.id, it.name, it.popularity, it.artists.map {
+                        ArtistItem(it.id, it.name)})}
 
             val tracksMatching = tracks.filter {
                 it!!.name.contains(name, true) &&
@@ -162,7 +179,14 @@ class SpotifyQuery: IStreamingServiceQuery {
             val albumMatching = albumsMatching.first()
 
             if (albumMatching != null) {
-                addedAlbums.add(albumMatching.toFullAlbum()!!)
+                val fullAlbum = albumMatching.toFullAlbum()!!
+                val popularity = fullAlbum.popularity ?: 0
+                val tracks =
+                    fullAlbum.tracks.map {
+                        TrackItem(it!!.id, it.name, popularity, it.artists.map {
+                            ArtistItem(it.id, it.name)})}
+
+                addedAlbums.add(AlbumItem(albumMatching.id, albumMatching.name, popularity, tracks))
                 return true
             }
         }
@@ -254,10 +278,15 @@ class SpotifyQuery: IStreamingServiceQuery {
         val artistOccurrencesSorted = artistOccurrences.toList().sortedByDescending { (id, occurences) -> occurences }
         val topArtistIds = artistOccurrencesSorted.take(5).map { it.first }
 
-        var jobs = listOf<Deferred<Pair<String, List<Track>>>>()
+        var jobs = listOf<Deferred<Pair<String, List<TrackItem>>>>()
 
         runBlocking {
-            jobs = topArtistIds.map { async { Pair(api!!.artists.getArtist(it)!!.name, api!!.artists.getArtistTopTracks(it)) } }
+            jobs =
+                topArtistIds.map { async { Pair(
+                    api!!.artists.getArtist(it)!!.name,
+                    api!!.artists.getArtistTopTracks(it).map {
+                        TrackItem(it.id, it.name, it.popularity, it.artists.map {
+                            ArtistItem(it.id, it.name) })})}}
         }
 
         val topArtistFolders = jobs.map { it.await() }

@@ -1,7 +1,3 @@
-import com.adamratzman.spotify.models.Album
-import com.adamratzman.spotify.models.Artist
-import com.adamratzman.spotify.models.Track
-
 class LastFMQuery : IStreamingServiceQuery {
     override val requiredFields: List<List<Fields>> get() = when (QueryMode.SimilarTracks) {
         QueryMode.Specified -> listOf(listOf(Fields.Artist), listOf(Fields.Genre))
@@ -16,15 +12,15 @@ class LastFMQuery : IStreamingServiceQuery {
         this.mode = QueryMode.SimilarTracks
     }
 
-    override suspend fun searchArtist(name: String): List<Artist> {
+    override suspend fun searchArtist(name: String): List<ArtistItem> {
         TODO("Not yet implemented")
     }
 
-    override suspend fun searchTrack(name: String, artist: String): List<Track> {
+    override suspend fun searchTrack(name: String, artist: String, album: String): List<TrackItem> {
         TODO("Not yet implemented")
     }
 
-    override suspend fun searchAlbum(name: String, artist: String): List<Album> {
+    override suspend fun searchAlbum(name: String, artist: String): List<AlbumItem> {
         TODO("Not yet implemented")
     }
 

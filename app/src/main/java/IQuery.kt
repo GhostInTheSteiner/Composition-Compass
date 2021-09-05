@@ -1,7 +1,3 @@
-import com.adamratzman.spotify.models.Album
-import com.adamratzman.spotify.models.Artist
-import com.adamratzman.spotify.models.Track
-
 interface IQuery {
     //check if all fields of any group are set
     val requiredFields: List<List<Fields>>
@@ -18,9 +14,9 @@ interface IQuery {
 
 //Spotify / LastFM
 interface IStreamingServiceQuery: IQuery {
-    suspend fun searchArtist(name: String) : List<Artist>
-    suspend fun searchTrack(name: String, artist: String) : List<Track>
-    suspend fun searchAlbum(name: String, artist: String) : List<Album>
+    suspend fun searchArtist(name: String) : List<ArtistItem>
+    suspend fun searchTrack(name: String, artist: String, album: String) : List<TrackItem>
+    suspend fun searchAlbum(name: String, artist: String) : List<AlbumItem>
     suspend fun searchGenre(name: String) : List<String>
 
     suspend fun addArtist(name: String) : Boolean
