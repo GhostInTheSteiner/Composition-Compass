@@ -19,7 +19,9 @@ import androidx.core.content.ContextCompat
 import hasUserContent
 import kotlinx.coroutines.*
 import SpinnerItem
+import TargetDirectory
 import android.content.SharedPreferences
+import android.provider.ContactsContract
 import android.widget.*
 import getItem
 import registerEventHandler
@@ -290,12 +292,21 @@ class MainActivity : AppCompatActivity() {
             update.isEnabled = false
             download.text = this.downloadingLabel
 
+            var directories = listOf<TargetDirectory>()
+
             info.text = "All required fields were set, initiating download..."
 
             if (composition.query is IFileQuery) {
                 val fileQuery = composition.query as IFileQuery
             } else if (composition.query is IYoutubeQuery) {
                 val youtubeQuery = composition.query as IYoutubeQuery
+
+                youtubeQuery.clear()
+
+                getTextViewValues(searchQuery).forEach { youtubeQuery.addSearchQuery(it) }
+
+                GlobalScope.launch(exceptionHandler()) { downloadDirectories(youtubeQuery.getSearchQueryResults()) }
+
             } else if (composition.query is IStreamingServiceQuery) {
 
                 val serviceQuery = composition.query as IStreamingServiceQuery
@@ -357,7 +368,7 @@ class MainActivity : AppCompatActivity() {
 
                     val selectedMode = (mode.selectedItem as SpinnerItem).id as QueryMode
 
-                    val directories =
+                    directories =
                         when (selectedMode) {
                             QueryMode.SimilarTracks -> serviceQuery.getSimilarTracks()
                             QueryMode.SimilarAlbums -> serviceQuery.getSimilarAlbums()
@@ -365,41 +376,48 @@ class MainActivity : AppCompatActivity() {
                             QueryMode.Specified -> serviceQuery.getSpecified()
                         }
 
-                    runOnUiThread { info.text = "Fetching tracks from YouTube..." }
-
-                    composition.downloader.start(
-                        directories,
-                        onUpdate = {
-                            runOnUiThread {
-                                info.text =
-                                    "Progress: " + it.progress + "%" + System.lineSeparator() + System.lineSeparator() +
-                                    "Storing in the following locations:" + System.lineSeparator()  + System.lineSeparator() +
-                                    directories.map { "\"${it.targetPath}\"" }.joinToString(System.lineSeparator())
-                            }
-                        },
-                        onFailure = { searchQuery, exception ->
-                            runOnUiThread {
-                                error.text =
-                                    error.text.toString() + "[" + searchQuery + "]" + System.lineSeparator() +
-                                    exception.message + System.lineSeparator() + System.lineSeparator()
-                            }
-                        }
-                    )
-
-                    runOnUiThread {
-                        info.text =
-                            "Download completed!" + System.lineSeparator() + System.lineSeparator() +
-                            "Files were stored in:" + System.lineSeparator() + System.lineSeparator() +
-                            directories.map { "\"${it.targetPath}\"" }.joinToString(System.lineSeparator())
-
-                        unlockDownload()
-                    }
+                    downloadDirectories(directories)
                 }
             }
-
         }
         catch (e: Exception) {
             printError(e)
+        }
+    }
+
+    private suspend fun downloadDirectories(directories: List<TargetDirectory>) {
+        //the below needs to be removed from this scope!
+
+        runOnUiThread { info.text = "Fetching tracks from YouTube..." }
+
+        composition.downloader.start(
+            directories,
+            onUpdate = {
+                runOnUiThread {
+                    info.text =
+                        "Progress: " + it.progress + "%" + System.lineSeparator() + System.lineSeparator() +
+                                "Storing in the following locations:" + System.lineSeparator() + System.lineSeparator() +
+                                directories.map { "\"${it.targetPath}\"" }
+                                    .joinToString(System.lineSeparator())
+                }
+            },
+            onFailure = { searchQuery, exception ->
+                runOnUiThread {
+                    error.text =
+                        error.text.toString() + "[" + searchQuery + "]" + System.lineSeparator() +
+                                exception.message + System.lineSeparator() + System.lineSeparator()
+                }
+            }
+        )
+
+        runOnUiThread {
+            info.text =
+                "Download completed!" + System.lineSeparator() + System.lineSeparator() +
+                        "Files were stored in:" + System.lineSeparator() + System.lineSeparator() +
+                        directories.map { "\"${it.targetPath}\"" }
+                            .joinToString(System.lineSeparator())
+
+            unlockDownload()
         }
     }
 

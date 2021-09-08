@@ -34,13 +34,13 @@ interface IStreamingServiceQuery: IQuery {
 }
 
 interface IYoutubeQuery: IQuery {
-    suspend fun addSearchQuery()
+    fun addSearchQuery(query: String) : Boolean
 
     //Results for the search query specified
-    suspend fun getSearchQueryResults()
+    fun getSearchQueryResults(): List<TargetDirectory>
 }
 
 interface IFileQuery: IQuery {
     //Results for the tracks specified in the file
-    suspend fun getSpecifiedTracks()
+    fun getSpecifiedTracks()
 }

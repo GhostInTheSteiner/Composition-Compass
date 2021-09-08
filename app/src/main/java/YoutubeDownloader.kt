@@ -102,9 +102,20 @@ class YoutubeDownloader {
 
             val directoryNames = directory.split("/").reversed().take(2)
 
-            if (directoryNames.any { it == DownloadFolder.Playlists.folderName } ) { }
-                //pass => search with URL
+            /*
+            Single Video:   /Playlists/!Single Downloads/Avicii - Levels HQ Upload.opus
+            PLaylist:       /Playlists/Complete Discography Digital Daggers/<list_of_tracks>
+            Search Query:   /Playlists/best techno songs 2021/<list_of_tracks>
+            */
+
+            if (searchQuery.trim().startsWith("http://") || searchQuery.trim().startsWith("https://")) { }
+                //pass =>   video or playlist; search with URL
+
+            else if (directoryNames.any { it.equals(DownloadFolder.Playlists.folderName) })
+                //          search query; download first 50 results
+                request.addOption("--default-search", "ytsearch50")
             else
+                //          other download mode; download single track only
                 request.addOption("--default-search", "ytsearch")
 
             if (directoryNames.any { it in listOf(DownloadFolder.Playlists.folderName, DownloadFolder.Artists.folderName, DownloadFolder.Albums.folderName)}) { }

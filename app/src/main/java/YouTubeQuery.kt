@@ -1,16 +1,53 @@
-class YouTubeQuery(options: CompositionCompassOptions) : IQuery {
+import java.util.*
+
+class YouTubeQuery : IYoutubeQuery {
+    private var addedSearchQueries: MutableList<String>
+    private val options: CompositionCompassOptions
+
     override val requiredFields: List<List<Fields>> get() = listOf(listOf(Fields.SearchQuery))
     override val supportedFields: List<Fields> get() = listOf(Fields.SearchQuery)
+
+    constructor(options: CompositionCompassOptions) {
+        this.addedSearchQueries = mutableListOf()
+        this.options = options
+    }
+
+    override fun addSearchQuery(query: String): Boolean {
+        addedSearchQueries += query
+        return true
+    }
+
+    override fun getSearchQueryResults(): List<TargetDirectory> =
+        addedSearchQueries.map { TargetDirectory(
+            getPath(DownloadFolder.Playlists, getSubFolder(it)),
+            listOf(SearchQuery(it)))}
+
+    private fun getSubFolder(searchOrUrl: String): String =
+        if ((searchOrUrl.startsWith("http://") || searchOrUrl.startsWith("https://")) && searchOrUrl.contains("list="))
+            //playlist; quick and dirty alternative to avoid extracting the id ;(
+            UUID.randomUUID().toString()
+
+        else if (searchOrUrl.startsWith("http://") || searchOrUrl.startsWith("https://"))
+            //single video
+            "!Singles"
+
+        else
+            //search query
+            searchOrUrl.replace('/', ' ')
+
     override fun changeMode(mode: QueryMode) {
-        //TODO
+        //pass => gui is always locked to "Specified"
     }
 
     override fun clear() {
-        //TODO
+        addedSearchQueries.clear()
     }
 
     override suspend fun prepare() {
-        //TODO
+        //pass => nothing to connect to
     }
 
+    private fun getPath(folder: DownloadFolder, subFolderName: String): String {
+        return options.rootDirectory + "/" + folder.folderName + "/" + subFolderName
+    }
 }
