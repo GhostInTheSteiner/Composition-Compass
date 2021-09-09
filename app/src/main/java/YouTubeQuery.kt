@@ -19,13 +19,13 @@ class YouTubeQuery : IYoutubeQuery {
 
     override fun getSearchQueryResults(): List<TargetDirectory> =
         addedSearchQueries.map { TargetDirectory(
-            getPath(DownloadFolder.Playlists, getSubFolder(it)),
+            getPath(DownloadFolder.Stations, getSubFolder(it)),
             listOf(SearchQuery(it)))}
 
     private fun getSubFolder(searchOrUrl: String): String =
         if ((searchOrUrl.startsWith("http://") || searchOrUrl.startsWith("https://")) && searchOrUrl.contains("list="))
             //playlist; quick and dirty alternative to avoid extracting the id ;(
-            UUID.randomUUID().toString()
+            "!Playlist (" + UUID.randomUUID().toString() + ")"
 
         else if (searchOrUrl.startsWith("http://") || searchOrUrl.startsWith("https://"))
             //single video
@@ -33,7 +33,7 @@ class YouTubeQuery : IYoutubeQuery {
 
         else
             //search query
-            searchOrUrl.replace('/', ' ')
+            "!Search (" + searchOrUrl.replace('/', ' ') + ")"
 
     override fun changeMode(mode: QueryMode) {
         //pass => gui is always locked to "Specified"

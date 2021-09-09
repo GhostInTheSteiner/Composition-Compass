@@ -210,7 +210,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            suggestions = suggestions.distinct()
+            suggestions = suggestions.distinct().map { it.replace(',', ' ') }
 
             runOnUiThread { view.setAdapter(getAutocompleteAdapter(suggestions)) }
         }
@@ -234,8 +234,18 @@ class MainActivity : AppCompatActivity() {
         val mode_ = (mode.selectedItem as SpinnerItem).id as QueryMode
         composition.changeQueryMode(mode_)
 
+//        composition.query.supportedFields.forEach { (fieldViews[it]!!.parent as TableRow).visibility = View.VISIBLE }
+
         //enable supported fields
-        composition.query.supportedFields.forEach { (fieldViews[it]!!.parent as TableRow).visibility = View.VISIBLE }
+        queryParameters.forEach {
+            val supported = composition.query.supportedFields.map { fieldViews[it] }
+
+            if (supported.contains(it))
+                (it.parent as TableRow).visibility = View.VISIBLE
+
+            else
+                it.setText("") //clear, so the field doesn't interfer with others while it's invisible
+        }
 
 
 
