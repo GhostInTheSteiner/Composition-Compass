@@ -42,5 +42,5 @@ interface IYoutubeQuery: IQuery {
 
 interface IFileQuery: IQuery {
     //Results for the tracks specified in the file
-    fun getSpecifiedTracks()
+    fun getSpecifiedTracks(): List<TargetDirectory>
 }

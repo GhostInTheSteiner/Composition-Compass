@@ -86,11 +86,9 @@ class YoutubeDownloader {
 
             val request = YoutubeDLRequest(searchQuery)
 
-            val archiveDir = File(options.archiveDirectory)
             val downloadDir = File(directory)
 
             downloadDir.mkdirs()
-            archiveDir.mkdirs()
 
             request.addOption("--extract-audio")
             request.addOption("--ignore-errors")
@@ -118,10 +116,10 @@ class YoutubeDownloader {
                 //          other download mode; download single track only
                 request.addOption("--default-search", "ytsearch")
 
-            if (directoryNames.any { it in listOf(DownloadFolder.Playlists.folderName, DownloadFolder.Artists.folderName, DownloadFolder.Albums.folderName)}) { }
+            if (directoryNames.any { it in listOf(DownloadFolder.Artists.folderName, DownloadFolder.Albums.folderName)}) { }
                 //pass => redownloads allowed
             else
-                request.addOption("--download-archive", archiveDir.absolutePath + "/downloaded.txt")
+                request.addOption("--download-archive", downloadDir.absolutePath + "/downloaded.txt")
 
             dl.execute(request) { progress, etaInSeconds -> onUpdate(progress) }
 

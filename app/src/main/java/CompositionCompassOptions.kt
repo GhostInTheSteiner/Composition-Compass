@@ -17,10 +17,6 @@ class CompositionCompassOptions {
         get() = options[::rootDirectory.name] as String
         set(value) { options[::rootDirectory.name] = value as Object }
 
-    var archiveDirectory: String
-        get() = options[::archiveDirectory.name] as String
-        set(value) { options[::archiveDirectory.name] = value as Object }
-
     var maxParallelDownloads: Int
         get() = options[::maxParallelDownloads.name] as Int
         set(value) { options[::maxParallelDownloads.name] = value as Object }
@@ -55,7 +51,6 @@ class CompositionCompassOptions {
         val rootDirectory_ = configFile.parent
 
         options_[::rootDirectory.name] = rootDirectory_ as Object
-        options_[::archiveDirectory.name] = rootDirectory_ as Object
 
         options_[::samplesSimilarArtists.name] = 1000 as Object
         options_[::samplesSimilarAlbums.name] = 1000 as Object

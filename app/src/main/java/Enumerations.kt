@@ -2,12 +2,13 @@ enum class Fields(val viewName: String) {
     Artist("artist"),
     Track("track"),
     Genre("genre"),
+    Album("album"),
+    SearchQuery("searchQuery"),
+    File("file"),
     Info("info"),
     Mode("mode"),
     Source("source"),
-    SearchQuery("searchQuery"),
-    Error("error"),
-    Album("album")
+    Error("error")
 }
 
 enum class QueryMode() {
@@ -19,10 +20,8 @@ enum class QueryMode() {
 
 enum class DownloadFolder(val folderName: String) {
     Stations("Stations"),
-    Playlists("Playlists"),
     Artists("Artists"),
     Albums("Albums"),
-    Genres("Genres")
 }
 
 enum class QuerySource() {

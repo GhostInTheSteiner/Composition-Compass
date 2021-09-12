@@ -28,6 +28,7 @@ import registerEventHandler
 import setSelection
 import java.lang.Exception
 import android.view.inputmethod.InputMethodManager
+import androidx.core.app.NotificationCompat
 
 
 class MainActivity : AppCompatActivity() {
@@ -40,6 +41,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var track: InstantMultiAutoCompleteTextView
     private lateinit var album: InstantMultiAutoCompleteTextView
     private lateinit var searchQuery: InstantMultiAutoCompleteTextView
+    private lateinit var file: InstantMultiAutoCompleteTextView
     private lateinit var mode: Spinner
     private lateinit var source: Spinner
     private lateinit var download: Button
@@ -95,11 +97,12 @@ class MainActivity : AppCompatActivity() {
         album = getView(Fields.Album)
         genre = getView(Fields.Genre)
         searchQuery = getView(Fields.SearchQuery)
+        file = getView(Fields.File)
 
         download = findViewById(R.id.download)
         update = findViewById(R.id.update)
 
-        queryParameters = listOf(artist, track, album, genre, searchQuery)
+        queryParameters = listOf(artist, track, album, genre, searchQuery, file)
 
         queryParameters.forEach {
             //load last inouts
@@ -122,7 +125,7 @@ class MainActivity : AppCompatActivity() {
 
         source.adapter = getSpinnerAdapter(
             SpinnerItem(QuerySource.Spotify, "Spotify"),
-            SpinnerItem(QuerySource.LastFM, "LastFM"),
+//            SpinnerItem(QuerySource.LastFM, "LastFM"),
             SpinnerItem(QuerySource.YouTube, "YouTube"),
             SpinnerItem(QuerySource.File, "File")
         )
@@ -308,6 +311,9 @@ class MainActivity : AppCompatActivity() {
 
             if (composition.query is IFileQuery) {
                 val fileQuery = composition.query as IFileQuery
+
+                GlobalScope.launch(exceptionHandler()) { downloadDirectories(fileQuery.getSpecifiedTracks()) }
+
             } else if (composition.query is IYoutubeQuery) {
                 val youtubeQuery = composition.query as IYoutubeQuery
 

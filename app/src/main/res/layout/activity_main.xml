@@ -87,6 +87,7 @@
                 android:gravity="right"
                 android:padding="3dip" />
             <com.gits.compositioncompass.InstantMultiAutoCompleteTextView
+                android:enabled="false"
                 android:maxWidth="@dimen/activity_horizontal_margin"
                 android:hint="Seach Query or URL"
                 android:id="@+id/searchQuery"
@@ -94,6 +95,23 @@
 
         </TableRow>
 
+        <TableRow
+            android:id="@+id/rowFile" >
+
+            <TextView
+                android:id="@+id/fileLabel"
+                style="@style/margin_labels"
+                android:text="Files"
+                android:gravity="right"
+                android:padding="3dip" />
+            <com.gits.compositioncompass.InstantMultiAutoCompleteTextView
+                android:maxWidth="@dimen/activity_horizontal_margin"
+                android:hint="Pandora/Files/[your_files]"
+                android:enabled="false"
+                android:id="@+id/file"
+                android:padding="3dip" />
+
+        </TableRow>
 
         <TableRow
             android:id="@+id/rowSource" >

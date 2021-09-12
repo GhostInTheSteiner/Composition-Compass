@@ -29,7 +29,8 @@ fun View.registerEventHandler(
     spinner_onNothingSelected: (parent: AdapterView<*>?) -> Unit = { },
     spinner_onItemSelected: (parent: AdapterView<*>?, view: View?, position: Int, id: Long) -> Unit = { a,b,c,d -> },
     editText_onFocusChange: (v: View?, hasFocus: Boolean) -> Unit = { a, b -> },
-    editText_afterChanged: (s: Editable?) -> Unit = { a -> }
+    editText_afterChanged: (s: Editable?) -> Unit = { a -> },
+    editText_onClick: (v: View?) -> Unit = { a -> }
     //others go here...
 ) {
     when (this) {
@@ -38,11 +39,17 @@ fun View.registerEventHandler(
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) { spinner_onItemSelected(parent, view, position, id) }
         }}
 
-        is EditText -> { this.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) { }
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { }
-            override fun afterTextChanged(s: Editable?) { editText_afterChanged(s) }
-        })}
+        is EditText -> {
+            this.addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) { }
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { }
+                override fun afterTextChanged(s: Editable?) { editText_afterChanged(s) }
+            })
+
+            this.setOnClickListener(object : View.OnClickListener {
+                override fun onClick(v: View?) { editText_onClick(v) }
+            })
+        }
 
         is Button -> { this.setOnClickListener(button_onClick) }
         is EditText -> { this.setOnFocusChangeListener(editText_onFocusChange) }

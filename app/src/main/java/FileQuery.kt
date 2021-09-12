@@ -1,6 +1,9 @@
-class FileQuery(options: CompositionCompassOptions) : IQuery {
-    override val requiredFields: List<List<Fields>> get() = listOf()
-    override val supportedFields: List<Fields> get() = listOf()
+import java.io.File
+
+class FileQuery(val options: CompositionCompassOptions) : IFileQuery {
+    override val requiredFields: List<List<Fields>> get() = listOf(listOf())
+    override val supportedFields: List<Fields> get() = listOf(Fields.File)
+    
     override fun changeMode(mode: QueryMode) {
         //TODO
     }
@@ -13,4 +16,13 @@ class FileQuery(options: CompositionCompassOptions) : IQuery {
         //TODO
     }
 
+    override fun getSpecifiedTracks(): List<TargetDirectory> =
+        File(options.rootDirectory + "/Files").listFiles().map { TargetDirectory(
+            getPath(DownloadFolder.Stations, "!File (${it.name})"),
+            it.readLines().map { SearchQuery(it) })}
+
+
+    private fun getPath(folder: DownloadFolder, subFolderName: String): String {
+        return options.rootDirectory + "/" + folder.folderName + "/" + subFolderName
+    }
 }
