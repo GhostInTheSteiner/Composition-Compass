@@ -213,13 +213,11 @@ class SpotifyQuery: IStreamingServiceQuery {
         val path = getPath(DownloadFolder.Stations, subFolderName)
 
         val recommendations = api!!.browse.getRecommendations(artistSeeds, genreSeeds, trackSeeds)
-        val queries = recommendations.tracks.map { SearchQuery(it.name, it.artists.map { it.name } ) }
+        val tracks = removeExceptions(recommendations.tracks)
+
+        val queries = tracks.map { SearchQuery(it.name, it.artists.map { it.name } ) }
 
         return listOf(TargetDirectory(path, queries))
-    }
-
-    private fun getPath(folder: DownloadFolder, subFolderName: String): String {
-        return options.rootDirectory + "/" + folder.folderName + "/" + subFolderName
     }
 
     override suspend fun getSimilarAlbums(): List<TargetDirectory> {
@@ -229,14 +227,14 @@ class SpotifyQuery: IStreamingServiceQuery {
         //get occurences
         val albumOccurrences = mutableMapOf<String, Int>()
 
-        recommendations.forEach { it.tracks.forEach {
+        recommendations.forEach { removeExceptions(it.tracks).forEach {
             var currentOccurences = albumOccurrences.get(it.album.id) ?: 0
             albumOccurrences[it.album.id] = ++currentOccurences
         }}
 
         //get top album tracks
         val albumOccurrencesSorted = albumOccurrences.toList().sortedByDescending { (id, occurences) -> occurences }
-        val topAlbumIds = albumOccurrencesSorted.take(5).map { it.first }
+        val topAlbumIds = albumOccurrencesSorted.take(options.resultsSimilarAlbums).map { it.first }
 
         var jobs = listOf<Deferred<Pair<String, PagingObject<SimpleTrack>>>>()
 
@@ -269,14 +267,14 @@ class SpotifyQuery: IStreamingServiceQuery {
         //get occurences
         val artistOccurrences = mutableMapOf<String, Int>()
 
-        recommendations.forEach { it.tracks.forEach { it.artists.forEach {
+        recommendations.forEach { removeExceptions(it.tracks).forEach { it.artists.forEach {
             var currentOccurences = artistOccurrences.get(it.id) ?: 0
             artistOccurrences[it.id] = ++currentOccurences
         }}}
 
         //get top artist tracks
         val artistOccurrencesSorted = artistOccurrences.toList().sortedByDescending { (id, occurences) -> occurences }
-        val topArtistIds = artistOccurrencesSorted.take(5).map { it.first }
+        val topArtistIds = artistOccurrencesSorted.take(options.resultsSimilarArtists).map { it.first }
 
         var jobs = listOf<Deferred<Pair<String, List<TrackItem>>>>()
 
@@ -301,6 +299,13 @@ class SpotifyQuery: IStreamingServiceQuery {
         }
 
         return targetDirectories
+    }
+
+    private fun removeExceptions(tracks: List<Track>): List<Track> =
+        tracks.filter { !(Regex(options.exceptions, RegexOption.IGNORE_CASE).containsMatchIn(it.name + " " + it.artists.joinToString(" "))) }
+
+    private fun getPath(folder: DownloadFolder, subFolderName: String): String {
+        return options.rootDirectory + "/" + folder.folderName + "/" + subFolderName
     }
 
     //amount in steps of 50, 100, 150, 200, ...

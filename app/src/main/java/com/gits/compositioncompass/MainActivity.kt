@@ -20,6 +20,7 @@ import hasUserContent
 import kotlinx.coroutines.*
 import SpinnerItem
 import TargetDirectory
+import android.app.NotificationChannel
 import android.content.SharedPreferences
 import android.provider.ContactsContract
 import android.widget.*
@@ -29,6 +30,11 @@ import setSelection
 import java.lang.Exception
 import android.view.inputmethod.InputMethodManager
 import androidx.core.app.NotificationCompat
+import android.app.NotificationManager
+import android.content.Context
+import android.os.Build
+import androidx.core.app.NotificationManagerCompat
+import java.util.*
 
 
 class MainActivity : AppCompatActivity() {
@@ -51,6 +57,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var preferencesEditor: SharedPreferences.Editor
     private lateinit var jobsDownload: List<Job>
     private lateinit var fieldViews: MutableMap<Fields, View>
+    private lateinit var notificationChannelId: String
 
     private lateinit var downloadingLabel: String
     private lateinit var downloadLabel: String
@@ -59,18 +66,57 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+        try {
+            super.onCreate(savedInstanceState)
 
-        requestPerms()
+            notificationChannelId = createNotificationChannel("composition-compass")
+            requestPerms()
 
-        composition = CompositionRoot.getInstance(application)
+            composition = CompositionRoot.getInstance(application)
 
-        jobsDownload = listOf()
+            jobsDownload = listOf()
 
-        preferences = applicationContext.getSharedPreferences("composition-compass", 0)
-        preferencesEditor = preferences.edit()
+            preferences = applicationContext.getSharedPreferences("composition-compass", 0)
+            preferencesEditor = preferences.edit()
 
-        prepareView()
+            prepareView()
+        }
+        catch (e: Exception) {
+            val mBuilder: NotificationCompat.Builder = NotificationCompat.Builder(this, notificationChannelId)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle("An exception occured ;(") // title
+                .setStyle(
+                    NotificationCompat.BigTextStyle()
+                    .bigText(e.stackTraceToString()))
+                .setContentText(
+                    e.message + System.lineSeparator() + System.lineSeparator() +
+                    e.stackTraceToString()) // body message
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+
+            NotificationManagerCompat.from(this).notify(Random().nextInt(Int.MAX_VALUE), mBuilder.build())
+
+            throw e
+        }
+    }
+
+    private fun createNotificationChannel(id: String): String {
+        // Create the NotificationChannel, but only on API 26+ because
+        // the NotificationChannel class is new and not in the support library
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = getString(R.string.app_name)
+            val descriptionText = "Notifications for Compass Compass"
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val channel = NotificationChannel(id, name, importance).apply {
+                description = descriptionText
+            }
+
+            // Register the channel with the system
+            val notificationManager: NotificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        return id
     }
 
     private fun requestPerms() {

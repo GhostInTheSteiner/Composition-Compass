@@ -31,7 +31,7 @@ class CompositionRoot {
     companion object {
         fun getInstance(application: Application): CompositionRoot {
             val extStoragePath = Environment.getExternalStorageDirectory().absolutePath
-            val configFile = extStoragePath + "/Pandora/config-downloader.ini"
+            val configFile = extStoragePath + "/Pandora/config.ini"
             val options = CompositionCompassOptions(configFile)
 
             return CompositionRoot(options, application)
