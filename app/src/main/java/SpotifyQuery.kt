@@ -248,9 +248,10 @@ class SpotifyQuery: IStreamingServiceQuery {
         val topAlbumFolders = jobs.map { it.await() }
         val targetDirectories = mutableListOf<TargetDirectory>()
 
+
         //set download paths (one folder for each album)
         topAlbumFolders.forEach { (albumFolder, tracks) ->
-            val path = getPath(DownloadFolder.Albums, albumFolder)
+            val path = getPath(DownloadFolder.Albums, getSimilarFolder() + "/" + albumFolder)
             val searchQueries = tracks.map { SearchQuery(it!!.name, it.artists.map { it.name }) }
 
             targetDirectories += TargetDirectory(path, searchQueries)
@@ -292,7 +293,7 @@ class SpotifyQuery: IStreamingServiceQuery {
 
         //set download paths (one folder for each artist)
         topArtistFolders.forEach { (artistFolder, tracks) ->
-            val path = getPath(DownloadFolder.Artists, artistFolder)
+            val path = getPath(DownloadFolder.Artists, getSimilarFolder() + "/" + artistFolder)
             val searchQueries = tracks.map { SearchQuery(it.name, it.artists.map { it.name }) }
 
             targetDirectories += TargetDirectory(path, searchQueries)
@@ -300,6 +301,18 @@ class SpotifyQuery: IStreamingServiceQuery {
 
         return targetDirectories
     }
+
+    private fun getSimilarFolder() =
+        "!Similar (" +
+            listOf(
+                addedArtists.map { "'" + it.name + "'" }.joinToString(" & "),
+                addedAlbums.map { "'" + it.name + "'" }.joinToString(" & "),
+                addedTracks.map { "'" + it.name + "'" }.joinToString(" & "),
+                addedGenres.map { "'" + it + "'" }.joinToString(" & ")
+            )
+            .filter { it.length > 0 }
+            .joinToString(" | ") +
+        ")"
 
     private fun removeExceptions(tracks: List<Track>): List<Track> =
         tracks.filter { !(Regex(options.exceptions, RegexOption.IGNORE_CASE).containsMatchIn(it.name + " " + it.artists.joinToString(" "))) }

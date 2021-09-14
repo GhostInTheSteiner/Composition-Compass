@@ -99,9 +99,8 @@
                 android:gravity="right"
                 android:padding="3dip" />
             <com.gits.compositioncompass.InstantMultiAutoCompleteTextView
-                android:enabled="false"
                 android:maxWidth="@dimen/activity_horizontal_margin"
-                android:hint="Seach Query or URL"
+                android:hint="Search Query or URL"
                 android:id="@+id/searchQuery"
                 android:padding="3dip"
                 android:backgroundTint="#48b4e0"
@@ -166,7 +165,7 @@
                 android:layout_span="2"
                 android:text="「 Download 」"
                 android:textColor="@color/white"
-                android:backgroundTint="#48b4e0"
+                android:backgroundTint="#229aca"
 
                 />
         </TableRow>
@@ -202,7 +201,6 @@
                     android:textSize="12dp"
                     android:text="Close App"
                     android:textColor="@color/white"
-                    textco
                     android:backgroundTint="#229aca"
                     />
             </LinearLayout>

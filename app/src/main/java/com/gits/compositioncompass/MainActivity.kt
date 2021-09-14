@@ -459,7 +459,7 @@ class MainActivity : AppCompatActivity() {
                     info.text =
                         "Progress: " + it.progress + "%" + System.lineSeparator() + System.lineSeparator() +
                                 "Storing in the following locations:" + System.lineSeparator() + System.lineSeparator() +
-                                directories.map { "\"${it.targetPath}\"" }
+                                directories.map { "\"${getShortPath(it.targetPath)}\"" }
                                     .joinToString(System.lineSeparator())
                 }
             },
@@ -476,12 +476,15 @@ class MainActivity : AppCompatActivity() {
             info.text =
                 "Download completed!" + System.lineSeparator() + System.lineSeparator() +
                         "Files were stored in:" + System.lineSeparator() + System.lineSeparator() +
-                        directories.map { "\"${it.targetPath}\"" }
+                        directories.map { "\"${getShortPath(it.targetPath)}\"" }
                             .joinToString(System.lineSeparator())
 
             unlockDownload()
         }
     }
+
+    fun getShortPath(fullPath: String) =
+        fullPath.split("Pandora/").drop(1).joinToString("Pandora/")
 
     fun hideKeyboard() {
         val imm: InputMethodManager =
