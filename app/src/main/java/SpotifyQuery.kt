@@ -25,7 +25,7 @@ class SpotifyQuery: IStreamingServiceQuery {
 
     override val requiredFields: List<List<Fields>> get() = when (mode) {
         QueryMode.Specified -> listOf(listOf(Fields.Artist), listOf(Fields.Artist, Fields.Track), listOf(Fields.Artist, Fields.Album))
-        else                -> listOf(listOf(Fields.Genre, Fields.Track, Fields.Artist))
+        else                -> listOf(listOf(Fields.Artist), listOf(Fields.Artist, Fields.Track), listOf(Fields.Artist, Fields.Track, Fields.Genre), listOf(Fields.Artist, Fields.Genre))
     }
 
     override val supportedFields: List<Fields> get() = when (mode) {
@@ -147,9 +147,18 @@ class SpotifyQuery: IStreamingServiceQuery {
                     TrackItem(it!!.id, it.name, it.popularity, it.artists.map {
                         ArtistItem(it.id, it.name)})}
 
-            val tracksMatching = tracks.filter {
-                it!!.name.contains(name, true) &&
+            var tracksMatching = mutableListOf<TrackItem>()
+
+            tracksMatching.addAll(tracks.filter {
+                it!!.name.equals(name, true) &&
                 it.artists.any { it.name.contains(artist, true) }
+            })
+
+            if (tracksMatching.count() == 0) {
+                tracksMatching.addAll(tracks.filter {
+                    it!!.name.contains(name, true) &&
+                    it.artists.any { it.name.contains(artist, true) }
+                })
             }
 
             val trackMatching = tracksMatching.first()
@@ -209,7 +218,7 @@ class SpotifyQuery: IStreamingServiceQuery {
         val artistNames = addedArtists.map { it.name }.joinToString("; ")
         val trackNames = addedTracks.map { it.name }.joinToString("; ")
 
-        val subFolderName = artistNames + " (" + listOf(trackNames, genreNames).joinToString("; ") + ")"
+        val subFolderName = artistNames + " (" + listOf(trackNames, genreNames).joinToString("; ").trim().trim(';') + ")"
         val path = getPath(DownloadFolder.Stations, subFolderName)
 
         val recommendations = api!!.browse.getRecommendations(artistSeeds, genreSeeds, trackSeeds)

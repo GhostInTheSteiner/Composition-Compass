@@ -460,7 +460,7 @@ class MainActivity : AppCompatActivity() {
                         "Progress: " + it.progress + "%" + System.lineSeparator() + System.lineSeparator() +
                                 "Storing in the following locations:" + System.lineSeparator() + System.lineSeparator() +
                                 directories.map { "\"${getShortPath(it.targetPath)}\"" }
-                                    .joinToString(System.lineSeparator())
+                                    .joinToString(System.lineSeparator() + "-----------------" + System.lineSeparator())
                 }
             },
             onFailure = { searchQuery, exception ->
@@ -477,7 +477,7 @@ class MainActivity : AppCompatActivity() {
                 "Download completed!" + System.lineSeparator() + System.lineSeparator() +
                         "Files were stored in:" + System.lineSeparator() + System.lineSeparator() +
                         directories.map { "\"${getShortPath(it.targetPath)}\"" }
-                            .joinToString(System.lineSeparator())
+                            .joinToString(System.lineSeparator() + "-----------------" + System.lineSeparator())
 
             unlockDownload()
         }
