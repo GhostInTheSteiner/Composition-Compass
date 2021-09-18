@@ -119,7 +119,7 @@ class YoutubeDownloader {
             if (directoryNames.any { it in listOf(DownloadFolder.Artists.folderName, DownloadFolder.Albums.folderName)}) { }
                 //pass => redownloads allowed
             else
-                request.addOption("--download-archive", downloadDir.absolutePath + "/downloaded.txt")
+                request.addOption("--download-archive", options.rootDirectory + "/downloaded.txt")
 
             dl.execute(request) { progress, etaInSeconds -> onUpdate(progress) }
 
