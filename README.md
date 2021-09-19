@@ -2,9 +2,9 @@
 
 This project allows you to download similar songs to a given input sample. You can then play those songs back and sort them out without even looking on your screen, which is especially useful while driving long distances in your car.
 
-Composition Compass is based on an equally named Tasker-only project:
+Composition Compass is based on my equally named Tasker-only project:
 
-...
+https://github.com/GhostInTheSteiner/Composition-Compass-Legacy
 
 Contrary to the original Composition Compass it's successor consists of two separate applications: A downloader and a player. The downloader has been written in Kotlin and is provided as simple APK file. The player is still a Tasker project and therefore provided as XML.
 
