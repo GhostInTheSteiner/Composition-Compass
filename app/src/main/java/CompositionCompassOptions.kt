@@ -1,12 +1,12 @@
 import java.io.File
-import java.io.ObjectInput
 
 class CompositionCompassOptions {
     private var configFile: File
     private var options: MutableMap<String, Object>
 
-    var __newFile: Boolean
-    var __location: String
+    var __requiredFields: List<String>
+    var __requiredFieldsSet: Boolean
+    var __filePath: String
 
     var spotifyClientId: String
         get() = options[::spotifyClientId.name] as String
@@ -66,17 +66,16 @@ class CompositionCompassOptions {
         configFile = File(filePath)
         options = loadDefaults()
 
-        __newFile = false
-        __location = filePath
-
         if (!configFile.exists()) {
             configFile.createNewFile()
             save()
-
-            __newFile = true
         }
 
         load()
+
+        __filePath = filePath
+        __requiredFields = listOf(::spotifyClientId.name, ::spotifyClientSecret.name, ::lastfmApiKey.name)
+        __requiredFieldsSet = __requiredFields.map { options[it] }.all { (it as String).length > 0 }
     }
 
     private fun loadDefaults(): MutableMap<String, Object> {
@@ -84,12 +83,12 @@ class CompositionCompassOptions {
         val rootDirectory_ = configFile.parent
 
         options_[::rootDirectory.name] = rootDirectory_ as Object
-        options_[::tempDirectory.name] = (rootDirectory_ + "/.temp") as Object
-        options_[::automatedDirectory.name] = (rootDirectory_ + "/.Automated") as Object
+        options_[::tempDirectory.name] = ".temp" as Object
+        options_[::automatedDirectory.name] = ".Automated" as Object
 
-        options_[::spotifyClientSecret.name] = "<Sono me, dare no me?>" as Object
-        options_[::spotifyClientId.name] = "<Sono me, dare no me?>" as Object
-        options_[::lastfmApiKey.name] = "<Sono me, dare no me?>" as Object
+        options_[::spotifyClientSecret.name] = "" as Object
+        options_[::spotifyClientId.name] = "" as Object
+        options_[::lastfmApiKey.name] = "" as Object
 
         options_[::samplesSimilarArtists.name] = 1000 as Object
         options_[::samplesSimilarAlbums.name] = 1000 as Object

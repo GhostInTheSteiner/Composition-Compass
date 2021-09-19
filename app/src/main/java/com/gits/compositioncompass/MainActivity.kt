@@ -22,7 +22,6 @@ import SpinnerItem
 import TargetDirectory
 import android.app.NotificationChannel
 import android.content.SharedPreferences
-import android.provider.ContactsContract
 import android.widget.*
 import getItem
 import registerEventHandler
@@ -32,9 +31,17 @@ import android.view.inputmethod.InputMethodManager
 import androidx.core.app.NotificationCompat
 import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.FileProvider
+import java.io.File
 import java.util.*
+import android.app.AlertDialog
+
+
+
 
 
 class MainActivity : AppCompatActivity() {
@@ -80,6 +87,8 @@ class MainActivity : AppCompatActivity() {
             preferencesEditor = preferences.edit()
 
             prepareView()
+
+            requestConfig()
         }
         catch (e: Exception) {
             val mBuilder: NotificationCompat.Builder = NotificationCompat.Builder(this, notificationChannelId)
@@ -97,6 +106,37 @@ class MainActivity : AppCompatActivity() {
 
             throw e
         }
+    }
+
+    private fun requestConfig() {
+        if (!composition.options.__requiredFieldsSet) {
+            AlertDialog.Builder(this)
+                .setTitle("Configuration required")
+                .setMessage(
+                    "I'll now open the configuration file for you. The following values need to be configured on first launch:" +
+                    System.lineSeparator() + System.lineSeparator() +
+                    composition.options.__requiredFields.map { "- " + it }.joinToString(System.lineSeparator()) + System.lineSeparator() + System.lineSeparator() +
+                    "Once you're done restart the downloader."
+                )
+                .setPositiveButton(android.R.string.ok, { a, b -> openFile(composition.options.__filePath) })
+                .setNeutralButton("Help", { a, b -> openFile(composition.options.rootDirectory + "/.Resources/README.md") })
+                .setIcon(android.R.drawable.ic_dialog_info)
+                .show()
+        }
+    }
+
+    private fun openFile(filePath: String) {
+        val intent = Intent(Intent.ACTION_EDIT)
+        val data = FileProvider.getUriForFile(
+            applicationContext,
+            BuildConfig.APPLICATION_ID + ".provider",
+            File(filePath)
+        );
+        intent.setDataAndType(data, "text/plain")
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+        startActivity(intent)
+        this.finishAffinity()
     }
 
     private fun createNotificationChannel(id: String): String {
@@ -521,7 +561,7 @@ class MainActivity : AppCompatActivity() {
         trace
 
     fun closeApp() {
-        finishAndRemoveTask()
+        finishAffinity()
     }
 
     fun resetFormatting() {
