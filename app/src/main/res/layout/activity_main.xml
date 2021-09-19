@@ -21,7 +21,7 @@
                 style="@style/margin_labels"/>
             <com.gits.compositioncompass.InstantMultiAutoCompleteTextView
                 android:maxWidth="@dimen/activity_horizontal_margin"
-                android:hint="Artist 1, Artist 2 ..."
+                android:hint="Artist 1, Artist 2, ..."
                 android:id="@+id/artist"
                 android:padding="3dip"
                 android:backgroundTint="#48b4e0"
@@ -60,6 +60,7 @@
                 android:gravity="right"
                 android:padding="3dip" />
             <com.gits.compositioncompass.InstantMultiAutoCompleteTextView
+                android:maxWidth="@dimen/activity_horizontal_margin"
                 android:hint="Title 1, Title 2, ..."
                 android:id="@+id/track"
                 android:padding="3dip"
