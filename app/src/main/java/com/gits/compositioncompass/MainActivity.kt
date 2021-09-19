@@ -121,7 +121,7 @@ class MainActivity : AppCompatActivity() {
                     "Once you're done restart the downloader."
                 )
                 .setPositiveButton(android.R.string.ok, { a, b -> openFile(composition.options.__filePath); this.finishAffinity() })
-                .setNeutralButton("Help", { a, b -> openWebsite("https://github.com/GhostInTheSteiner/Composition-Compass-Downloader/blob/master/README.md"); this.finishAffinity() })
+                .setNeutralButton("Help", { a, b -> openWebsite("https://github.com/GhostInTheSteiner/Composition-Compass-Downloader/blob/master/README.md#Setup"); this.finishAffinity() })
                 .setIcon(android.R.drawable.ic_dialog_info)
                 .show()
         }
