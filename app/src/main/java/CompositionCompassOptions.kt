@@ -5,6 +5,9 @@ class CompositionCompassOptions {
     private var configFile: File
     private var options: MutableMap<String, Object>
 
+    var __newFile: Boolean
+    var __location: String
+
     var spotifyClientId: String
         get() = options[::spotifyClientId.name] as String
         set(value) { options[::spotifyClientId.name] = value as Object }
@@ -63,9 +66,14 @@ class CompositionCompassOptions {
         configFile = File(filePath)
         options = loadDefaults()
 
+        __newFile = false
+        __location = filePath
+
         if (!configFile.exists()) {
             configFile.createNewFile()
             save()
+
+            __newFile = true
         }
 
         load()

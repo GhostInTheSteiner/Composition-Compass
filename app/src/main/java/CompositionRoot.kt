@@ -3,12 +3,15 @@ import android.os.Environment
 
 class CompositionRoot {
 
+    var firstLaunch: Boolean
     val options: CompositionCompassOptions
     var query: IQuery //replaceable
     val downloader: YoutubeDownloader
 
     private constructor(options: CompositionCompassOptions, application: Application) {
         this.options = options
+        
+        firstLaunch = this.options.__newFile
 
         downloader = YoutubeDownloader(options, application)
         query = SpotifyQuery(options) //default query
