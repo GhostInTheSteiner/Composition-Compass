@@ -185,8 +185,21 @@
                     android:layout_marginRight="10px"
                     android:id="@+id/update"
                     android:onClick="updateYoutubeDL"
-                    android:textSize="12dp"
+                    android:textSize="10dp"
                     android:text="Update YoutubeDL"
+                    android:textColor="@color/white"
+                    android:backgroundTint="#229aca"
+                    />
+
+                <Button
+                    android:layout_width="0dp"
+                    android:layout_weight="0.5"
+                    android:layout_height="wrap_content"
+                    android:maxWidth="350px"
+                    android:id="@+id/config"
+                    android:onClick="openConfig"
+                    android:textSize="12dp"
+                    android:text="Open Config"
                     android:textColor="@color/white"
                     android:backgroundTint="#229aca"
                     />

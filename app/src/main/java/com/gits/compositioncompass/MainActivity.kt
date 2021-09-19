@@ -44,6 +44,8 @@ import android.app.AlertDialog
 
 
 
+
+
 class MainActivity : AppCompatActivity() {
 
     private lateinit var queryParameters: List<InstantMultiAutoCompleteTextView>
@@ -118,8 +120,8 @@ class MainActivity : AppCompatActivity() {
                     composition.options.__requiredFields.map { "- " + it }.joinToString(System.lineSeparator()) + System.lineSeparator() + System.lineSeparator() +
                     "Once you're done restart the downloader."
                 )
-                .setPositiveButton(android.R.string.ok, { a, b -> openFile(composition.options.__filePath) })
-                .setNeutralButton("Help", { a, b -> openFile(composition.options.rootDirectory + "/.Resources/README.md") })
+                .setPositiveButton(android.R.string.ok, { a, b -> openFile(composition.options.__filePath); this.finishAffinity() })
+                .setNeutralButton("Help", { a, b -> openWebsite("https://github.com/GhostInTheSteiner/Composition-Compass-Downloader/blob/master/README.md"); this.finishAffinity() })
                 .setIcon(android.R.drawable.ic_dialog_info)
                 .show()
         }
@@ -136,7 +138,11 @@ class MainActivity : AppCompatActivity() {
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
         startActivity(intent)
-        this.finishAffinity()
+    }
+
+    private fun openWebsite(url: String) {
+        val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        startActivity(browserIntent)
     }
 
     private fun createNotificationChannel(id: String): String {
@@ -262,6 +268,11 @@ class MainActivity : AppCompatActivity() {
             composition.downloader.update();
             info.text = "Update completed!"
         }
+    }
+
+    fun openConfig(view: View) {
+        openFile(composition.options.__filePath)
+        this.finishAffinity()
     }
 
     fun queryParameters_AfterChanged(view: InstantMultiAutoCompleteTextView) {

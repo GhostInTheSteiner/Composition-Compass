@@ -28,6 +28,10 @@ class CompositionCompassOptions {
         get() = options[::automatedDirectory.name] as String
         set(value) { options[::automatedDirectory.name] = value as Object }
 
+    var resourcesDirectory: String
+        get() = options[::resourcesDirectory.name] as String
+        set(value) { options[::resourcesDirectory.name] = value as Object }
+
     var maxParallelDownloads: Int
         get() = options[::maxParallelDownloads.name] as Int
         set(value) { options[::maxParallelDownloads.name] = value as Object }
@@ -83,8 +87,9 @@ class CompositionCompassOptions {
         val rootDirectory_ = configFile.parent
 
         options_[::rootDirectory.name] = rootDirectory_ as Object
-        options_[::tempDirectory.name] = ".temp" as Object
-        options_[::automatedDirectory.name] = ".Automated" as Object
+        options_[::tempDirectory.name] = "!temporary" as Object
+        options_[::automatedDirectory.name] = "!automated" as Object
+        options_[::resourcesDirectory.name] = "!resources" as Object
 
         options_[::spotifyClientSecret.name] = "" as Object
         options_[::spotifyClientId.name] = "" as Object
@@ -105,21 +110,22 @@ class CompositionCompassOptions {
 
     private fun load() {
         configFile.forEachLine {
-            val splitted = it.split("=")
+            if (it.contains("=")) {
+                val splitted = it.split("=")
 
-            val key = splitted.first()
-            val value = splitted.drop(1).joinToString("=")
+                val key = splitted.first()
+                val value = splitted.drop(1).joinToString("=")
 
-            val number = value.toIntOrNull()
+                val number = value.toIntOrNull()
 
-            if (key.equals("exceptions"))
-                exceptionsList = value.split("|")
+                if (key.equals("exceptions"))
+                    exceptionsList = value.split("|")
 
-            if (number == null)
-                options[key] = value as Object
-
-            else
-                options[key] = number as Object
+                if (number == null)
+                    options[key] = value as Object
+                else
+                    options[key] = number as Object
+            }
         }
     }
 
