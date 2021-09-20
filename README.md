@@ -29,7 +29,8 @@ The setup process has been greatly simplified, but you'll still need to configur
 
 6. To obtain your Spotify API credentials visit the following link and create an app:  
 https://developer.spotify.com/dashboard/  
-Your app will then contain your Client ID and Secret. **Note: Those values are NOT identical with your Spotify username and password. They're special keys required for access to the API.**
+Your app will then contain your Client ID and Secret.  
+**Note: Those values are NOT identical with your Spotify username and password. They're special keys required for access to the API.**
 
 7. To obtain your LastFM API key visit the following link:  
 https://www.last.fm/api/account/create  
