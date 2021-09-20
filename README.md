@@ -33,7 +33,7 @@ Your app will then contain your Client ID and Secret. **Note: Those values are N
 
 7. To obtain your LastFM API key visit the following link:  
 https://www.last.fm/api/account/create  
-**Note: This key is NOT identical with your LastFM username and password. They're special keys required for access to the API.**
+**Note: This key is NOT identical with your LastFM username or password. It's a special key required for access to the API.**
 
 8. Go back to Composition Compass' config file and paste your API credentials at the corresponding fields. Remember to save the file!
 
