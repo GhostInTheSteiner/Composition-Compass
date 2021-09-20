@@ -52,7 +52,6 @@ This application essentially allows you to download songs from YouTube. The inte
 - Fetch similar tracks, albums and artists
 - Fetch specified tracks, albums and artists
 
-
 ## The player
 
 The player is supposed to play back your previously downloaded tracks. It only works with VLC Media Player and allows to view artist meta info (provided by Last.fm) and to sort out tracks you don't like. Generally, it offers three modes:
@@ -61,7 +60,7 @@ The player is supposed to play back your previously downloaded tracks. It only w
 - **Station**: Allows to play back your downloaded similar tracks.
 - **Favorites**: Allows to play back liked tracks.
 
-Similar tracks will be downloaded to so-called "Stations", stored in `Pandora/Stations/<name>`. Using the `Stations` mode you'll be able to play those back in VLC and press Volume Up and Down keys to move them to `!automated/Favorites` and `!automated/Recycle Bin` respectively. The current track will also be skipped in VLC at the same time, so you don't have to listen to it until the very end.
+Similar tracks will be downloaded to so-called "Stations", stored in `Pandora/Stations/<name>`. Using the `Stations` mode you'll be able to play those back in VLC and press Volume Up and Down keys to move them to `Pandora/!automated/Favorites` and `Pandora/!automated/Recycle Bin` respectively. The current track will also be skipped in VLC at the same time, so you don't have to listen to it until the very end.
 
-The `Favorites` mode is essentially the same, however it plays back the `!automated/Favorites` folder instead. This is especially useful if you have a lot of tracks in that folder and want to sort out the ones you don't like.
+The `Favorites` mode is essentially the same, however it plays back the `Pandora/!automated/Favorites` folder instead. This is especially useful if you have a lot of tracks in that folder and want to sort out the ones you don't like.
 
