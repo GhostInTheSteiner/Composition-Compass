@@ -19,13 +19,15 @@ The setup process has been greatly simplified, but you'll still need to configur
 
 1. Download the latest ZIP from the `releases` page.
 
-2. Place the contained `Pandora` folder right in the root directory of your internal storage (e.g. `/storage/emulated/0/Pandora`). **This is important! If there's already another folder named `Pandora` it has to be removed.**
+2. Place the contained `Pandora` folder right in the root directory of your internal storage (e.g. `/storage/emulated/0/Pandora`).  
+**This is important! If there's already another folder named `Pandora` it has to be removed.**
 
 3. Open Tasker and import the XML inside the `Pandora/!resources` folder.
 
 4. Once imported, launch the `CarPlayer.OpenItem` Task. It'll prompt you for all required dependencies. If you're missing one of them Composition Compass will automatically install it and ask you to restart the Task.
 
-5. After you're done you should see the main menu. Tap on the `Open Downloader` button. The downloader app will open and ask you to configure missing fields in the configuration. **Note: You need to have at least one text editor installed on your system! I recommend `Acode` or `Markor` for a nicely rendered view of the config file.**
+5. After you're done you should see the main menu. Tap on the `Open Downloader` button. The downloader app will open and ask you to configure missing fields in the configuration.  
+**Note: You need to have at least one text editor installed on your system! I recommend `Acode` or `Markor` for a nicely rendered view of the config file.**
 
 6. To obtain your Spotify API credentials visit the following link and create an app:  
 https://developer.spotify.com/dashboard/  
