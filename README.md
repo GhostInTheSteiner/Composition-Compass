@@ -28,11 +28,15 @@ The setup process has been greatly simplified, but you'll still need to configur
 5. After you're done you should see the main menu. Tap on the `Open Downloader` button. The downloader app will open and ask you to configure missing fields in the configuration. **Note: You need to have at least one text editor installed on your system! I recommend `Acode` or `Markor` for a nicely rendered view of the config file.**
 
 6. To obtain your Spotify API credentials visit the following link and create an app:
+
 https://developer.spotify.com/dashboard/
+
 Your app will then contain your Client ID and Secret. **Note: Those values are NOT identical with your Spotify username and password. They're special keys required for access to the API.**
 
 7. To obtain your LastFM API key visit the following link:
+
 https://www.last.fm/api/account/create
+
 **Note: This key is NOT identical with your LastFM username and password. They're special keys required for access to the API.**
 
 8. Go back to Composition Compass' config file and paste your API credentials at the corresponding fields. Remember to save the file!
