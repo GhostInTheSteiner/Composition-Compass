@@ -1,6 +1,6 @@
 # Composition Compass
 
-This project allows you to download similar songs to a given input sample. You can then play those songs back and sort them out without even looking on your screen, which is especially useful while driving long distances in your car.
+Composition Compass is a set of Android apps that allow you to download similar songs to a given input sample. You can then play those songs back and sort them out without even looking on your screen, which is especially useful while driving long distances in your car.
 
 Composition Compass is based on an equally named Tasker-only project:
 
