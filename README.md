@@ -21,7 +21,7 @@ The setup process has been greatly simplified, but you'll still need to configur
 
 2. Place the contained `Pandora` folder right in the root directory of your internal storage (e.g. `/storage/emulated/0/Pandora`). **This is important! If there's already another folder named `Pandora` it has to be removed.**
 
-3. Open the `!resources` folder and import the XML file to Tasker.
+3. Open Tasker and import the XML inside the `!resources` folder.
 
 4. Once imported, launch the `CarPlayer.OpenItem` Task. It'll prompt you for all required dependencies. If you're missing one of them Composition Compass will automatically install it and ask you to restart the Task.
 
