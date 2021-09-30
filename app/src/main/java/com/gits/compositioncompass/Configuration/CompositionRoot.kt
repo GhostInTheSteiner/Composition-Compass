@@ -1,3 +1,9 @@
+package com.gits.compositioncompass.Configuration
+
+import com.gits.compositioncompass.Queries.*
+import QueryMode
+import QuerySource
+import com.gits.compositioncompass.Downloader.YoutubeDownloader
 import android.app.Application
 import android.os.Environment
 

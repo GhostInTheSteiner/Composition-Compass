@@ -3,6 +3,10 @@ import android.text.TextWatcher
 import android.view.View
 import android.widget.*
 import androidx.core.widget.addTextChangedListener
+import kotlinx.coroutines.yield
+import org.json.JSONArray
+import org.json.JSONObject
+import org.w3c.dom.Node
 
 fun View.hasUserContent(): Boolean {
     if (this is EditText)
@@ -54,4 +58,14 @@ fun View.registerEventHandler(
         is Button -> { this.setOnClickListener(button_onClick) }
         is EditText -> { this.setOnFocusChangeListener(editText_onFocusChange) }
     }
+}
+
+fun<T> JSONArray.toList(): List<T> {
+    val result = mutableListOf<T>()
+
+    for (i in 0..this.length() - 1) {
+        result.add(this[i] as T)
+    }
+
+    return result
 }

@@ -1,3 +1,14 @@
+package com.gits.compositioncompass.Queries
+
+import com.gits.compositioncompass.Models.AlbumItem
+import com.gits.compositioncompass.Models.ArtistItem
+import com.gits.compositioncompass.Configuration.CompositionCompassOptions
+import DownloadFolder
+import Fields
+import QueryMode
+import com.gits.compositioncompass.Models.TargetDirectory
+import com.gits.compositioncompass.Models.TrackItem
+
 interface IQuery {
     //check if all fields of any group are set
     val requiredFields: List<List<Fields>>
@@ -10,6 +21,12 @@ interface IQuery {
 
     //connects to the service
     suspend fun prepare()
+}
+
+abstract class Query(protected var options: CompositionCompassOptions) {
+    protected fun getPath(folder: DownloadFolder, subFolderName: String): String {
+        return options.rootDirectory + "/" + folder.folderName + "/" + subFolderName
+    }
 }
 
 //Spotify / LastFM

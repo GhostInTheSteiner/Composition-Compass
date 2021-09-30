@@ -1,4 +1,3 @@
-import android.media.MediaPlayer
-import com.adamratzman.spotify.models.Track
+package com.gits.compositioncompass.Models
 
 class TargetDirectory(val targetPath: String, val searchQueries: List<SearchQuery>)

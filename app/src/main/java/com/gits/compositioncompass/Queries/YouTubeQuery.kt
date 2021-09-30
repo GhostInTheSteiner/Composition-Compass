@@ -1,3 +1,11 @@
+package com.gits.compositioncompass.Queries
+
+import com.gits.compositioncompass.Configuration.CompositionCompassOptions
+import DownloadFolder
+import Fields
+import QueryMode
+import com.gits.compositioncompass.Models.SearchQuery
+import com.gits.compositioncompass.Models.TargetDirectory
 import java.util.*
 
 class YouTubeQuery : IYoutubeQuery {
@@ -18,9 +26,12 @@ class YouTubeQuery : IYoutubeQuery {
     }
 
     override fun getSearchQueryResults(): List<TargetDirectory> =
-        addedSearchQueries.map { TargetDirectory(
-            getPath(DownloadFolder.Stations, getSubFolder(it)),
-            listOf(SearchQuery(it)))}
+        addedSearchQueries.map {
+            TargetDirectory(
+                getPath(DownloadFolder.Stations, getSubFolder(it)),
+                listOf(SearchQuery(it))
+            )
+        }
 
     private fun getSubFolder(searchOrUrl: String): String =
         if ((searchOrUrl.startsWith("http://") || searchOrUrl.startsWith("https://")) && searchOrUrl.contains("list="))

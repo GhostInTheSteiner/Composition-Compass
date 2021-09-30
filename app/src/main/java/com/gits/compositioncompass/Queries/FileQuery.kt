@@ -1,3 +1,11 @@
+package com.gits.compositioncompass.Queries
+
+import com.gits.compositioncompass.Configuration.CompositionCompassOptions
+import DownloadFolder
+import Fields
+import QueryMode
+import com.gits.compositioncompass.Models.SearchQuery
+import com.gits.compositioncompass.Models.TargetDirectory
 import java.io.File
 
 class FileQuery(val options: CompositionCompassOptions) : IFileQuery {
@@ -17,9 +25,11 @@ class FileQuery(val options: CompositionCompassOptions) : IFileQuery {
     }
 
     override fun getSpecifiedTracks(): List<TargetDirectory> =
-        File(options.rootDirectory + "/Files").listFiles().map { TargetDirectory(
-            getPath(DownloadFolder.Stations, "!File (${it.name})"),
-            it.readLines().map { SearchQuery(it) })}
+        File(options.rootDirectory + "/Files").listFiles().map {
+            TargetDirectory(
+                getPath(DownloadFolder.Stations, "!File (${it.name})"),
+                it.readLines().map { SearchQuery(it) })
+        }
 
 
     private fun getPath(folder: DownloadFolder, subFolderName: String): String {

@@ -1,21 +1,30 @@
+package com.gits.compositioncompass.Models
+
 class TrackItem(
     val id: String,
     val name: String,
-    val popularity: Int = 0,
-    val artists: List<ArtistItem>
+    val artists: List<ArtistItem>,
+    val popularity: Int = 0
 )
 
 class ArtistItem(
     val id: String,
     val name: String,
     val popularity: Int = 0
-)
+) {
+    //Only supposed to be used for similar tracks.
+    //Since most of the time you are already in your car (and perhaps even driving... o.O)
+    //you need to be able to quickly read the station name.
+    val initials: String
+        get() = name.split(' ').map { it.first() }.joinToString("")
+}
 
 class AlbumItem(
     val id: String,
     val name: String,
-    val popularity: Int = 0,
-    val tracks: List<TrackItem>
+    val tracks: List<TrackItem>,
+    val artists: List<ArtistItem>,
+    val popularity: Int = 0
 )
 //
 //fun getArtists(artists: List<SimpleArtist>?) =

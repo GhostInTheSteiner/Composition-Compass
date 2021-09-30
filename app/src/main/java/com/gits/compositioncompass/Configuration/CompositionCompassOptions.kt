@@ -1,3 +1,5 @@
+package com.gits.compositioncompass.Configuration
+
 import java.io.File
 
 class CompositionCompassOptions {

@@ -1,11 +1,15 @@
+package com.gits.compositioncompass.Downloader
+
+import DownloadFolder
+import com.gits.compositioncompass.Models.SearchQuery
+import com.gits.compositioncompass.Models.TargetDirectory
+import com.gits.compositioncompass.Configuration.CompositionCompassOptions
 import android.app.Application
 import com.yausername.ffmpeg.FFmpeg
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
 import kotlinx.coroutines.*
 import java.io.File
-import kotlin.io.path.Path
-import kotlin.io.path.name
 
 class YoutubeDownloader {
     private var application: Application
@@ -103,7 +107,7 @@ class YoutubeDownloader {
             /*
             Single Video:   /Stations/!Singles/Avicii - Levels HQ Upload.opus
             PLaylist:       /Stations/!Playlist (<UUID>)/<list_of_tracks>
-            Search Query:   /Stations/!Search (best techno songs 2021)/<list_of_tracks>
+            Search com.gits.compositioncompass.Queries.Query:   /Stations/!Search (best techno songs 2021)/<list_of_tracks>
             */
 
             if (directoryNames.first().equals("!Singles") || directoryNames.first().startsWith("!Playlist (")) { }

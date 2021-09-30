@@ -1,4 +1,4 @@
-package com.gits.compositioncompass
+package com.gits.compositioncompass.ui.controls
 
 import android.content.Context
 import android.graphics.Rect

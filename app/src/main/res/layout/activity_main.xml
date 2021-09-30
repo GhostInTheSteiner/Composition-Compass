@@ -19,7 +19,7 @@
                 android:gravity="right"
                 android:padding="3dip"
                 style="@style/margin_labels"/>
-            <com.gits.compositioncompass.InstantMultiAutoCompleteTextView
+            <com.gits.compositioncompass.ui.controls.InstantMultiAutoCompleteTextView
                 android:maxWidth="@dimen/activity_horizontal_margin"
                 android:hint="Artist 1, Artist 2, ..."
                 android:id="@+id/artist"
@@ -40,7 +40,7 @@
                 android:padding="3dip"
                 style="@style/margin_labels"/>
 
-            <com.gits.compositioncompass.InstantMultiAutoCompleteTextView
+            <com.gits.compositioncompass.ui.controls.InstantMultiAutoCompleteTextView
                 android:maxWidth="@dimen/activity_horizontal_margin"
                 android:hint="Album 1, Album 2, ..."
                 android:id="@+id/album"
@@ -59,7 +59,7 @@
                 android:text="Tracks"
                 android:gravity="right"
                 android:padding="3dip" />
-            <com.gits.compositioncompass.InstantMultiAutoCompleteTextView
+            <com.gits.compositioncompass.ui.controls.InstantMultiAutoCompleteTextView
                 android:maxWidth="@dimen/activity_horizontal_margin"
                 android:hint="Title 1, Title 2, ..."
                 android:id="@+id/track"
@@ -79,7 +79,7 @@
                 android:text="Genres"
                 android:gravity="right"
                 android:padding="3dip" />
-            <com.gits.compositioncompass.InstantMultiAutoCompleteTextView
+            <com.gits.compositioncompass.ui.controls.InstantMultiAutoCompleteTextView
                 android:maxWidth="@dimen/activity_horizontal_margin"
                 android:hint="Genre 1, Genre 2, ..."
                 android:id="@+id/genre"
@@ -99,7 +99,7 @@
                 android:text="Search"
                 android:gravity="right"
                 android:padding="3dip" />
-            <com.gits.compositioncompass.InstantMultiAutoCompleteTextView
+            <com.gits.compositioncompass.ui.controls.InstantMultiAutoCompleteTextView
                 android:maxWidth="@dimen/activity_horizontal_margin"
                 android:hint="Search Query or URL"
                 android:id="@+id/searchQuery"
@@ -119,7 +119,7 @@
                 android:text="Files"
                 android:gravity="right"
                 android:padding="3dip" />
-            <com.gits.compositioncompass.InstantMultiAutoCompleteTextView
+            <com.gits.compositioncompass.ui.controls.InstantMultiAutoCompleteTextView
                 android:maxWidth="@dimen/activity_horizontal_margin"
                 android:hint="Pandora/Files/[your_files]"
                 android:enabled="false"

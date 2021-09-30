@@ -1,3 +1,5 @@
+package com.gits.compositioncompass.Models
+
 class SearchQuery(
     val track:String = "",
     val artists: List<String> = listOf(),

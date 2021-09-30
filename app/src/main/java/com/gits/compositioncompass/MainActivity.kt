@@ -1,12 +1,12 @@
 package com.gits.compositioncompass
 
-import CompositionRoot
+import com.gits.compositioncompass.Configuration.CompositionRoot
 import QuerySource
 import QueryMode
 import Fields
-import IFileQuery
-import IStreamingServiceQuery
-import IYoutubeQuery
+import com.gits.compositioncompass.Queries.IFileQuery
+import com.gits.compositioncompass.Queries.IStreamingServiceQuery
+import com.gits.compositioncompass.Queries.IYoutubeQuery
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -18,8 +18,6 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import hasUserContent
 import kotlinx.coroutines.*
-import SpinnerItem
-import TargetDirectory
 import android.app.NotificationChannel
 import android.content.SharedPreferences
 import android.widget.*
@@ -39,11 +37,9 @@ import androidx.core.content.FileProvider
 import java.io.File
 import java.util.*
 import android.app.AlertDialog
-
-
-
-
-
+import com.gits.compositioncompass.Models.TargetDirectory
+import com.gits.compositioncompass.ui.controls.InstantMultiAutoCompleteTextView
+import com.gits.compositioncompass.ui.controls.SpinnerItem
 
 
 class MainActivity : AppCompatActivity() {
@@ -113,7 +109,7 @@ class MainActivity : AppCompatActivity() {
     private fun requestConfig() {
         if (!composition.options.__requiredFieldsSet) {
             AlertDialog.Builder(this)
-                .setTitle("Configuration required")
+                .setTitle("com.gits.compositioncompass.Configuration required")
                 .setMessage(
                     "I'll now open the configuration file for you. The following values need to be configured on first launch:" +
                     System.lineSeparator() + System.lineSeparator() +
@@ -217,7 +213,7 @@ class MainActivity : AppCompatActivity() {
 
         source.adapter = getSpinnerAdapter(
             SpinnerItem(QuerySource.Spotify, "Spotify"),
-//            SpinnerItem(QuerySource.LastFM, "LastFM"),
+            SpinnerItem(QuerySource.LastFM, "LastFM"),
             SpinnerItem(QuerySource.YouTube, "YouTube"),
             SpinnerItem(QuerySource.File, "File")
         )
@@ -282,35 +278,47 @@ class MainActivity : AppCompatActivity() {
 
             var suggestions = listOf<String>()
 
-            when (val query = composition.query) {
-                is IStreamingServiceQuery -> {
+            runBlocking {
 
-                    //take last value from field
-                    val valuesCurrent = view.text.toString().split(",").map { it.trim() }
-                    val valuesArtist = artist.text.toString().split(",").map { it.trim() }
-                    val valuesAlbum = album.text.toString().split(",").map { it.trim() }
+                when (val query = composition.query) {
+                    is IStreamingServiceQuery -> {
 
-                    val valuesCurrentLatest = valuesCurrent.last()
-                    val valuesCurrentLatest_Artist =
-                        if (valuesArtist.count() < valuesCurrent.count()) ""
-                        else valuesArtist[valuesCurrent.count()-1]
+                        //take last value from field
+                        val valuesCurrent = view.text.toString().split(",").map { it.trim() }
+                        val valuesArtist = artist.text.toString().split(",").map { it.trim() }
+                        val valuesAlbum = album.text.toString().split(",").map { it.trim() }
 
-                    val valuesCurrentLatest_Album =
-                        if (valuesAlbum.count() < valuesCurrent.count()) ""
-                        else valuesAlbum[valuesCurrent.count()-1]
+                        val valuesCurrentLatest = valuesCurrent.last()
+                        val valuesCurrentLatest_Artist =
+                            if (valuesArtist.count() < valuesCurrent.count()) ""
+                            else valuesArtist[valuesCurrent.count() - 1]
 
-                    suggestions =
-                        when (view.id) {
-                            R.id.track -> query.searchTrack(valuesCurrentLatest, valuesCurrentLatest_Artist, valuesCurrentLatest_Album).map { it.name }
-                            R.id.album -> query.searchAlbum(valuesCurrentLatest, valuesCurrentLatest_Artist).map { it.name }
-                            R.id.artist -> query.searchArtist(valuesCurrentLatest).map { it.name }
-                            R.id.genre -> query.searchGenre(valuesCurrentLatest)
-                            else -> suggestions
-                        }
+                        val valuesCurrentLatest_Album =
+                            if (valuesAlbum.count() < valuesCurrent.count()) ""
+                            else valuesAlbum[valuesCurrent.count() - 1]
+
+                        suggestions =
+                            when (view.id) {
+                                R.id.track ->
+                                    query.searchTrack(valuesCurrentLatest, valuesCurrentLatest_Artist, valuesCurrentLatest_Album)
+                                    .sortedByDescending { it.popularity }.map { it.name }
+                                R.id.album ->
+                                    query.searchAlbum(valuesCurrentLatest, valuesCurrentLatest_Artist)
+                                    .sortedByDescending { it.popularity }.map { it.name }
+                                R.id.artist ->
+                                    query.searchArtist(valuesCurrentLatest)
+                                    .sortedByDescending { it.popularity }.map { it.name }
+                                R.id.genre ->
+                                    query.searchGenre(valuesCurrentLatest)
+                                    .sortedBy { it }
+                                else -> suggestions
+                            }
+                    }
                 }
-            }
 
-            suggestions = suggestions.distinct().map { it.replace(',', ' ') }
+                suggestions = suggestions.distinct().map { it.replace(',', ' ') }
+
+            }
 
             runOnUiThread { view.setAdapter(getAutocompleteAdapter(suggestions)) }
         }

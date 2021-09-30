@@ -1,7 +1,6 @@
-import com.adamratzman.spotify.models.Track
-import kotlinx.coroutines.yield
-import java.text.DecimalFormat
-import kotlin.math.round
+package com.gits.compositioncompass.Downloader
+
+import com.gits.compositioncompass.Models.SearchQuery
 import kotlin.math.roundToInt
 
 class DownloadStatus {
