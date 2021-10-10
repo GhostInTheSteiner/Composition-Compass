@@ -15,34 +15,17 @@ import com.adamratzman.spotify.models.*
 import com.adamratzman.spotify.spotifyAppApi
 import com.adamratzman.spotify.utils.Market
 import kotlinx.coroutines.*
-import java.lang.Exception
 import kotlin.math.roundToInt
 
 class SpotifyQuery: IStreamingServiceQuery, Query {
-
-    private var addedArtists: MutableList<ArtistItem>
-    private var addedTracks: MutableList<TrackItem>
-    private var addedGenres: MutableList<String>
-    private var addedAlbums: MutableList<AlbumItem>
-
-    private var listTracks: List<TrackItem>
-    private var listAlbums: List<AlbumItem>
-    private var listGenres: List<String>
 
     private var api: SpotifyAppApi?
     private var apiBuilder: SpotifyAppApiBuilder
     private var mode: QueryMode
 
     override val requiredFields: List<List<Fields>> get() = when (mode) {
-        QueryMode.Specified -> listOf(listOf(Fields.Artist), listOf(Fields.Artist, Fields.Track), listOf(
-            Fields.Artist,
-            Fields.Album
-        ))
-        else                -> listOf(listOf(Fields.Artist), listOf(Fields.Artist, Fields.Track), listOf(
-            Fields.Artist,
-            Fields.Track,
-            Fields.Genre
-        ), listOf(Fields.Artist, Fields.Genre))
+        QueryMode.Specified -> listOf(listOf(Fields.Artist), listOf(Fields.Artist, Fields.Track), listOf(Fields.Artist, Fields.Album))
+        else                -> listOf(listOf(Fields.Artist), listOf(Fields.Artist, Fields.Track), listOf(Fields.Artist, Fields.Track, Fields.Genre), listOf(Fields.Artist, Fields.Genre))
     }
 
     override val supportedFields: List<Fields> get() = when (mode) {
@@ -52,15 +35,6 @@ class SpotifyQuery: IStreamingServiceQuery, Query {
 
     constructor(options: CompositionCompassOptions): super(options) {
         this.options = options
-
-        this.addedArtists = mutableListOf()
-        this.addedTracks = mutableListOf()
-        this.addedGenres = mutableListOf()
-        this.addedAlbums = mutableListOf()
-
-        this.listAlbums = listOf()
-        this.listTracks = listOf()
-        this.listGenres = listOf()
 
         mode = QueryMode.SimilarTracks
 
@@ -75,10 +49,6 @@ class SpotifyQuery: IStreamingServiceQuery, Query {
     //needs to be called before any other functions!
     override suspend fun prepare() {
         api = api ?: apiBuilder.build()
-
-        listGenres =
-            if (listGenres.count() == 0) api!!.browse.getAvailableGenreSeeds()
-            else listGenres
     }
 
     override suspend fun searchArtist(name: String): List<ArtistItem> {
@@ -90,7 +60,7 @@ class SpotifyQuery: IStreamingServiceQuery, Query {
         if (artists != null)
             artists!!.forEach {
                 if (it != null) {
-                    list += ArtistItem(it!!.id, it.name, it.popularity)
+                    list += ArtistItem(it!!.id, it.name, listOf(), it.popularity)
                 }
             }
 
@@ -129,8 +99,7 @@ class SpotifyQuery: IStreamingServiceQuery, Query {
                         fullAlbum!!.tracks.map {
                             TrackItem(it!!.id, it.name, it.artists.map {
                                 ArtistItem(it.id, it.name)
-                            }, it.popularity ?: 0)
-                        }
+                            }, it.popularity ?: 0)}
 
                     list += AlbumItem(it.id, it.name, tracks, listOf(), popularity)
                 }
@@ -139,7 +108,7 @@ class SpotifyQuery: IStreamingServiceQuery, Query {
         return list.toList()
     }
 
-    override suspend fun searchGenre(name: String): List<String> =
+    override suspend fun searchGenre(name: String, artist: String): List<String> =
         api!!.browse.getAvailableGenreSeeds().filter { it.contains(name) }
 
     override suspend fun addArtist(name: String) : Boolean {
@@ -147,7 +116,14 @@ class SpotifyQuery: IStreamingServiceQuery, Query {
 
         if (artists.count() > 0) {
             val artist = artists.get(0)
-            addedArtists.add(ArtistItem(artist.id, artist.name, artist.popularity))
+            addedArtists.add(ArtistItem(
+                artist.id,
+                artist.name,
+                api!!.artists.getArtistTopTracks(artist.id).map { TrackItem(
+                    it.id,
+                    it.name,
+                    it.artists.map { ArtistItem(it.id, it.name)})},
+                    artist.popularity))
             return true
         }
 
@@ -244,15 +220,11 @@ class SpotifyQuery: IStreamingServiceQuery, Query {
         val artistSeeds = addedArtists.map { it.id }
         val trackSeeds = addedTracks.map { it.id }
 
-        val genreNames = addedGenres.joinToString("; ")
-        val artistNames = addedArtists.map { it.initials }.joinToString("; ")
-        val trackNames = addedTracks.map { it.name }.joinToString("; ")
-
-        val subFolderName = artistNames + " (" + listOf(trackNames, genreNames).joinToString("; ").trim().trim(';') + ")"
+        val subFolderName = getSubFolder_Station()
         val path = getPath(DownloadFolder.Stations, subFolderName)
 
         val recommendations = api!!.browse.getRecommendations(artistSeeds, genreSeeds, trackSeeds)
-        val tracks = removeExceptions(recommendations.tracks)
+        val tracks = removeExceptions_(recommendations.tracks)
 
         val queries = tracks.map { SearchQuery(it.name, it.artists.map { it.name }) }
 
@@ -266,7 +238,7 @@ class SpotifyQuery: IStreamingServiceQuery, Query {
         //get occurences
         val albumOccurrences = mutableMapOf<String, Int>()
 
-        recommendations.forEach { removeExceptions(it.tracks).forEach {
+        recommendations.forEach { removeExceptions_(it.tracks).forEach {
             var currentOccurences = albumOccurrences.get(it.album.id) ?: 0
             albumOccurrences[it.album.id] = ++currentOccurences
         }}
@@ -290,7 +262,7 @@ class SpotifyQuery: IStreamingServiceQuery, Query {
 
         //set download paths (one folder for each album)
         topAlbumFolders.forEach { (albumFolder, tracks) ->
-            val path = getPath(DownloadFolder.Albums, getSimilarFolder() + "/" + albumFolder)
+            val path = getPath(DownloadFolder.Albums, getSubFolder_Similar() + "/" + albumFolder)
             val searchQueries = tracks.map { SearchQuery(it!!.name, it.artists.map { it.name }) }
 
             targetDirectories += TargetDirectory(path, searchQueries)
@@ -307,7 +279,7 @@ class SpotifyQuery: IStreamingServiceQuery, Query {
         //get occurences
         val artistOccurrences = mutableMapOf<String, Int>()
 
-        recommendations.forEach { removeExceptions(it.tracks).forEach { it.artists.forEach {
+        recommendations.forEach { removeExceptions_(it.tracks).forEach { it.artists.forEach {
             var currentOccurences = artistOccurrences.get(it.id) ?: 0
             artistOccurrences[it.id] = ++currentOccurences
         }}}
@@ -322,7 +294,7 @@ class SpotifyQuery: IStreamingServiceQuery, Query {
             jobs =
                 topArtistIds.map { async { Pair(
                     api!!.artists.getArtist(it)!!.name,
-                    api!!.artists.getArtistTopTracks(it).map {
+                    api!!.artists.getArtistTopTracks(it).take(resultsSimilarArtists_Tracks).map {
                         TrackItem(it.id, it.name, it.artists.map {
                             ArtistItem(it.id, it.name)
                         }, it.popularity)
@@ -334,7 +306,7 @@ class SpotifyQuery: IStreamingServiceQuery, Query {
 
         //set download paths (one folder for each artist)
         topArtistFolders.forEach { (artistFolder, tracks) ->
-            val path = getPath(DownloadFolder.Artists, getSimilarFolder() + "/" + artistFolder)
+            val path = getPath(DownloadFolder.Artists, getSubFolder_Similar() + "/" + artistFolder)
             val searchQueries = tracks.map { SearchQuery(it.name, it.artists.map { it.name }) }
 
             targetDirectories += TargetDirectory(path, searchQueries)
@@ -343,19 +315,7 @@ class SpotifyQuery: IStreamingServiceQuery, Query {
         return targetDirectories
     }
 
-    private fun getSimilarFolder() =
-        "!Similar (" +
-            listOf(
-                addedArtists.map { "'" + it.name + "'" }.joinToString(" & "),
-                addedAlbums.map { "'" + it.name + "'" }.joinToString(" & "),
-                addedTracks.map { "'" + it.name + "'" }.joinToString(" & "),
-                addedGenres.map { "'" + it + "'" }.joinToString(" & ")
-            )
-            .filter { it.length > 0 }
-            .joinToString(" | ") +
-        ")"
-
-    private fun removeExceptions(tracks: List<Track>): List<Track> =
+    fun removeExceptions_(tracks: List<Track>): List<Track> =
         tracks.filter { !(Regex(options.exceptions, RegexOption.IGNORE_CASE).containsMatchIn(it.name + " " + it.artists.joinToString(" "))) }
 
     //amount in steps of 50, 100, 150, 200, ...
@@ -377,71 +337,6 @@ class SpotifyQuery: IStreamingServiceQuery, Query {
         recommendations = jobs.map { it.await() }
 
         return recommendations
-    }
-
-    override suspend fun getSpecified(): List<TargetDirectory> {
-        val artistsDefined = addedArtists.count() > 0
-        val tracksDefined = addedTracks.count() > 0
-        val albumsDefined = addedAlbums.count() > 0
-
-        var targetDirectories = listOf<TargetDirectory>()
-
-        if (artistsDefined && albumsDefined) { //fetch specified albums (whole albums)
-            targetDirectories =
-                addedAlbums.map { album ->
-                    TargetDirectory(
-                        getPath(
-                            DownloadFolder.Albums,
-                            album.name
-                        ),
-                        album.tracks.map { track ->
-                            SearchQuery(
-                                track!!.name,
-                                track.artists.map { it.name })
-                        })
-                }
-
-        }
-        else if (artistsDefined && tracksDefined) { //fetch specified tracks (single tracks)
-            targetDirectories =
-                addedArtists.mapIndexed { i, artist ->
-                    TargetDirectory(
-                        getPath(
-                            DownloadFolder.Artists,
-                            artist.name
-                        ),
-                        listOf(
-                            SearchQuery(
-                                addedTracks[i].name,
-                                listOf(artist.name)
-                            )
-                        )
-                    )
-                }
-
-        }
-        else if (artistsDefined) { //fetch specified artists (top tracks for each artist)
-            //api!!.artists.getArtistTopTracks(addedArtists[0].id)
-
-            targetDirectories =
-                addedArtists.map { artist ->
-                    TargetDirectory(
-                        getPath(
-                            DownloadFolder.Artists,
-                            artist.name
-                        ),
-                        api!!.artists.getArtistTopTracks(artist.id).map { track ->
-                            SearchQuery(
-                                track.name,
-                                track.artists.map { it.name })
-                        })
-                }
-
-        }
-        else
-            throw Exception("Required field 'artist' not found!")
-
-        return targetDirectories
     }
 
     override fun clear() {

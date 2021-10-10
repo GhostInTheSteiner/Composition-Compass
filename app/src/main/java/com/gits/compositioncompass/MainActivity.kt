@@ -309,10 +309,12 @@ class MainActivity : AppCompatActivity() {
                                     query.searchArtist(valuesCurrentLatest)
                                     .sortedByDescending { it.popularity }.map { it.name }
                                 R.id.genre ->
-                                    query.searchGenre(valuesCurrentLatest)
+                                    query.searchGenre(valuesCurrentLatest, valuesCurrentLatest_Artist)
                                     .sortedBy { it }
                                 else -> suggestions
                             }
+
+                        suggestions = suggestions.filter { it.contains(valuesCurrentLatest, true) }
                     }
                 }
 

@@ -1,13 +1,11 @@
 package com.gits.compositioncompass.Queries
 
-import com.gits.compositioncompass.Models.AlbumItem
-import com.gits.compositioncompass.Models.ArtistItem
 import com.gits.compositioncompass.Configuration.CompositionCompassOptions
 import DownloadFolder
 import Fields
 import QueryMode
-import com.gits.compositioncompass.Models.TargetDirectory
-import com.gits.compositioncompass.Models.TrackItem
+import com.gits.compositioncompass.Models.*
+import java.lang.Exception
 
 interface IQuery {
     //check if all fields of any group are set
@@ -23,18 +21,12 @@ interface IQuery {
     suspend fun prepare()
 }
 
-abstract class Query(protected var options: CompositionCompassOptions) {
-    protected fun getPath(folder: DownloadFolder, subFolderName: String): String {
-        return options.rootDirectory + "/" + folder.folderName + "/" + subFolderName
-    }
-}
-
 //Spotify / LastFM
 interface IStreamingServiceQuery: IQuery {
     suspend fun searchArtist(name: String) : List<ArtistItem>
     suspend fun searchTrack(name: String, artist: String, album: String) : List<TrackItem>
     suspend fun searchAlbum(name: String, artist: String) : List<AlbumItem>
-    suspend fun searchGenre(name: String) : List<String>
+    suspend fun searchGenre(name: String, artist: String = "") : List<String>
 
     suspend fun addArtist(name: String) : Boolean
     suspend fun addTrack(name: String, artist: String) : Boolean

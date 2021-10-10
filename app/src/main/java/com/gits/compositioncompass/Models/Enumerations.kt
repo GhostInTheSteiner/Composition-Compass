@@ -30,3 +30,13 @@ enum class QuerySource() {
     YouTube,
     File
 }
+
+enum class MetaItem {
+    Track,
+    Artist,
+    Album
+}
+
+enum class LastFM_EmptyResponses(val json: String) {
+    ArtistTopTracks("{\"toptracks\": {\"track\": []}}")
+}

@@ -4,12 +4,14 @@ class TrackItem(
     val id: String,
     val name: String,
     val artists: List<ArtistItem>,
-    val popularity: Int = 0
+    val popularity: Int = 0,
+    val genres: List<String> = listOf()
 )
 
 class ArtistItem(
     val id: String,
     val name: String,
+    val topTracks: List<TrackItem> = listOf(), //most popular tracks
     val popularity: Int = 0
 ) {
     //Only supposed to be used for similar tracks.

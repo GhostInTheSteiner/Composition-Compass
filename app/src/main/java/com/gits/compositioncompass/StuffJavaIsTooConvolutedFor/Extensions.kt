@@ -69,3 +69,11 @@ fun<T> JSONArray.toList(): List<T> {
 
     return result
 }
+
+
+fun JSONObject.getJSONObjectOrNull(s: String): JSONObject? {
+    if (this.has(s))
+        return this.getJSONObject(s)
+    else
+        return null
+}
