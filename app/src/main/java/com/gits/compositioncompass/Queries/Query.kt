@@ -28,19 +28,7 @@ abstract class Query(
 
         var targetDirectories = listOf<TargetDirectory>()
 
-        if (artistsDefined && albumsDefined) { //fetch specified albums (whole albums)
-            targetDirectories =
-                addedAlbums.map { album ->
-                    TargetDirectory(
-                        getPath(
-                            DownloadFolder.Albums,
-                            album.name),
-                        album.tracks.map { track ->
-                            SearchQuery(
-                                track!!.name,
-                                track.artists.map { it.name })})}}
-
-        else if (artistsDefined && tracksDefined) { //fetch specified tracks (single tracks)
+        if (artistsDefined && tracksDefined) { //fetch specified tracks (single tracks)
             targetDirectories =
                 addedArtists.mapIndexed { i, artist ->
                     TargetDirectory(
@@ -51,6 +39,18 @@ abstract class Query(
                             SearchQuery(
                                 addedTracks[i].name,
                                 listOf(artist.name))))}}
+
+        else if (artistsDefined && albumsDefined) { //fetch specified albums (whole albums)
+            targetDirectories =
+                addedAlbums.map { album ->
+                    TargetDirectory(
+                        getPath(
+                            DownloadFolder.Albums,
+                            album.name),
+                        album.tracks.map { track ->
+                            SearchQuery(
+                                track!!.name,
+                                track.artists.map { it.name })})}}
 
         else if (artistsDefined) { //fetch specified artists
             targetDirectories =

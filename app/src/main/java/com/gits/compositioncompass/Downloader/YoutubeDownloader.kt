@@ -99,7 +99,6 @@ class YoutubeDownloader {
 
             request.addOption("--output", downloadDir.absolutePath + "/%(title)s.%(ext)s")
             request.addOption("--match-filter", "duration < 600")
-            request.addOption("--match-title", "^((?!(${options.exceptions})).)*$")
             //for meta-data keep in mind that adding it might break the CarPlayer in Tasker!
 
             val directoryNames = directory.split("/").reversed().take(2)
@@ -107,7 +106,7 @@ class YoutubeDownloader {
             /*
             Single Video:   /Stations/!Singles/Avicii - Levels HQ Upload.opus
             PLaylist:       /Stations/!Playlist (<UUID>)/<list_of_tracks>
-            Search com.gits.compositioncompass.Queries.Query:   /Stations/!Search (best techno songs 2021)/<list_of_tracks>
+            Search Query:   /Stations/!Search (best techno songs 2021)/<list_of_tracks>
             */
 
             if (directoryNames.first().equals("!Singles") || directoryNames.first().startsWith("!Playlist (")) { }
@@ -122,8 +121,10 @@ class YoutubeDownloader {
 
             if (directoryNames.any { it in listOf(DownloadFolder.Artists.folderName, DownloadFolder.Albums.folderName)}) { }
                 //pass => redownloads allowed
-            else
+            else {
                 request.addOption("--download-archive", options.rootDirectory + "/downloaded.txt")
+                request.addOption("--match-title", "^((?!(${options.exceptions})).)*$")
+            }
 
             dl.execute(request) { progress, etaInSeconds -> onUpdate(progress) }
 

@@ -59,9 +59,7 @@ class LastFMQuery
             .getJSONArray("artist")
             .toList<JSONObject>()
             .map {
-                ArtistItem(
-                    getId(),
-                    it.getString("name"),
+                ArtistItem(getId(), it.getString("name"),
                     popularity = it.getString("listeners").toInt())}
 
         return artists
@@ -93,13 +91,8 @@ class LastFMQuery
             .getJSONArray("track")
             .toList<JSONObject>()
             .map {
-                TrackItem(
-                    getId(),
-                    it.getString("name"),
-                    listOf(
-                        ArtistItem(
-                            getId(),
-                            it.getString("artist"))),
+                TrackItem(getId(), it.getString("name"), listOf(
+                    ArtistItem(getId(), it.getString("artist"))),
                     it.getString("listeners").toInt())}
 
         tracks = tracks
@@ -124,15 +117,8 @@ class LastFMQuery
             .getJSONArray("album")
             .toList<JSONObject>()
             .map {
-                AlbumItem(
-                    getId(),
-                    it.getString("name"),
-                    listOf(),
-                    listOf(
-                        ArtistItem(
-                            getId(),
-                            artist)),
-                    0)}
+                AlbumItem(getId(), it.getString("name"), listOf(), listOf(
+                    ArtistItem(getId(), artist)), 0)}
 
         return albums
     }
@@ -172,15 +158,18 @@ class LastFMQuery
             .getJSONObject("artistmatches")
             .getJSONArray("artist")
             .toList<JSONObject>()
-            .map { ArtistItem(
-                getId(),
-                it.getString("name"))}
+
+        val artistItem = runBlocking { artist
+            .map { artist -> async {
+                ArtistItem(getId(), artist.getString("name"), getArtistTopTracks(artist.getString("name")).map { topTrack ->
+                    TrackItem(getId(), topTrack.getString("name"), listOf(ArtistItem(getId(), artist.getString("name"))),
+                        genres = getGenres(topTrack, MetaItem.Artist)) })}}}.awaitAll()
             .firstOrNull()
 
-        if (artist == null)
+        if (artistItem == null)
             return false
         else {
-            addedArtists.add(artist)
+            addedArtists.add(artistItem)
             return true
         }
     }
@@ -199,13 +188,9 @@ class LastFMQuery
             .getJSONObject("results")
             .getJSONObject("trackmatches")
             .getJSONArray("track")
-            .toList<JSONObject>()
-            .map { TrackItem(
-                getId(),
-                it.getString("name"),
-                listOf(ArtistItem(
-                    getId(),
-                    it.getString("artist"))))}
+            .toList<JSONObject>().map {
+                TrackItem(getId(), it.getString("name"), listOf(
+                    ArtistItem(getId(), it.getString("artist"))))}
             .firstOrNull()
 
         if (track == null)
@@ -231,22 +216,17 @@ class LastFMQuery
             .getJSONArray("album")
             .toList<JSONObject>()
             .map { async {
-                AlbumItem(
-                    getId(),
-                    it.getString("name"),
-                    getAlbumInfo(it.getString("name"), it.getString("tracks"))
-                        .getJSONObject("album").getJSONObject("tracks").getJSONArray("track")
-                        .toList<JSONObject>().map {
-                            TrackItem(
-                                getId(),
-                                it.getString("name"),
-                                listOf(
-                                    ArtistItem(
-                                        getId(),
-                                        it.getJSONObject("artist").getString("name"))))},
-                    listOf(ArtistItem(
-                        getId(),
-                        it.getString("artist"))))}}.awaitAll()
+                try {
+                    val albumInfo =  getAlbumInfo(it.getString("name"), it.getString("artist"))
+                    val albumInfo_track = albumInfo.getJSONObject("album").getJSONObject("tracks").getJSONArray("track")
+                    val albumInfo_trackJson = albumInfo_track.toList<JSONObject>()
+                    AlbumItem(getId(), it.getString("name"), albumInfo_trackJson.map {
+                        TrackItem(getId(), it.getString("name"), listOf(
+                            ArtistItem(getId(), it.getJSONObject("artist").getString("name"))))},
+                    listOf(ArtistItem(getId(), it.getString("artist"))))}
+                catch(e: Exception) {
+                    null
+                }}}.awaitAll().filterNotNull()
             .firstOrNull {
                 it.artists.any {
                     it.name.contains(artist, true)}}}
@@ -265,33 +245,7 @@ class LastFMQuery
     }
 
     override suspend fun getSimilarTracks(): List<TargetDirectory> {
-        val params = mutableListOf(
-            "method", "track.getsimilar",
-            "track", addedTracks.first().name,
-            "artist", addedArtists.first().name,
-            //apparently results get capped at 250; if the value is higher than 1000 LastFM will default to 100 though
-            "limit", "1000"
-        )
-
-        val json = sendRequest(params)
-
-        var tracksJson = json
-            .getJSONObject("similartracks")
-            .getJSONArray("track")
-            .toList<JSONObject>()
-            .sortedByDescending { it.getInt("match") }
-
-        var tracks = runBlocking { tracksJson.map { async { TrackItem(
-            getId(),
-            it.getString("name"),
-            listOf(ArtistItem(
-                getId(),
-                it.getJSONObject("artist").getString("name"))),
-            genres = getGenres(it, MetaItem.Track))
-        }}}.awaitAll()
-
-        tracks = filterGenres(tracks)
-        tracks = filterExceptions(tracks)
+        var tracks = getSimilarTrackItems()
 
         val subFolderName = getSubFolder_Station()
         val searchQueries = tracks.map { SearchQuery(it.name, it.artists.map { it.name }) }
@@ -301,7 +255,15 @@ class LastFMQuery
     }
 
     override suspend fun getSimilarAlbums(): List<TargetDirectory> {
-        throw NotImplementedError()
+        var tracks = getSimilarTrackItems(true)
+
+        val trackGroups = tracks
+            .groupBy { it.album!!.name }
+            .map { Pair(it.key, it.value) }
+
+        val directories = getTargetDirectories(DownloadFolder.Albums, trackGroups, options.resultsSimilarAlbums)
+
+        return directories
     }
 
     override suspend fun getSimilarArtists(): List<TargetDirectory> {
@@ -309,7 +271,8 @@ class LastFMQuery
             "method", "artist.getsimilar",
             "artist", addedArtists.first().name,
             //apparently results get capped at 250; if the value is higher than 1000 LastFM will default to 100 though
-            "limit", options.samplesSimilarArtists.coerceAtMost(1000).toString()
+            //we'll always cap at 100 here because this function would surpass the rate limit on any higher values
+            "limit", options.samplesSimilarArtists.coerceAtMost(100).toString()
         )
 
         val json = sendRequest(params)
@@ -323,30 +286,13 @@ class LastFMQuery
         val trackGroups = runBlocking { artistsJson.map {
             artist: JSONObject -> async {
                 val topTrackJSONs = getArtistTopTracks(artist.getString("name")).take(resultsSimilarArtists_Tracks)
-                val topTrackItems = topTrackJSONs.map { topTrack -> async { TrackItem(
-                    getId(),
-                    topTrack.getString("name"),
-                    listOf(ArtistItem(getId(),
-                    artist.getString("name"))),
-                    genres = getGenres(topTrack, MetaItem.Artist))}}.awaitAll()
+                val topTrackItems = topTrackJSONs.map { topTrack -> async {
+                    TrackItem(getId(), topTrack.getString("name"), listOf(ArtistItem(getId(), artist.getString("name"))),
+                        genres = getGenres(topTrack, MetaItem.Artist))}}.awaitAll()
 
                 Pair(artist.getString("name"), topTrackItems)}}}.awaitAll()
 
-        var directories = trackGroups.mapNotNull { (artist, tracks__) ->
-            var tracks_ = filterExceptions(tracks__)
-            var tracks = filterGenres(tracks_)
-
-            if (tracks.count() > 0) {
-                tracks = tracks_ //download all tracks, as others might just lack a proper label...
-                val subFolderName = getSubFolder_Similar() + "/" + artist
-                val searchQueries = tracks.map { SearchQuery(it.name, it.artists.map { it.name }) }
-                TargetDirectory(getPath(DownloadFolder.Artists, subFolderName), searchQueries)
-            }
-            else
-                null
-        }
-
-        directories = directories.take(options.resultsSimilarArtists)
+        var directories = getTargetDirectories(DownloadFolder.Artists, trackGroups, options.resultsSimilarArtists)
 
         return directories
     }
@@ -364,6 +310,65 @@ class LastFMQuery
 
     override suspend fun prepare() {
         //pass
+    }
+
+    //target directories to trackGroups (for either similar artists or similar albums)
+    private fun getTargetDirectories(folder: DownloadFolder, subFolders: List<Pair<String, List<TrackItem>>>, subFoldersLimit: Int) = subFolders
+        .mapNotNull { (subFolderName, tracks__) ->
+            var tracks_ = filterExceptions(tracks__)
+            var tracks = filterGenres(tracks_)
+
+            if (tracks.count() > 0) {
+                tracks = tracks_ //download all tracks, as others might just lack a proper label...
+                val subFolder = getSubFolder_Similar() + "/" + subFolderName
+                val searchQueries = tracks.map { SearchQuery(it.name, it.artists.map { it.name }) }
+                TargetDirectory(getPath(folder, subFolder), searchQueries)}
+            else
+                null }
+        .take(subFoldersLimit)
+
+    private suspend fun LastFMQuery.getSimilarTrackItems(includeAlbums: Boolean = false): List<TrackItem> {
+        val params = mutableListOf(
+            "method", "track.getsimilar",
+            "artist", addedArtists.first().name,
+            //apparently results get capped at 250; if the value is higher than 1000 LastFM will default to 100 though
+            "limit", "1000"
+        )
+
+        if (addedTracks.count() > 0)
+            params.addAll(listOf("artist", addedArtists.first().name))
+
+        val json = sendRequest(params)
+
+        var tracksJson = json
+            .getJSONObject("similartracks")
+            .getJSONArray("track")
+            .toList<JSONObject>()
+            .sortedByDescending { it.getInt("match") }
+
+        if (addedGenres.count() == 0) //if genres are added the results will already be reduced enough...
+            tracksJson = tracksJson.take(50) //limit results to the most similar tracks
+
+        var tracks = runBlocking {
+            tracksJson.map { async {
+                val trackName = it.getString("name")
+                val artistName = it.getJSONObject("artist").getString("name")
+                var albumItem: AlbumItem? = null
+
+                if (includeAlbums) {
+                    val albumInfo_album = getAlbumInfo(trackName, artistName).getJSONObject("album")
+                    val albumName = albumInfo_album.getString("name")
+                    val albumTracksJson = albumInfo_album.getJSONObject("tracks").getJSONArray("track").toList<JSONObject>()
+                    val albumTracks = albumTracksJson.map { TrackItem( getId(), it.getString("name"), listOf(ArtistItem(getId(), artistName))) }
+                    albumItem = AlbumItem(getId(), albumName, albumTracks, listOf(ArtistItem(getId(), artistName)))}
+
+                TrackItem(getId(), trackName, listOf(ArtistItem(getId(), artistName)),
+                    genres = getGenres(it, MetaItem.Track),
+                    album = albumItem)}}}.awaitAll()
+
+        tracks = filterGenres(tracks)
+        tracks = filterExceptions(tracks)
+        return tracks
     }
 
     private suspend fun getTrackInfo(name: String, artist: String): JSONObject {

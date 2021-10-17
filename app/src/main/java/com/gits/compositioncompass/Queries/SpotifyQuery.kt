@@ -14,6 +14,7 @@ import com.adamratzman.spotify.SpotifyAppApiBuilder
 import com.adamratzman.spotify.models.*
 import com.adamratzman.spotify.spotifyAppApi
 import com.adamratzman.spotify.utils.Market
+import contains
 import kotlinx.coroutines.*
 import kotlin.math.roundToInt
 
@@ -147,13 +148,13 @@ class SpotifyQuery: IStreamingServiceQuery, Query {
 
             tracksMatching.addAll(tracks.filter {
                 it!!.name.equals(name, true) &&
-                it.artists.any { it.name.contains(artist, true) }
+                it.artists.any { it.name.contains(artist, true, true) }
             })
 
             if (tracksMatching.count() == 0) {
                 tracksMatching.addAll(tracks.filter {
                     it!!.name.contains(name, true) &&
-                    it.artists.any { it.name.contains(artist, true) }
+                    it.artists.any { it.name.contains(artist, true, true) }
                 })
             }
 
@@ -177,8 +178,8 @@ class SpotifyQuery: IStreamingServiceQuery, Query {
             val albums: PagingObject<SimpleAlbum> = results.albums!!
 
             val albumsMatching = albums.filter {
-                it!!.name.contains(name, true) &&
-                it.artists.any { it.name.contains(artist, true) }
+                it!!.name.contains(name, true, true) &&
+                it.artists.any { it.name.contains(artist, true, true) }
             }
 
             val albumMatching = albumsMatching.first()

@@ -77,3 +77,10 @@ fun JSONObject.getJSONObjectOrNull(s: String): JSONObject? {
     else
         return null
 }
+
+fun String.contains(s: String, ignoreCase: Boolean, ignoreSpecialChars: Boolean) =
+    if (ignoreSpecialChars)
+        this.split(" ").map { it.trim(',', ';', '-', ':', '.') }.joinToString(" ").contains(
+            s.split(" ").map { it.trim(',', ';', '-', ':', '.') }.joinToString(" "), ignoreCase)
+    else
+        this.contains(s, ignoreCase)

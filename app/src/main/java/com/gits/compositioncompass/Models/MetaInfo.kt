@@ -5,7 +5,8 @@ class TrackItem(
     val name: String,
     val artists: List<ArtistItem>,
     val popularity: Int = 0,
-    val genres: List<String> = listOf()
+    val genres: List<String> = listOf(),
+    val album: AlbumItem? = null
 )
 
 class ArtistItem(
@@ -18,7 +19,7 @@ class ArtistItem(
     //Since most of the time you are already in your car (and perhaps even driving... o.O)
     //you need to be able to quickly read the station name.
     val initials: String
-        get() = name.split(' ').map { it.first() }.joinToString("")
+        get() = name.split(' ').map { it.first().uppercaseChar() }.joinToString("")
 }
 
 class AlbumItem(
