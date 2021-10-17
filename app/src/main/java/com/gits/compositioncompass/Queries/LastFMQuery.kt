@@ -336,7 +336,7 @@ class LastFMQuery
         )
 
         if (addedTracks.count() > 0)
-            params.addAll(listOf("artist", addedArtists.first().name))
+            params.addAll(listOf("track", addedTracks.first().name))
 
         val json = sendRequest(params)
 
@@ -349,22 +349,32 @@ class LastFMQuery
         if (addedGenres.count() == 0) //if genres are added the results will already be reduced enough...
             tracksJson = tracksJson.take(50) //limit results to the most similar tracks
 
-        var tracks = runBlocking {
-            tracksJson.map { async {
+        var tracks = runBlocking { tracksJson
+            .map { async {
                 val trackName = it.getString("name")
                 val artistName = it.getJSONObject("artist").getString("name")
                 var albumItem: AlbumItem? = null
 
-                if (includeAlbums) {
-                    val albumInfo_album = getAlbumInfo(trackName, artistName).getJSONObject("album")
-                    val albumName = albumInfo_album.getString("name")
-                    val albumTracksJson = albumInfo_album.getJSONObject("tracks").getJSONArray("track").toList<JSONObject>()
-                    val albumTracks = albumTracksJson.map { TrackItem( getId(), it.getString("name"), listOf(ArtistItem(getId(), artistName))) }
-                    albumItem = AlbumItem(getId(), albumName, albumTracks, listOf(ArtistItem(getId(), artistName)))}
+                try {
+                    if (includeAlbums) {
+                        val albumInfo = getAlbumInfo(trackName, artistName)
+                        val albumInfo_album = albumInfo.getJSONObject("album")
+                        if (albumInfo_album.has("tracks")) {
+                            val albumName = albumInfo_album.getString("name")
+                            val albumTracksJson = albumInfo_album.getJSONObject("tracks").getJSONArray("track").toList<JSONObject>()
+                            val albumTracks = albumTracksJson.map { TrackItem( getId(), it.getString("name"), listOf(ArtistItem(getId(), artistName))) }
+                            albumItem = AlbumItem(getId(), albumName, albumTracks, listOf(ArtistItem(getId(), artistName)))}}
 
-                TrackItem(getId(), trackName, listOf(ArtistItem(getId(), artistName)),
-                    genres = getGenres(it, MetaItem.Track),
-                    album = albumItem)}}}.awaitAll()
+                    if (includeAlbums && albumItem == null) //includeAlbums == true, but no tracks were found
+                        null
+                    else //either no albums should be included in the first place, or albums should be AND tracks were found
+                        TrackItem(getId(), trackName, listOf(ArtistItem(getId(), artistName)),
+                            genres = getGenres(it, MetaItem.Track),
+                            album = albumItem)}
+                catch (e: Exception) {
+                    null
+                }}}}.awaitAll()
+            .filterNotNull()
 
         tracks = filterGenres(tracks)
         tracks = filterExceptions(tracks)
