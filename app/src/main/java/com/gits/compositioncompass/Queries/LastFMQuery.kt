@@ -21,8 +21,9 @@ class LastFMQuery
 : IStreamingServiceQuery, Query {
 
     override val requiredFields: List<List<Fields>> get() = when (mode) {
-        QueryMode.Specified -> listOf(listOf(Fields.Artist), listOf(Fields.Artist, Fields.Track), listOf(Fields.Artist, Fields.Album))
-        else                -> listOf(listOf(Fields.Artist), listOf(Fields.Artist, Fields.Track), listOf(Fields.Artist, Fields.Track, Fields.Genre), listOf(Fields.Artist, Fields.Genre))
+        QueryMode.Specified         -> listOf(listOf(Fields.Artist), listOf(Fields.Artist, Fields.Track), listOf(Fields.Artist, Fields.Album))
+        QueryMode.SimilarTracks     -> listOf(listOf(Fields.Artist, Fields.Track), listOf(Fields.Artist, Fields.Track, Fields.Genre))
+        else                        -> listOf(listOf(Fields.Artist), listOf(Fields.Artist, Fields.Track), listOf(Fields.Artist, Fields.Track, Fields.Genre), listOf(Fields.Artist, Fields.Genre))
     }
 
     override val supportedFields: List<Fields> get() = when (mode) {
