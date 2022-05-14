@@ -72,6 +72,8 @@ class CompositionCompassOptions {
         configFile = File(filePath)
         options = loadDefaults()
 
+        File(configFile.parent).mkdirs()
+
         if (!configFile.exists()) {
             configFile.createNewFile()
             save()
