@@ -19,7 +19,7 @@ The setup process has been greatly simplified, but you'll still need to configur
 
 1. Download the latest ZIP from the `releases` page.
 
-2. Place the contained `Pandora` folder right in the root directory of your internal storage (e.g. `/storage/emulated/0/Pandora`).  
+2. Place the contained `Pandora` folder right in a "Music" directory of your internal storage (e.g. `/storage/emulated/0/Music/Pandora`).  
 **This is important! If there's already another folder named `Pandora` it has to be removed.**
 
 3. Open Tasker and import the XML inside the `Pandora/!resources` folder.
