@@ -17,4 +17,9 @@
     <style name="Theme.CompositionCompass.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
 
     <style name="Theme.CompositionCompass.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+
+    <style name="Theme.CompositionCompass.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
 </resources>

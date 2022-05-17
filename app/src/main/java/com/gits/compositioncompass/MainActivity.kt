@@ -271,6 +271,11 @@ class MainActivity : AppCompatActivity() {
         this.finishAffinity()
     }
 
+    fun openPlayer(view: View) {
+        val intent = Intent(this, PlayerActivity::class.java)
+        startActivity(intent)
+    }
+
     fun queryParameters_AfterChanged(view: InstantMultiAutoCompleteTextView) {
         GlobalScope.launch(exceptionHandler()) {
 

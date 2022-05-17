@@ -1,0 +1,33 @@
+<ScrollView
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:maxWidth="@dimen/activity_horizontal_margin">
+
+    <TableLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="20px"
+        android:stretchColumns="1">
+
+        <TableRow
+            android:id="@+id/rowArtists" >
+
+            <TextView
+                android:id="@+id/artistLabel"
+                android:text="Artists"
+                android:gravity="right"
+                android:padding="3dip"
+                style="@style/margin_labels"/>
+            <com.gits.compositioncompass.ui.controls.InstantMultiAutoCompleteTextView
+                android:maxWidth="@dimen/activity_horizontal_margin"
+                android:hint="Artist 1, Artist 2, ..."
+                android:id="@+id/startbutton"
+                android:padding="3dip"
+                android:backgroundTint="#48b4e0"
+                android:drawableTint="#48b4e0"
+                />
+
+        </TableRow>
+    </TableLayout>
+</ScrollView>
