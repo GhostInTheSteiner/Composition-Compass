@@ -1,33 +1,77 @@
-<ScrollView
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:maxWidth="@dimen/activity_horizontal_margin">
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:android="http://schemas.android.com/apk/res/android">
 
     <TableLayout
+        android:gravity="bottom"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_margin="20px"
         android:stretchColumns="1">
 
         <TableRow
-            android:id="@+id/rowArtists" >
+            android:layout_weight="1">
 
             <TextView
-                android:id="@+id/artistLabel"
-                android:text="Artists"
-                android:gravity="right"
-                android:padding="3dip"
-                style="@style/margin_labels"/>
-            <com.gits.compositioncompass.ui.controls.InstantMultiAutoCompleteTextView
-                android:maxWidth="@dimen/activity_horizontal_margin"
-                android:hint="Artist 1, Artist 2, ..."
-                android:id="@+id/startbutton"
-                android:padding="3dip"
-                android:backgroundTint="#48b4e0"
-                android:drawableTint="#48b4e0"
-                />
+                android:layout_width="wrap_content"
+                android:text="Descritpion"
+                android:overScrollMode="always">
+            </TextView>
+        </TableRow>
+
+        <TableRow>
+
+            <com.arges.sepan.argmusicplayer.PlayerViews.ArgPlayerFullScreenView
+                android:id="@+id/argmusicplayer"
+                android:layout_width="wrap_content"
+                android:layout_height="414dp" />
 
         </TableRow>
+
+        <TableRow>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:gravity="center">
+
+                <Button
+                    android:id="@+id/browse"
+                    android:text="Browse"
+                    android:layout_height="wrap_content"
+                    android:layout_width="wrap_content"
+                    android:onClick="browse"
+                />
+
+                <Button
+                    android:id="@+id/dislike"
+                    android:text="Dislike"
+                    android:layout_height="wrap_content"
+                    android:layout_width="wrap_content"
+                    android:onClick="dislike"
+                    />
+
+                <Button
+                    android:id="@+id/like"
+                    android:text="Like"
+                    android:layout_height="wrap_content"
+                    android:layout_width="wrap_content"
+                    android:onClick="like"
+                    />
+            </LinearLayout>
+
+        </TableRow>
+
+        <TableRow>
+            <CheckBox
+                android:id="@+id/volume_button_triggers"
+                android:text="Enable volume button triggers">
+
+            </CheckBox>
+        </TableRow>
+
+        <TableRow android:minHeight="100dp"></TableRow>
     </TableLayout>
-</ScrollView>
+</LinearLayout>

@@ -1,3 +1,6 @@
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
@@ -84,3 +87,11 @@ fun String.contains(s: String, ignoreCase: Boolean, ignoreSpecialChars: Boolean)
             s.split(" ").map { it.trim(',', ';', '-', ':', '.') }.joinToString(" "), ignoreCase)
     else
         this.contains(s, ignoreCase)
+
+fun Vibrator.vibrateLong() {
+    if (Build.VERSION.SDK_INT >= 26) {
+        this.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE))
+    } else {
+        this.vibrate(500)
+    }
+}

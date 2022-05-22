@@ -24,7 +24,6 @@ import android.widget.*
 import getItem
 import registerEventHandler
 import setSelection
-import java.lang.Exception
 import android.view.inputmethod.InputMethodManager
 import androidx.core.app.NotificationCompat
 import android.app.NotificationManager
@@ -40,6 +39,7 @@ import android.app.AlertDialog
 import com.gits.compositioncompass.Models.TargetDirectory
 import com.gits.compositioncompass.ui.controls.InstantMultiAutoCompleteTextView
 import com.gits.compositioncompass.ui.controls.SpinnerItem
+import kotlin.Exception
 
 
 class MainActivity : AppCompatActivity() {
@@ -77,7 +77,7 @@ class MainActivity : AppCompatActivity() {
             notificationChannelId = createNotificationChannel("composition-compass")
             requestPerms()
 
-            composition = CompositionRoot.getInstance(application)
+            composition = CompositionRoot.getInstance(this, application)
 
             jobsDownload = listOf()
 
@@ -85,8 +85,8 @@ class MainActivity : AppCompatActivity() {
             preferencesEditor = preferences.edit()
 
             prepareView()
-
             requestConfig()
+            updateYoutubeDL(findViewById(R.id.update))
         }
         catch (e: Exception) {
             val mBuilder: NotificationCompat.Builder = NotificationCompat.Builder(this, notificationChannelId)
@@ -94,10 +94,10 @@ class MainActivity : AppCompatActivity() {
                 .setContentTitle("An exception occured ;(") // title
                 .setStyle(
                     NotificationCompat.BigTextStyle()
-                    .bigText(e.stackTraceToString()))
+                        .bigText(e.stackTraceToString()))
                 .setContentText(
                     e.message + System.lineSeparator() + System.lineSeparator() +
-                    e.stackTraceToString()) // body message
+                            e.stackTraceToString()) // body message
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
 
             NotificationManagerCompat.from(this).notify(Random().nextInt(Int.MAX_VALUE), mBuilder.build())
@@ -112,9 +112,9 @@ class MainActivity : AppCompatActivity() {
                 .setTitle("com.gits.compositioncompass.Configuration required")
                 .setMessage(
                     "I'll now open the configuration file for you. The following values need to be configured on first launch:" +
-                    System.lineSeparator() + System.lineSeparator() +
-                    composition.options.__requiredFields.map { "- " + it }.joinToString(System.lineSeparator()) + System.lineSeparator() + System.lineSeparator() +
-                    "Once you're done restart the downloader."
+                            System.lineSeparator() + System.lineSeparator() +
+                            composition.options.__requiredFields.map { "- " + it }.joinToString(System.lineSeparator()) + System.lineSeparator() + System.lineSeparator() +
+                            "Once you're done restart the downloader."
                 )
                 .setPositiveButton(android.R.string.ok, { a, b -> openFile(composition.options.__filePath); this.finishAffinity() })
                 .setNeutralButton("Help", { a, b -> openWebsite("https://github.com/GhostInTheSteiner/Composition-Compass-Downloader/blob/master/README.md#Setup"); this.finishAffinity() })
@@ -306,16 +306,16 @@ class MainActivity : AppCompatActivity() {
                             when (view.id) {
                                 R.id.track ->
                                     query.searchTrack(valuesCurrentLatest, valuesCurrentLatest_Artist, valuesCurrentLatest_Album)
-                                    .sortedByDescending { it.popularity }.map { it.name }
+                                        .sortedByDescending { it.popularity }.map { it.name }
                                 R.id.album ->
                                     query.searchAlbum(valuesCurrentLatest, valuesCurrentLatest_Artist)
-                                    .sortedByDescending { it.popularity }.map { it.name }
+                                        .sortedByDescending { it.popularity }.map { it.name }
                                 R.id.artist ->
                                     query.searchArtist(valuesCurrentLatest)
-                                    .sortedByDescending { it.popularity }.map { it.name }
+                                        .sortedByDescending { it.popularity }.map { it.name }
                                 R.id.genre ->
                                     query.searchGenre(valuesCurrentLatest, valuesCurrentLatest_Artist)
-                                    .sortedBy { it }
+                                        .sortedBy { it }
                                 else -> suggestions
                             }
 
@@ -376,7 +376,7 @@ class MainActivity : AppCompatActivity() {
 
         preferencesEditor.putString("view:" + source.id, source_.name)
         preferencesEditor.putString("view:" + mode.id, mode_.name)
-        
+
         preferencesEditor.apply()
     }
 
@@ -407,8 +407,8 @@ class MainActivity : AppCompatActivity() {
             else {
                 info.text =
                     "The following fields are required:" + System.lineSeparator() + System.lineSeparator() +
-                    required.map { "\"" + it.map { it.viewName }.joinToString(", ") + "\"" }
-                    .joinToString(System.lineSeparator() + "or ")
+                            required.map { "\"" + it.map { it.viewName }.joinToString(", ") + "\"" }
+                                .joinToString(System.lineSeparator() + "or ")
 
                 return
             }
@@ -583,8 +583,8 @@ class MainActivity : AppCompatActivity() {
 
     fun getErrorMessage(message: String, trace: String) =
         "The following error occured ;(" + System.lineSeparator() + System.lineSeparator() +
-        message + System.lineSeparator() + System.lineSeparator() +
-        trace
+                message + System.lineSeparator() + System.lineSeparator() +
+                trace
 
     fun closeApp() {
         finishAffinity()

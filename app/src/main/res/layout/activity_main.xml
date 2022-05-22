@@ -204,17 +204,17 @@
                     android:textColor="@color/white"
                     android:textSize="10dp" />
 
-<!--                <Button-->
-<!--                    android:id="@+id/player"-->
-<!--                    android:layout_width="0dp"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:layout_marginLeft="10px"-->
-<!--                    android:layout_weight="0.5"-->
-<!--                    android:backgroundTint="#229aca"-->
-<!--                    android:onClick="openPlayer"-->
-<!--                    android:text="Open Player"-->
-<!--                    android:textColor="@color/white"-->
-<!--                    android:textSize="10dp" />-->
+                <Button
+                    android:id="@+id/player"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="10px"
+                    android:layout_weight="0.5"
+                    android:backgroundTint="#229aca"
+                    android:onClick="openPlayer"
+                    android:text="Open Player"
+                    android:textColor="@color/white"
+                    android:textSize="10dp" />
 
                 <Button
                     android:id="@+id/close"
