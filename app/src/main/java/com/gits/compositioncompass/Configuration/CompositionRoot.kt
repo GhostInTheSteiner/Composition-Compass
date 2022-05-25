@@ -23,19 +23,35 @@ import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.Notifier
 
 class CompositionRoot {
 
-    val preferencesReader: SharedPreferences
-    var preferencesWriter: SharedPreferences.Editor
     val options: CompositionCompassOptions
-    var query: IQuery //replaceable
-    val downloader: YoutubeDownloader
+    var lastActivity: Activity
+    lateinit var preferencesReader: SharedPreferences
+    lateinit var preferencesWriter: SharedPreferences.Editor
+    lateinit var query: IQuery //replaceable
+    lateinit var downloader: YoutubeDownloader
+    lateinit var logger: Logger
 
     private constructor(options: CompositionCompassOptions, activity: Activity) {
-        this.options = options
+        initWithoutActivity(options)
+        initWithActivity(options, activity)
 
-        downloader = YoutubeDownloader(options, activity)
+        instance = this
+
+        this.options = options
+        this.lastActivity = activity
+    }
+
+    //not dependant on activity (one-time only instantiation)
+    private fun initWithoutActivity(options: CompositionCompassOptions) {
         query = SpotifyQuery(options) //default query
+    }
+
+    //dependant on activity (need to be re-instantiated once activity changes)
+    private fun initWithActivity(options: CompositionCompassOptions, activity: Activity) {
+        downloader = YoutubeDownloader(options, activity)
+        logger = Logger(options, Notifier(options, activity))
         preferencesReader = activity.getSharedPreferences(options.packageName, 0)
-        preferencesWriter = preferencesReader.edit();
+        preferencesWriter = preferencesReader.edit()
     }
 
     fun changeQuerySource(source: QuerySource) {
@@ -52,29 +68,27 @@ class CompositionRoot {
         query.changeMode(mode)
     }
 
-    fun logger(activity: Activity) : Logger {
-        return Logger(options, Notifier(options, activity))
-    }
-
-    fun activity(activity: Activity) {
-
-    }
-
     companion object {
-        private var compositionRoot: CompositionRoot? = null
+        private var instance: CompositionRoot? = null
 
-        fun getInstance(activity: Activity): CompositionRoot {
-            if (compositionRoot == null) {
+        fun getInstance(newActivity: Activity) : CompositionRoot {
+            if (instance == null) {
                 val extStoragePath = Environment.getExternalStorageDirectory().absolutePath
                 val configFile = extStoragePath + "/Music/Pandora/config.ini"
-                val options = CompositionCompassOptions(configFile, activity)
+                val options = CompositionCompassOptions(configFile, newActivity)
 
-                return CompositionRoot(options, activity)
+                return CompositionRoot(options, newActivity)
             }
 
-            else {
-                return compositionRoot!!
+            else if (instance!!.lastActivity != newActivity) {
+                //re-init with currently displayed activity
+                instance!!.initWithActivity(instance!!.options, newActivity)
+                instance!!.lastActivity = newActivity
+                return instance!!
             }
+
+            else
+                return instance!!
         }
     }
 }

@@ -20,16 +20,16 @@ class YoutubeDownloader {
     private var jobs: List<Job>
 
     constructor(options: CompositionCompassOptions, activity: Activity) {
-        this.options = options
-        this.activity = activity
-
         dl = YoutubeDL.getInstance()
         dl.init(activity)
 
         ffmpeg = FFmpeg.getInstance()
-        ffmpeg.init(this.activity)
+        ffmpeg.init(activity)
 
         jobs = listOf()
+
+        this.options = options
+        this.activity = activity
     }
 
     suspend fun start(targetDirectories: List<TargetDirectory>, onUpdate: (DownloadStatus) -> Unit, onFailure: (String, Exception) -> Unit) {

@@ -69,22 +69,21 @@ class MainActivity : AppCompatActivity() {
     private lateinit var composition: CompositionRoot
     private lateinit var binding: ActivityMainBinding
 
-    override fun onResume(savedInstanceState: Bundle?) {
-        composition.activity(this)
+    override fun onResume() {
+        super.onResume(); CompositionRoot.getInstance(this)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         try {
-            val permissions = PermissionManager(this)
-
-            val storage = permissions.requestStorageLegacy()
-
             super.onCreate(savedInstanceState)
+
+            val permissions = PermissionManager(this)
+            val storage = permissions.requestStorageLegacy()
 
             notificationChannelId = createNotificationChannel("composition-compass")
 
             composition = CompositionRoot.getInstance(this)
-            logger = composition.logger(this)
+            logger = composition.logger
 
             preferencesReader = composition.preferencesReader
             preferencesWriter = composition.preferencesWriter
@@ -93,7 +92,6 @@ class MainActivity : AppCompatActivity() {
 
             prepareView()
             requestConfig()
-            updateYoutubeDL(findViewById(R.id.update))
         }
         catch (e: Exception) {
             val mBuilder: NotificationCompat.Builder = NotificationCompat.Builder(this, notificationChannelId)
@@ -408,6 +406,8 @@ class MainActivity : AppCompatActivity() {
 
                 return
             }
+
+            updateYoutubeDL(findViewById(R.id.update))
 
             download.isEnabled = false
             update.isEnabled = false

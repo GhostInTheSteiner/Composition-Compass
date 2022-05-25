@@ -42,6 +42,10 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     private lateinit var composition: CompositionRoot
     private lateinit var logger: Logger
 
+    override fun onResume() {
+        super.onResume(); CompositionRoot.getInstance(this)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -49,7 +53,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
         setContentView(binding.root)
 
         composition = CompositionRoot.getInstance(this)
-        logger = composition.logger(this)
+        logger = composition.logger
 
         try {
             val automated = composition.options.rootDirectory + "/" + composition.options.automatedDirectory
@@ -84,7 +88,10 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        if (!findViewById<CheckBox>(R.id.volume_button_triggers).isChecked) { } //pass
+        if (keyCode == KeyEvent.KEYCODE_BACK)
+            finish()
+
+        else if (!findViewById<CheckBox>(R.id.volume_button_triggers).isChecked) { } //pass
 
         else if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
             dislike(findViewById(R.id.dislike))
@@ -134,8 +141,8 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
         val audioList = ArgAudioList(false)
         LocalFile(path).listFiles().forEach {
             audioList.add(ArgAudio.createFromFilePath(
-                it.nameWithoutExtension.split(" - ")[0],
-                it.nameWithoutExtension.split(" - ")[1],
+                it.nameWithoutExtension.split(" - ").first(),
+                it.nameWithoutExtension.split(" - ").last(),
                 it.originalPath))
         }
 
