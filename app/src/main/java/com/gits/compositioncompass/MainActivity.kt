@@ -7,15 +7,11 @@ import Fields
 import com.gits.compositioncompass.Queries.IFileQuery
 import com.gits.compositioncompass.Queries.IStreamingServiceQuery
 import com.gits.compositioncompass.Queries.IYoutubeQuery
-import android.Manifest
-import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import android.view.View
 import com.gits.compositioncompass.databinding.ActivityMainBinding
 
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import hasUserContent
 import kotlinx.coroutines.*
 import android.app.NotificationChannel
@@ -38,7 +34,6 @@ import java.util.*
 import android.app.AlertDialog
 import com.gits.compositioncompass.Models.TargetDirectory
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.Logger
-import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.Notifier
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.PermissionManager
 import com.gits.compositioncompass.ui.controls.InstantMultiAutoCompleteTextView
 import com.gits.compositioncompass.ui.controls.SpinnerItem
@@ -62,8 +57,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var download: Button
     private lateinit var update: Button
 
-    private lateinit var preferences: SharedPreferences
-    private lateinit var preferencesEditor: SharedPreferences.Editor
+    private lateinit var preferencesReader: SharedPreferences
+    private lateinit var preferencesWriter: SharedPreferences.Editor
     private lateinit var jobsDownload: List<Job>
     private lateinit var fieldViews: MutableMap<Fields, View>
     private lateinit var notificationChannelId: String
@@ -73,6 +68,10 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var composition: CompositionRoot
     private lateinit var binding: ActivityMainBinding
+
+    override fun onResume(savedInstanceState: Bundle?) {
+        composition.activity(this)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         try {
@@ -84,14 +83,13 @@ class MainActivity : AppCompatActivity() {
 
             notificationChannelId = createNotificationChannel("composition-compass")
 
-            composition = CompositionRoot.getInstance(application)
-            logger = composition.logger(composition.notifier(this))
+            composition = CompositionRoot.getInstance(this)
+            logger = composition.logger(this)
 
+            preferencesReader = composition.preferencesReader
+            preferencesWriter = composition.preferencesWriter
 
             jobsDownload = listOf()
-
-            preferences = applicationContext.getSharedPreferences("composition-compass", 0)
-            preferencesEditor = preferences.edit()
 
             prepareView()
             requestConfig()
@@ -192,7 +190,7 @@ class MainActivity : AppCompatActivity() {
 
         queryParameters.forEach {
             //load last inouts
-            it.setText(preferences.getString("view:" + it.id.toString(), ""))
+            it.setText(preferencesReader.getString("view:" + it.id.toString(), ""))
 
             //register event handler for autocomplete feature
             it.setTokenizer(MultiAutoCompleteTextView.CommaTokenizer())
@@ -219,12 +217,12 @@ class MainActivity : AppCompatActivity() {
         mode.setSelection(
             mode.getItem<SpinnerItem> {
                 it.id == QueryMode.valueOf(
-                    preferences.getString("view:" + mode.id, QueryMode.SimilarTracks.name) ?: "")})
+                    preferencesReader.getString("view:" + mode.id, QueryMode.SimilarTracks.name) ?: "")})
 
         source.setSelection(
             source.getItem<SpinnerItem> {
                 it.id == QuerySource.valueOf(
-                    preferences.getString("view:" + source.id, QuerySource.Spotify.name) ?: "")})
+                    preferencesReader.getString("view:" + source.id, QuerySource.Spotify.name) ?: "")})
 
         //because Google's implementation for the gui-xml is incomplete...
         mode.registerEventHandler(spinner_onItemSelected = this::mode_OnItemSelected)
@@ -328,8 +326,8 @@ class MainActivity : AppCompatActivity() {
             runOnUiThread { view.setAdapter(getAutocompleteAdapter(suggestions)) }
         }
 
-        queryParameters.forEach { preferencesEditor.putString("view:" + it.id.toString(), it.text.toString()) }
-        preferencesEditor.apply()
+        queryParameters.forEach { preferencesWriter.putString("view:" + it.id.toString(), it.text.toString()) }
+        preferencesWriter.apply()
     }
 
     fun mode_OnItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) = updateState()
@@ -372,10 +370,10 @@ class MainActivity : AppCompatActivity() {
         else
             mode.isEnabled = true
 
-        preferencesEditor.putString("view:" + source.id, source_.name)
-        preferencesEditor.putString("view:" + mode.id, mode_.name)
+        preferencesWriter.putString("view:" + source.id, source_.name)
+        preferencesWriter.putString("view:" + mode.id, mode_.name)
 
-        preferencesEditor.apply()
+        preferencesWriter.apply()
     }
 
     private fun hideQueryParameters() {

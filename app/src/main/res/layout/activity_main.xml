@@ -11,6 +11,22 @@
         android:stretchColumns="1">
 
         <TableRow
+            android:minHeight="120dp">
+
+            <TextView
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:layout_span="2"
+                android:text="Composition\nCompass"
+                android:textSize="40dp"
+                android:textStyle="bold|italic"
+                android:textAlignment="center"
+                android:textColor="#229aca">
+
+            </TextView>
+        </TableRow>
+
+        <TableRow
             android:id="@+id/rowArtists" >
 
             <TextView

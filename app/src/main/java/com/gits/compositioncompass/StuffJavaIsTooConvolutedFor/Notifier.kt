@@ -9,10 +9,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat.getSystemService
+import com.gits.compositioncompass.Configuration.CompositionCompassOptions
 import com.gits.compositioncompass.R
 import java.util.*
 
-class Notifier(var activity: AppCompatActivity, private val appName: String) {
+class Notifier(private val options: CompositionCompassOptions, private val activity: Activity) {
 
     private var id: String
 
@@ -39,8 +40,8 @@ class Notifier(var activity: AppCompatActivity, private val appName: String) {
         // Create the NotificationChannel, but only on API 26+ because
         // the NotificationChannel class is new and not in the support library
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = appName
-            val descriptionText = "Notifications for $appName"
+            val name = options.appName
+            val descriptionText = "Notifications for ${options.appName}"
             val importance = NotificationManager.IMPORTANCE_DEFAULT
             val channel = NotificationChannel(id, name, importance).apply {
                 description = descriptionText

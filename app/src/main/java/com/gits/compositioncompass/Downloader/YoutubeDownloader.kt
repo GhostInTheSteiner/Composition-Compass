@@ -1,6 +1,7 @@
 package com.gits.compositioncompass.Downloader
 
 import DownloadFolder
+import android.app.Activity
 import com.gits.compositioncompass.Models.SearchQuery
 import com.gits.compositioncompass.Models.TargetDirectory
 import com.gits.compositioncompass.Configuration.CompositionCompassOptions
@@ -12,21 +13,21 @@ import kotlinx.coroutines.*
 import java.io.File
 
 class YoutubeDownloader {
-    private var application: Application
+    private var activity: Activity
     private var options: CompositionCompassOptions
     private var dl: YoutubeDL
     private var ffmpeg: FFmpeg
     private var jobs: List<Job>
 
-    constructor(options: CompositionCompassOptions, application: Application) {
+    constructor(options: CompositionCompassOptions, activity: Activity) {
         this.options = options
-        this.application = application
+        this.activity = activity
 
         dl = YoutubeDL.getInstance()
-        dl.init(application)
+        dl.init(activity)
 
         ffmpeg = FFmpeg.getInstance()
-        ffmpeg.init(application)
+        ffmpeg.init(this.activity)
 
         jobs = listOf()
     }
@@ -82,7 +83,7 @@ class YoutubeDownloader {
     }
     
     fun update() {
-        dl.updateYoutubeDL(application);
+        dl.updateYoutubeDL(activity);
     }
 
     private fun runYoutubeDL(searchQuery: String, directory: String, onUpdate: (Float) -> Unit, onFailure: (Exception) -> Unit) {

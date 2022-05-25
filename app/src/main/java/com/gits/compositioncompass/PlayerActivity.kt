@@ -48,10 +48,8 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
         binding = ActivityPlayerBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        composition = CompositionRoot.getInstance()
-
-        val notifier = composition.notifier(this);
-        logger = composition.logger(notifier)
+        composition = CompositionRoot.getInstance(this)
+        logger = composition.logger(this)
 
         try {
             val automated = composition.options.rootDirectory + "/" + composition.options.automatedDirectory

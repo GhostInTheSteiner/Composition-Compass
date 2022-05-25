@@ -3,27 +3,39 @@ package com.gits.compositioncompass.Configuration
 import com.gits.compositioncompass.Queries.*
 import QueryMode
 import QuerySource
+import android.app.Activity
 import com.gits.compositioncompass.Downloader.YoutubeDownloader
-import android.app.Application
+import android.content.SharedPreferences
 import android.os.Environment
-import androidx.appcompat.app.AppCompatActivity
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.Logger
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.Notifier
-import java.io.File
+
+//CompositionRoot:  Configures its own components based on CompositionRootOptions
+//Activities:       Merely acquire a reference to CompositionRoot via getInstance()
+//                  Each Activity knows ALL functions the CompositionRoot offers
+//                  CompositionRoot itself is "passed down" to all Activities,
+//                  along with its contained CompositionRootOptions
+//
+//                  WE ACQUIRE A REFERENCE TO THE "BACK-END COMPOSITIONROOT" VIA getInstance()
+//                  AND PASS IT DOWN TO ALL ACTIVITIES / MASKS. THE FRONT-END CAN AND SHOULD HAVE
+//                  ITS OWN COMPOSITIONROOT. THE FRONT-END SHOULD MERELY "USE" THE BACK-END COMPOSITIONROOT,
+//                  BUT NOT BE A PART OF IT.
 
 class CompositionRoot {
 
+    val preferencesReader: SharedPreferences
+    var preferencesWriter: SharedPreferences.Editor
     val options: CompositionCompassOptions
     var query: IQuery //replaceable
     val downloader: YoutubeDownloader
-    val appName: String
 
-    private constructor(options: CompositionCompassOptions, application: Application) {
+    private constructor(options: CompositionCompassOptions, activity: Activity) {
         this.options = options
 
-        downloader = YoutubeDownloader(options, application)
+        downloader = YoutubeDownloader(options, activity)
         query = SpotifyQuery(options) //default query
-        appName = "Composition Compass"
+        preferencesReader = activity.getSharedPreferences(options.packageName, 0)
+        preferencesWriter = preferencesReader.edit();
     }
 
     fun changeQuerySource(source: QuerySource) {
@@ -40,28 +52,29 @@ class CompositionRoot {
         query.changeMode(mode)
     }
 
-    fun notifier(activity: AppCompatActivity) : Notifier {
-        return Notifier(activity, appName)
+    fun logger(activity: Activity) : Logger {
+        return Logger(options, Notifier(options, activity))
     }
 
-    fun logger(notifier: Notifier) : Logger {
-        return Logger(notifier, File(options.rootDirectory  + "/" + options.logName))
+    fun activity(activity: Activity) {
+
     }
 
     companion object {
         private var compositionRoot: CompositionRoot? = null
 
-        fun getInstance(application: Application): CompositionRoot {
-            val extStoragePath = Environment.getExternalStorageDirectory().absolutePath
-            val configFile = extStoragePath + "/Music/Pandora/config.ini"
-            val options = CompositionCompassOptions(configFile)
+        fun getInstance(activity: Activity): CompositionRoot {
+            if (compositionRoot == null) {
+                val extStoragePath = Environment.getExternalStorageDirectory().absolutePath
+                val configFile = extStoragePath + "/Music/Pandora/config.ini"
+                val options = CompositionCompassOptions(configFile, activity)
 
-            compositionRoot = compositionRoot ?: CompositionRoot(options, application)
-            return compositionRoot!!
-        }
+                return CompositionRoot(options, activity)
+            }
 
-        fun getInstance(): CompositionRoot {
-            return compositionRoot!!
+            else {
+                return compositionRoot!!
+            }
         }
     }
 }

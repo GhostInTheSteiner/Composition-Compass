@@ -1,8 +1,11 @@
 package com.gits.compositioncompass.Configuration
 
+import android.app.Activity
+import android.app.Application
 import java.io.File
 
 class CompositionCompassOptions {
+    private var activity: Activity
     private var configFile: File
     private var options: MutableMap<String, Object>
 
@@ -37,6 +40,10 @@ class CompositionCompassOptions {
     var appName: String
         get() = options[::appName.name] as String
         set(value) { options[::appName.name] = value as Object }
+
+    var packageName: String
+        get() = options[::packageName.name] as String
+        set(value) { options[::packageName.name] = value as Object }
 
     var logName: String
         get() = options[::logName.name] as String
@@ -76,9 +83,10 @@ class CompositionCompassOptions {
 
     var exceptionsList: List<String> = listOf()
 
-    constructor(filePath: String) {
-        configFile = File(filePath)
-        options = loadDefaults()
+    constructor(filePath: String, activity: Activity) {
+        this.configFile = File(filePath)
+        this.activity = activity
+        this.options = loadDefaults()
 
         File(configFile.parent).mkdirs()
 
@@ -104,6 +112,7 @@ class CompositionCompassOptions {
         options_[::resourcesDirectory.name] = "!resources" as Object
 
         options_[::appName.name] = "Composition Compass" as Object
+        options_[::packageName.name] = activity.packageName as Object
         options_[::logName.name] = "error.log" as Object
 
         options_[::spotifyClientSecret.name] = "" as Object

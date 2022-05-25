@@ -5,6 +5,7 @@ import android.os.Environment
 import com.gits.compositioncompass.BuildConfig
 import java.io.File
 
+//instantiates a normal File() with a full file path, in case a scoped storage path is used
 class LocalFile(path: String) : File(getPath(path)) {
 
     var originalPath: String = ""
