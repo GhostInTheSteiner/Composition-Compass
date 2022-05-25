@@ -34,6 +34,14 @@ class CompositionCompassOptions {
         get() = options[::resourcesDirectory.name] as String
         set(value) { options[::resourcesDirectory.name] = value as Object }
 
+    var appName: String
+        get() = options[::appName.name] as String
+        set(value) { options[::appName.name] = value as Object }
+
+    var logName: String
+        get() = options[::logName.name] as String
+        set(value) { options[::logName.name] = value as Object }
+
     var maxParallelDownloads: Int
         get() = options[::maxParallelDownloads.name] as Int
         set(value) { options[::maxParallelDownloads.name] = value as Object }
@@ -94,6 +102,9 @@ class CompositionCompassOptions {
         options_[::tempDirectory.name] = "!temporary" as Object
         options_[::automatedDirectory.name] = "!automated" as Object
         options_[::resourcesDirectory.name] = "!resources" as Object
+
+        options_[::appName.name] = "Composition Compass" as Object
+        options_[::logName.name] = "composition-compass.log" as Object
 
         options_[::spotifyClientSecret.name] = "" as Object
         options_[::spotifyClientId.name] = "" as Object

@@ -3,11 +3,13 @@ package com.gits.compositioncompass.Configuration
 import com.gits.compositioncompass.Queries.*
 import QueryMode
 import QuerySource
-import android.app.Activity
 import com.gits.compositioncompass.Downloader.YoutubeDownloader
 import android.app.Application
 import android.os.Environment
+import androidx.appcompat.app.AppCompatActivity
+import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.Logger
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.Notifier
+import java.io.File
 
 class CompositionRoot {
 
@@ -16,9 +18,9 @@ class CompositionRoot {
     val downloader: YoutubeDownloader
     val appName: String
 
-    private constructor(options: CompositionCompassOptions, activity: Activity, application: Application) {
+    private constructor(options: CompositionCompassOptions, application: Application) {
         this.options = options
-        
+
         downloader = YoutubeDownloader(options, application)
         query = SpotifyQuery(options) //default query
         appName = "Composition Compass"
@@ -38,19 +40,23 @@ class CompositionRoot {
         query.changeMode(mode)
     }
 
-    fun notifier(activity: Activity) : Notifier {
+    fun notifier(activity: AppCompatActivity) : Notifier {
         return Notifier(activity, appName)
+    }
+
+    fun logger(notifier: Notifier) : Logger {
+        return Logger(notifier, File(options.rootDirectory  + "/" + options.logName))
     }
 
     companion object {
         private var compositionRoot: CompositionRoot? = null
 
-        fun getInstance(activity: Activity, application: Application): CompositionRoot {
+        fun getInstance(application: Application): CompositionRoot {
             val extStoragePath = Environment.getExternalStorageDirectory().absolutePath
             val configFile = extStoragePath + "/Music/Pandora/config.ini"
             val options = CompositionCompassOptions(configFile)
 
-            compositionRoot = compositionRoot ?: CompositionRoot(options, activity, application)
+            compositionRoot = compositionRoot ?: CompositionRoot(options, application)
             return compositionRoot!!
         }
 

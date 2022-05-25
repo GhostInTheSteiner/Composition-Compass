@@ -12,7 +12,7 @@ import androidx.core.content.ContextCompat.getSystemService
 import com.gits.compositioncompass.R
 import java.util.*
 
-class Notifier(var activity: Activity, private val appName: String) {
+class Notifier(var activity: AppCompatActivity, private val appName: String) {
 
     private var id: String
 

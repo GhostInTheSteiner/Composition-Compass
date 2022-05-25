@@ -37,6 +37,9 @@ import java.io.File
 import java.util.*
 import android.app.AlertDialog
 import com.gits.compositioncompass.Models.TargetDirectory
+import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.Logger
+import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.Notifier
+import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.PermissionManager
 import com.gits.compositioncompass.ui.controls.InstantMultiAutoCompleteTextView
 import com.gits.compositioncompass.ui.controls.SpinnerItem
 import kotlin.Exception
@@ -44,6 +47,7 @@ import kotlin.Exception
 
 class MainActivity : AppCompatActivity() {
 
+    private lateinit var logger: Logger
     private lateinit var queryParameters: List<InstantMultiAutoCompleteTextView>
     private lateinit var info: TextView
     private lateinit var error: TextView
@@ -72,12 +76,17 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         try {
+            val permissions = PermissionManager(this)
+
+            val storage = permissions.requestStorageLegacy()
+
             super.onCreate(savedInstanceState)
 
             notificationChannelId = createNotificationChannel("composition-compass")
-            requestPerms()
 
-            composition = CompositionRoot.getInstance(this, application)
+            composition = CompositionRoot.getInstance(application)
+            logger = composition.logger(composition.notifier(this))
+
 
             jobsDownload = listOf()
 
@@ -161,17 +170,6 @@ class MainActivity : AppCompatActivity() {
         return id
     }
 
-    private fun requestPerms() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), 1);
-        }
-
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 1);
-        }
-    }
-
-
     private fun prepareView() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -221,12 +219,12 @@ class MainActivity : AppCompatActivity() {
         mode.setSelection(
             mode.getItem<SpinnerItem> {
                 it.id == QueryMode.valueOf(
-                    preferences.getString("view:" + mode.id, QueryMode.SimilarTracks.name))})
+                    preferences.getString("view:" + mode.id, QueryMode.SimilarTracks.name) ?: "")})
 
         source.setSelection(
             source.getItem<SpinnerItem> {
                 it.id == QuerySource.valueOf(
-                    preferences.getString("view:" + source.id, QuerySource.Spotify.name))})
+                    preferences.getString("view:" + source.id, QuerySource.Spotify.name) ?: "")})
 
         //because Google's implementation for the gui-xml is incomplete...
         mode.registerEventHandler(spinner_onItemSelected = this::mode_OnItemSelected)
@@ -565,7 +563,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun exceptionHandler() =
-        CoroutineExceptionHandler { context, throwable -> runOnUiThread { unlockDownload() }; printError(throwable) }
+        CoroutineExceptionHandler { context, throwable ->
+            runOnUiThread { unlockDownload() };
+            printError(throwable)
+        }
 
     fun unlockDownload() {
         download.text = downloadLabel
@@ -574,11 +575,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun printError(e: Throwable) {
-        runOnUiThread { error.text = getErrorMessage(e.message ?: "Unknown cause", e.stackTraceToString()) }
+        runOnUiThread {
+            error.text = getErrorMessage(e.message ?: "Unknown cause", e.stackTraceToString())
+            logger.error(Exception(e.message, e.cause))
+        }
     }
 
     fun printError(e: Exception) {
-        runOnUiThread { error.text = getErrorMessage(e.message ?: "Unknown cause", e.stackTraceToString()) }
+        runOnUiThread {
+            error.text = getErrorMessage(e.message ?: "Unknown cause", e.stackTraceToString())
+            logger.error(e)
+        }
     }
 
     fun getErrorMessage(message: String, trace: String) =

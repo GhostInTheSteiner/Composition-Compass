@@ -7,48 +7,65 @@ import android.view.KeyEvent
 import android.view.View
 import android.widget.Button
 import android.widget.CheckBox
+import androidx.activity.result.ActivityResult
 import androidx.appcompat.app.AppCompatActivity
+import com.arges.sepan.argmusicplayer.Callbacks.OnErrorListener
 import com.arges.sepan.argmusicplayer.Callbacks.OnPlaylistAudioChangedListener
+import com.arges.sepan.argmusicplayer.Enums.ErrorType
 import com.arges.sepan.argmusicplayer.Models.ArgAudio
 import com.arges.sepan.argmusicplayer.Models.ArgAudioList
 import com.arges.sepan.argmusicplayer.PlayerViews.ArgPlayerFullScreenView
 import com.gits.compositioncompass.Configuration.CompositionRoot
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.ItemPicker
+import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.LocalFile
+import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.Logger
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.Notifier
 import com.gits.compositioncompass.databinding.ActivityPlayerBinding
 import vibrateLong
 import java.io.File
 
 
-class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener {
+class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnErrorListener {
     private var targetLike: String = ""
     private var targetDislike: String = ""
     private var currentAudio: ArgAudio? = null
+    private lateinit var source: ItemPicker
     private lateinit var vibrator: Vibrator
     private lateinit var player: ArgPlayerFullScreenView
     private lateinit var binding: ActivityPlayerBinding
     private lateinit var playerControls: List<View>
     private lateinit var composition: CompositionRoot
+    private lateinit var logger: Logger
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         binding = ActivityPlayerBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        composition = CompositionRoot.getInstance()
+
+        val notifier = composition.notifier(this);
+        logger = composition.logger(notifier)
+
+        try {
+            source = ItemPicker(this, ::sourceSuccess)
 //
 ////        val device = BluetoothDevice(this)
 ////        device.sendTextOverAVRCP()
 ////        device.artist = "test"
-//
-//        player = findViewById(R.id.argmusicplayer)
-//        player.setOnPlaylistAudioChangedListener(this)
-//
-//        playerControls = listOf(findViewById(R.id.like), findViewById(R.id.dislike))
 
-        vibrator = applicationContext.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            player = findViewById(R.id.argmusicplayer)
+            player.setOnPlaylistAudioChangedListener(this)
+            player.setOnErrorListener(this)
 
-        composition = CompositionRoot.getInstance()
-        composition.notifier(this).post(Exception("test"))
+            playerControls = listOf(findViewById(R.id.like), findViewById(R.id.dislike))
+
+            vibrator = applicationContext.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
+        catch (e: Exception) {
+            logger.error(e)
+        }
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
@@ -83,19 +100,12 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener {
 
     fun browse(view: View) {
         playerControls.forEach { it.isEnabled = false }
-
-        val picker = ItemPicker(this)
-        picker.folder(success = { path ->
-            loadFolder(path)
-            setTarget(path)
-            playerControls.forEach { it.isEnabled = true }
-//            player.playLoadedPlaylist()
-        })
+        source.folder()
     }
 
     private fun setTarget(path: String) {
-        val favorites = composition.options.automatedDirectory + "/Favorites"
-        val recylebin = composition.options.automatedDirectory + "/Recycle Bin"
+        val favorites = composition.options.rootDirectory + "/" + composition.options.automatedDirectory + "/Favorites"
+        val recylebin = composition.options.rootDirectory + "/" + composition.options.automatedDirectory + "/Recycle Bin"
 
         if (path.startsWith(favorites)) {
             targetLike = "$favorites/More Interesting"
@@ -110,19 +120,29 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener {
 
     private fun loadFolder(path: String) {
         val audioList = ArgAudioList(false)
-
-        File(path).listFiles().forEach {
+        LocalFile(path).listFiles().forEach {
             audioList.add(ArgAudio.createFromFilePath(
                 it.nameWithoutExtension.split(" - ")[0],
                 it.nameWithoutExtension.split(" - ")[1],
-                it.absolutePath))
+                it.originalPath))
         }
 
         player.loadPlaylist(audioList);
     }
 
+    private fun sourceSuccess(result: ActivityResult, file: File) {
+        val filePath = file.absolutePath
+        loadFolder(filePath)
+        setTarget(filePath)
+        playerControls.forEach { it.isEnabled = true }
+    }
+
     override fun onPlaylistAudioChanged(playlist: ArgAudioList?, currentAudioIndex: Int) {
         currentAudio = playlist?.get(currentAudioIndex)
+    }
+
+    override fun onError(errorType: ErrorType?, description: String?) {
+        TODO("Not yet implemented")
     }
 
 //    fun openActivityForResult() {
