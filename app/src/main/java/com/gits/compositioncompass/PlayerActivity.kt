@@ -14,6 +14,7 @@ import com.arges.sepan.argmusicplayer.Callbacks.OnPlaylistAudioChangedListener
 import com.arges.sepan.argmusicplayer.Enums.ErrorType
 import com.arges.sepan.argmusicplayer.Models.ArgAudio
 import com.arges.sepan.argmusicplayer.Models.ArgAudioList
+import com.arges.sepan.argmusicplayer.Models.ArgNotificationOptions
 import com.arges.sepan.argmusicplayer.PlayerViews.ArgPlayerFullScreenView
 import com.gits.compositioncompass.Configuration.CompositionRoot
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.ItemPicker
@@ -26,6 +27,10 @@ import java.io.File
 
 
 class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnErrorListener {
+    private var favorites: String = ""
+    private var recylebin: String = ""
+    private var favoritesMoreInteresting: String = ""
+    private var favoritesLessInteresting: String = ""
     private var targetLike: String = ""
     private var targetDislike: String = ""
     private var currentAudio: ArgAudio? = null
@@ -49,7 +54,17 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
         logger = composition.logger(notifier)
 
         try {
-            source = ItemPicker(this, ::sourceSuccess)
+            val automated = composition.options.rootDirectory + "/" + composition.options.automatedDirectory
+
+            recylebin = "$automated/Recycle Bin"
+            favorites = "$automated/Favorites"
+            favoritesMoreInteresting = "$favorites/More Interesting"
+            favoritesLessInteresting = "$favorites/Less Interesting"
+
+            listOf(recylebin, favorites, favoritesMoreInteresting, favoritesLessInteresting)
+                .forEach { File(it).mkdirs() }
+            
+            source = ItemPicker(this, ::sourceSuccess, ::sourceError)
 //
 ////        val device = BluetoothDevice(this)
 ////        device.sendTextOverAVRCP()
@@ -58,8 +73,10 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
             player = findViewById(R.id.argmusicplayer)
             player.setOnPlaylistAudioChangedListener(this)
             player.setOnErrorListener(this)
+            player.enableNotification(this)
 
             playerControls = listOf(findViewById(R.id.like), findViewById(R.id.dislike))
+            playerControls.forEach { it.isEnabled = false }
 
             vibrator = applicationContext.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         }
@@ -99,17 +116,14 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     }
 
     fun browse(view: View) {
-        playerControls.forEach { it.isEnabled = false }
         source.folder()
     }
 
     private fun setTarget(path: String) {
-        val favorites = composition.options.rootDirectory + "/" + composition.options.automatedDirectory + "/Favorites"
-        val recylebin = composition.options.rootDirectory + "/" + composition.options.automatedDirectory + "/Recycle Bin"
 
         if (path.startsWith(favorites)) {
-            targetLike = "$favorites/More Interesting"
-            targetDislike = "$favorites/Less Interesting"
+            targetLike = favoritesMoreInteresting
+            targetDislike = favoritesLessInteresting
         }
 
         else {
@@ -127,7 +141,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
                 it.originalPath))
         }
 
-        player.loadPlaylist(audioList);
+        player.playPlaylist(audioList)
     }
 
     private fun sourceSuccess(result: ActivityResult, file: File) {
@@ -137,12 +151,17 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
         playerControls.forEach { it.isEnabled = true }
     }
 
+
+    private fun sourceError(activityResult: ActivityResult) {
+        logger.error(Exception("Couldn't select folder: ${activityResult.resultCode}\n\n$activityResult"))
+    }
+
     override fun onPlaylistAudioChanged(playlist: ArgAudioList?, currentAudioIndex: Int) {
         currentAudio = playlist?.get(currentAudioIndex)
     }
 
     override fun onError(errorType: ErrorType?, description: String?) {
-        TODO("Not yet implemented")
+        logger.error(Exception("Error during playback: $errorType: $description"))
     }
 
 //    fun openActivityForResult() {

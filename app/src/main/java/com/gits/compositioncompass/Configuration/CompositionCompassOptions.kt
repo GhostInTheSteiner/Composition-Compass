@@ -104,7 +104,7 @@ class CompositionCompassOptions {
         options_[::resourcesDirectory.name] = "!resources" as Object
 
         options_[::appName.name] = "Composition Compass" as Object
-        options_[::logName.name] = "composition-compass.log" as Object
+        options_[::logName.name] = "error.log" as Object
 
         options_[::spotifyClientSecret.name] = "" as Object
         options_[::spotifyClientId.name] = "" as Object
