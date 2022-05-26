@@ -1,43 +1,40 @@
 package com.gits.compositioncompass
 
-import com.gits.compositioncompass.Configuration.CompositionRoot
-import QuerySource
-import QueryMode
 import Fields
+import QueryMode
+import QuerySource
+import android.app.*
+import android.content.Context
+import android.content.Intent
+import android.content.SharedPreferences
+import android.net.Uri
+import android.os.Build
+import android.os.Bundle
+import android.view.View
+import android.view.inputmethod.InputMethodManager
+import android.widget.*
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.FileProvider
+import com.gits.compositioncompass.Configuration.CompositionRoot
+import com.gits.compositioncompass.Models.TargetDirectory
 import com.gits.compositioncompass.Queries.IFileQuery
 import com.gits.compositioncompass.Queries.IStreamingServiceQuery
 import com.gits.compositioncompass.Queries.IYoutubeQuery
-import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
-import android.view.View
-import com.gits.compositioncompass.databinding.ActivityMainBinding
-
-import hasUserContent
-import kotlinx.coroutines.*
-import android.app.NotificationChannel
-import android.content.SharedPreferences
-import android.widget.*
-import getItem
-import registerEventHandler
-import setSelection
-import android.view.inputmethod.InputMethodManager
-import androidx.core.app.NotificationCompat
-import android.app.NotificationManager
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import android.os.Build
-import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.FileProvider
-import java.io.File
-import java.util.*
-import android.app.AlertDialog
-import com.gits.compositioncompass.Models.TargetDirectory
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.Logger
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.PermissionManager
+import com.gits.compositioncompass.databinding.ActivityMainBinding
 import com.gits.compositioncompass.ui.controls.InstantMultiAutoCompleteTextView
 import com.gits.compositioncompass.ui.controls.SpinnerItem
-import kotlin.Exception
+import getItem
+import hasUserContent
+import kotlinx.coroutines.*
+import registerEventHandler
+import setSelection
+import java.io.File
+import java.util.*
+import kotlin.system.exitProcess
 
 
 class MainActivity : AppCompatActivity() {
@@ -591,8 +588,8 @@ class MainActivity : AppCompatActivity() {
                 message + System.lineSeparator() + System.lineSeparator() +
                 trace
 
-    fun closeApp() {
-        finishAffinity()
+    fun closeApp(view: View) {
+        exitProcess(0)
     }
 
     fun resetFormatting() {

@@ -88,10 +88,8 @@ fun String.contains(s: String, ignoreCase: Boolean, ignoreSpecialChars: Boolean)
     else
         this.contains(s, ignoreCase)
 
-fun Vibrator.vibrateLong() {
-    if (Build.VERSION.SDK_INT >= 26) {
-        this.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE))
-    } else {
-        this.vibrate(500)
-    }
-}
+fun Vibrator.vibrateLong() =
+    this.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE))
+
+fun Vibrator.vibrateVeryLong() =
+    this.vibrate(VibrationEffect.createOneShot(1000, VibrationEffect.DEFAULT_AMPLITUDE))
