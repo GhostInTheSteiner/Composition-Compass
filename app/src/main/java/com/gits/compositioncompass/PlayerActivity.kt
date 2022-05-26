@@ -1,6 +1,7 @@
 package com.gits.compositioncompass
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.media.AudioManager
 import android.os.Bundle
 import android.os.PowerManager
@@ -37,6 +38,8 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     private var targetLike: String = ""
     private var targetDislike: String = ""
     private var currentAudio: ArgAudio? = null
+    private lateinit var preferencesReader: SharedPreferences
+    private lateinit var preferencesWriter: SharedPreferences.Editor
     private lateinit var wakeLock: PowerManager.WakeLock
     private lateinit var powerManager: PowerManager
     private lateinit var audioManager: AudioManager
@@ -69,6 +72,9 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
         logger = composition.logger
 
         try {
+            preferencesWriter = composition.preferencesWriter
+            preferencesReader = composition.preferencesReader
+
             val automated = composition.options.rootDirectory + "/" + composition.options.automatedDirectory
 
             recylebin = "$automated/Recycle Bin"
@@ -85,14 +91,6 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
 ////        device.sendTextOverAVRCP()
 ////        device.artist = "test"
 
-            player = findViewById(R.id.argmusicplayer)
-            player.setOnPlaylistAudioChangedListener(this)
-            player.setOnErrorListener(this)
-            player.enableNotification(this)
-
-            val triggers = findViewById<CheckBox>(R.id.volume_button_triggers)
-            triggers.setOnCheckedChangeListener(this)
-
             playerControls = listOf(findViewById(R.id.like), findViewById(R.id.dislike))
             playerControls.forEach { it.isEnabled = false }
 
@@ -103,6 +101,16 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
             wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyApp::MyWakelockTag");
             wakeLock.acquire()
 
+            player = findViewById(R.id.argmusicplayer)
+            player.setOnPlaylistAudioChangedListener(this)
+            player.setOnErrorListener(this)
+            player.enableNotification(this)
+
+            val triggers = findViewById<CheckBox>(R.id.volume_button_triggers)
+            triggers.setOnCheckedChangeListener(this)
+
+            val triggersValue = preferencesReader.getBoolean("view:${triggers.id}", false)
+            triggers.isChecked = triggersValue
         }
         catch (e: Exception) {
             logger.error(e)
@@ -252,6 +260,9 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
                 //so we hear the audio on the bluetooth receiver (usually a car radio)
                 if (checked) unmute()
                 else mute()
+
+                preferencesWriter.putBoolean("view:${R.id.volume_button_triggers}", checked)
+                preferencesWriter.apply()
             }
         }
     }
