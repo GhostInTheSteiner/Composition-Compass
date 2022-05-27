@@ -202,7 +202,7 @@
                     android:layout_marginRight="10px"
                     android:id="@+id/update"
                     android:onClick="updateYoutubeDL"
-                    android:textSize="10dp"
+                    android:textSize="9dp"
                     android:text="Update YoutubeDL"
                     android:textColor="@color/white"
                     android:backgroundTint="#229aca"

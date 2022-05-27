@@ -1,15 +1,19 @@
 package com.gits.compositioncompass
 
+import QuerySource
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.media.AudioManager
 import android.os.Bundle
 import android.os.PowerManager
 import android.os.Vibrator
+import android.text.method.ScrollingMovementMethod
 import android.view.KeyEvent
 import android.view.View
 import android.widget.CheckBox
 import android.widget.CompoundButton
+import android.widget.EditText
 import android.widget.TextView
 import androidx.activity.result.ActivityResult
 import androidx.appcompat.app.AppCompatActivity
@@ -18,15 +22,14 @@ import com.arges.sepan.argmusicplayer.Callbacks.OnPlaylistAudioChangedListener
 import com.arges.sepan.argmusicplayer.Enums.ErrorType
 import com.arges.sepan.argmusicplayer.Models.ArgAudio
 import com.arges.sepan.argmusicplayer.Models.ArgAudioList
-import com.arges.sepan.argmusicplayer.PlayerViews.ArgPlayerFullScreenView
 import com.arges.sepan.argmusicplayer.PlayerViews.ArgPlayerLargeView
 import com.gits.compositioncompass.Configuration.CompositionRoot
 import com.gits.compositioncompass.Queries.LastFMQuery
+import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.BluetoothDevice
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.ItemPicker
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.LocalFile
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.Logger
 import com.gits.compositioncompass.databinding.ActivityPlayerBinding
-import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.newSingleThreadContext
@@ -98,10 +101,6 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
                 .forEach { File(it).mkdirs() }
 
             source = ItemPicker(this, ::sourceSuccess, ::sourceError)
-//
-////        val device = BluetoothDevice(this)
-////        device.sendTextOverAVRCP()
-////        device.artist = "test"
 
             playerControls = listOf(findViewById(R.id.like), findViewById(R.id.dislike))
             playerControls.forEach { it.isEnabled = false }
@@ -122,10 +121,15 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
             player.enableNotification(this)
 
             val triggers = findViewById<CheckBox>(R.id.volume_button_triggers)
-            triggers.setOnCheckedChangeListener(this)
-
             val triggersValue = preferencesReader.getBoolean("view:${triggers.id}", false)
+            val description = findViewById<EditText>(R.id.description)
+
+            triggers.setOnCheckedChangeListener(this)
             triggers.isChecked = triggersValue
+
+            description.setVerticalScrollBarEnabled(true)
+            description.setMovementMethod(ScrollingMovementMethod())
+
         } catch (e: Exception) {
             logger.error(e)
         }
@@ -292,6 +296,29 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
                 preferencesWriter.putBoolean("view:${R.id.volume_button_triggers}", checked)
                 preferencesWriter.apply()
             }
+        }
+    }
+
+    fun testAVRCP1(view: View) {
+        try {
+            val device = BluetoothDevice(this)
+            device.sendTextOverAVRCP()
+        }
+        catch (e: Exception) {
+            logger.error(e)
+        }
+    }
+
+    fun testAVRCP2(view: View) {
+        try {
+            val avrcp = Intent("com.android.music.metachanged")
+            avrcp.putExtra("track", "song title")
+            avrcp.putExtra("artist", "artist name")
+            avrcp.putExtra("album", "album name")
+            applicationContext.sendBroadcast(avrcp)
+        }
+        catch (e: Exception) {
+            logger.error(e)
         }
     }
 }

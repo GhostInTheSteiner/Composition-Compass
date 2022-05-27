@@ -24,12 +24,17 @@
                 android:text="Description   "
                 android:textStyle="bold|italic"
                 android:textSize="20dp"></TextView>
-            <EditText
+            <ScrollView
+                android:fillViewport="true"
                 android:layout_weight="10"
-                android:layout_height="0dp"
                 android:layout_width="match_parent"
-                android:id="@+id/description"
-                style="@style/artistinfo"></EditText>
+                android:layout_height="0dp">
+                <EditText
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:id="@+id/description"
+                    style="@style/artistinfo"></EditText>
+            </ScrollView>
             <Space
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
@@ -100,7 +105,8 @@
             android:id="@+id/volume_button_triggers"
             android:text="Enable volume button triggers"
             android:layout_weight="1"
-            android:layout_height="0dp">
+            android:layout_height="0dp"
+            android:layout_marginLeft="10dp">
 
         </CheckBox>
     </LinearLayout>
