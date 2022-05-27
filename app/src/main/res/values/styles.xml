@@ -3,4 +3,19 @@
     <style name="margin_labels">
         <item name="android:layout_marginRight">20px</item>
     </style>
+    <style name="artistinfo">
+        <item name="android:focusable">false</item>
+        <item name="android:ellipsize">none</item>
+        <item name="android:singleLine">false</item>
+        <item name="android:gravity">top</item>
+        <item name="android:text">Select a folder to make this pane show artist information.</item>
+        <item name="android:background">@drawable/transparent</item>
+    </style>
+    <style name="playerbutton">
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_width">80dp</item>
+        <item name="android:layout_margin">5dp</item>
+        <item name="android:textSize">11dp</item>
+        <item name="android:padding">0dp</item>
+    </style>
 </resources>

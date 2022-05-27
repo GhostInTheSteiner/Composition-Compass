@@ -1,85 +1,107 @@
 <LinearLayout
-    android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:android="http://schemas.android.com/apk/res/android">
+    android:layout_width="match_parent"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal">
 
-    <TableLayout
-        android:gravity="bottom"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_margin="20px"
-        android:stretchColumns="1">
+        android:gravity="bottom"
+        android:orientation="vertical"
+        android:layout_margin="@dimen/activity_horizontal_margin">
 
-        <TableRow
-            android:layout_weight="1">
-
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_weight="7"
+            android:layout_height="0dp"
+            android:layout_width="match_parent">
             <TextView
-                android:layout_width="wrap_content"
-                android:text="Descritpion"
-                android:overScrollMode="always">
-            </TextView>
-        </TableRow>
-
-        <TableRow>
-
-            <com.arges.sepan.argmusicplayer.PlayerViews.ArgPlayerFullScreenView
-                android:id="@+id/argmusicplayer"
-                android:layout_width="wrap_content"
-                android:layout_height="414dp" />
-
-        </TableRow>
-
-        <TableRow>
-
-            <LinearLayout
+                android:layout_weight="1.4"
+                android:layout_height="0dp"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="horizontal"
-                android:gravity="center">
+                android:id="@+id/description_title"
+                android:text="Description   "
+                android:textStyle="bold|italic"
+                android:textSize="20dp"></TextView>
+            <EditText
+                android:layout_weight="10"
+                android:layout_height="0dp"
+                android:layout_width="match_parent"
+                android:id="@+id/description"
+                style="@style/artistinfo"></EditText>
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="0.5"></Space>
+            <TextView
+                android:layout_weight="0.9"
+                android:layout_height="0dp"
+                android:layout_width="match_parent"
+                android:id="@+id/genres_title"
+                android:text="Genres"
+                android:textStyle="bold|italic"
+                android:textSize="16dp"></TextView>
+            <EditText
+                android:layout_weight="1.5"
+                android:layout_height="0dp"
+                android:layout_width="match_parent"
+                android:id="@+id/genres"
+                android:textSize="14dp"
+                style="@style/artistinfo"></EditText>
+        </LinearLayout>
 
-                <Button
-                    android:id="@+id/browse"
-                    android:text="Browse"
-                    android:layout_height="wrap_content"
-                    android:layout_width="wrap_content"
-                    android:onClick="browse"
+
+        <com.arges.sepan.argmusicplayer.PlayerViews.ArgPlayerLargeView
+            android:id="@+id/argmusicplayer"
+            android:layout_width="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="2.8"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_weight="1"
+            android:paddingTop="10dp">
+
+            <Button
+                android:id="@+id/browse"
+                android:text="Browse"
+                style="@style/playerbutton"
+                android:onClick="browse"
+            />
+
+            <Button
+                android:id="@+id/dislike"
+                android:text="Dislike"
+                style="@style/playerbutton"
+                android:onClick="dislike"
                 />
 
-                <Button
-                    android:id="@+id/dislike"
-                    android:text="Dislike"
-                    android:layout_height="wrap_content"
-                    android:layout_width="wrap_content"
-                    android:onClick="dislike"
-                    />
+            <Button
+                android:id="@+id/like"
+                android:text="Like"
+                style="@style/playerbutton"
+                android:onClick="like"
+                />
 
-                <Button
-                    android:id="@+id/like"
-                    android:text="Like"
-                    android:layout_height="wrap_content"
-                    android:layout_width="wrap_content"
-                    android:onClick="like"
-                    />
+            <Button
+                android:id="@+id/close"
+                android:text="Close"
+                style="@style/playerbutton"
+                android:onClick="close"
+                />
+        </LinearLayout>
 
-                <Button
-                    android:id="@+id/close"
-                    android:text="Close"
-                    android:layout_height="wrap_content"
-                    android:layout_width="wrap_content"
-                    android:onClick="close"
-                    />
-            </LinearLayout>
+        <CheckBox
+            android:layout_width="match_parent"
+            android:id="@+id/volume_button_triggers"
+            android:text="Enable volume button triggers"
+            android:layout_weight="1"
+            android:layout_height="0dp">
 
-        </TableRow>
-
-        <TableRow>
-            <CheckBox
-                android:id="@+id/volume_button_triggers"
-                android:text="Enable volume button triggers">
-
-            </CheckBox>
-        </TableRow>
-
-        <TableRow android:minHeight="100dp"></TableRow>
-    </TableLayout>
+        </CheckBox>
+    </LinearLayout>
 </LinearLayout>

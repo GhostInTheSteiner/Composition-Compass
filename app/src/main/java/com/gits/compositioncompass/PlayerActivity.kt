@@ -10,6 +10,7 @@ import android.view.KeyEvent
 import android.view.View
 import android.widget.CheckBox
 import android.widget.CompoundButton
+import android.widget.TextView
 import androidx.activity.result.ActivityResult
 import androidx.appcompat.app.AppCompatActivity
 import com.arges.sepan.argmusicplayer.Callbacks.OnErrorListener
@@ -18,11 +19,17 @@ import com.arges.sepan.argmusicplayer.Enums.ErrorType
 import com.arges.sepan.argmusicplayer.Models.ArgAudio
 import com.arges.sepan.argmusicplayer.Models.ArgAudioList
 import com.arges.sepan.argmusicplayer.PlayerViews.ArgPlayerFullScreenView
+import com.arges.sepan.argmusicplayer.PlayerViews.ArgPlayerLargeView
 import com.gits.compositioncompass.Configuration.CompositionRoot
+import com.gits.compositioncompass.Queries.LastFMQuery
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.ItemPicker
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.LocalFile
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.Logger
 import com.gits.compositioncompass.databinding.ActivityPlayerBinding
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.newSingleThreadContext
 import vibrateLong
 import vibrateVeryLong
 import java.io.File
@@ -38,6 +45,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     private var targetLike: String = ""
     private var targetDislike: String = ""
     private var currentAudio: ArgAudio? = null
+    private lateinit var query: LastFMQuery
     private lateinit var preferencesReader: SharedPreferences
     private lateinit var preferencesWriter: SharedPreferences.Editor
     private lateinit var wakeLock: PowerManager.WakeLock
@@ -45,7 +53,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     private lateinit var audioManager: AudioManager
     private lateinit var source: ItemPicker
     private lateinit var vibrator: Vibrator
-    private lateinit var player: ArgPlayerFullScreenView
+    private lateinit var player: ArgPlayerLargeView
     private lateinit var binding: ActivityPlayerBinding
     private lateinit var playerControls: List<View>
     private lateinit var composition: CompositionRoot
@@ -75,7 +83,11 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
             preferencesWriter = composition.preferencesWriter
             preferencesReader = composition.preferencesReader
 
-            val automated = composition.options.rootDirectory + "/" + composition.options.automatedDirectory
+            val automated =
+                composition.options.rootDirectory + "/" + composition.options.automatedDirectory
+
+            composition.changeQuerySource(QuerySource.LastFM)
+            query = composition.query as LastFMQuery
 
             recylebin = "$automated/Recycle Bin"
             favorites = "$automated/Favorites"
@@ -95,10 +107,13 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
             playerControls.forEach { it.isEnabled = false }
 
             vibrator = applicationContext.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-            audioManager = applicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            powerManager = applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager
+            audioManager =
+                applicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            powerManager =
+                applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager
 
-            wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyApp::MyWakelockTag");
+            wakeLock =
+                powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyApp::MyWakelockTag");
             wakeLock.acquire()
 
             player = findViewById(R.id.argmusicplayer)
@@ -111,14 +126,16 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
 
             val triggersValue = preferencesReader.getBoolean("view:${triggers.id}", false)
             triggers.isChecked = triggersValue
-        }
-        catch (e: Exception) {
+        } catch (e: Exception) {
             logger.error(e)
         }
     }
 
-    override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean = onKeyPress(keyCode, event, false)
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean = onKeyPress(keyCode, event, true)
+    override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean =
+        onKeyPress(keyCode, event, false)
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean =
+        onKeyPress(keyCode, event, true)
 
     fun onKeyPress(keyCode: Int, event: KeyEvent?, keyDown: Boolean): Boolean {
         val keyUp = !keyDown
@@ -138,9 +155,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
                 }
 
                 return true
-            }
-
-            else if (keyUp && keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+            } else if (keyUp && keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
                 if (ignoreUp) ignoreUp = false
                 else {
                     unmute() //station is closed anyway, no reason to restore previous volume
@@ -149,17 +164,13 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
                 }
 
                 return true
-            }
-
-            else if (keyDown && keyCode == KeyEvent.KEYCODE_VOLUME_UP && event!!.repeatCount == 5) {
+            } else if (keyDown && keyCode == KeyEvent.KEYCODE_VOLUME_UP && event!!.repeatCount == 5) {
                 ignoreUp = true
                 unmute()
                 // like(findViewById(R.id.like), true)
                 vibrator.vibrateLong()
                 return true
-            }
-
-            else if (keyDown && keyCode == KeyEvent.KEYCODE_VOLUME_DOWN && event!!.repeatCount == 5) {
+            } else if (keyDown && keyCode == KeyEvent.KEYCODE_VOLUME_DOWN && event!!.repeatCount == 5) {
                 ignoreUp = true
                 close()
                 vibrator.vibrateVeryLong()
@@ -195,17 +206,18 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
         finish()
     }
 
-    private fun mute() = audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, AudioManager.FLAG_SHOW_UI)
-    private fun unmute() = audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 4, AudioManager.FLAG_SHOW_UI)
+    private fun mute() =
+        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, AudioManager.FLAG_SHOW_UI)
+
+    private fun unmute() =
+        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 4, AudioManager.FLAG_SHOW_UI)
 
     private fun setTarget(path: String) {
 
         if (path.startsWith(favorites)) {
             targetLike = favoritesMoreInteresting
             targetDislike = favoritesLessInteresting
-        }
-
-        else {
+        } else {
             targetLike = favorites
             targetDislike = recylebin
         }
@@ -214,10 +226,13 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     private fun playFolder(path: String) {
         val audioList = ArgAudioList(false)
         LocalFile(path).listFiles().forEach {
-            audioList.add(ArgAudio.createFromFilePath(
-                it.nameWithoutExtension.split(" - ").first(),
-                it.nameWithoutExtension.split(" - ").last(),
-                it.originalPath))
+            audioList.add(
+                ArgAudio.createFromFilePath(
+                    it.nameWithoutExtension.split(" - ").first(),
+                    it.nameWithoutExtension.split(" - ").last(),
+                    it.originalPath
+                )
+            )
         }
 
         player.playPlaylist(audioList)
@@ -248,6 +263,19 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
 
     override fun onPlaylistAudioChanged(playlist: ArgAudioList?, currentAudioIndex: Int) {
         currentAudio = playlist?.get(currentAudioIndex)
+
+        GlobalScope.launch(newSingleThreadContext("search-artist")) {
+            try {
+                query.searchArtist(currentAudio!!.singer, true).first().let {
+                    findViewById<TextView>(R.id.description_title).text = it.name
+                    findViewById<TextView>(R.id.description).text = it.biography
+                    findViewById<TextView>(R.id.genres).text = it.genres.joinToString()
+                }
+            }
+            catch (e: Exception) {
+                logger.error(e)
+            }
+        }
     }
 
     override fun onError(errorType: ErrorType?, description: String?) {
@@ -266,19 +294,4 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
             }
         }
     }
-
-
-
-//    fun openActivityForResult() {
-//        startForResult.launch(Intent(this, AnotherActivity::class.java))
-//    }
-//
-//    val startForResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-//            result: ActivityResult ->
-//        if (result.resultCode == Activity.RESULT_OK) {
-//            val intent = result.data
-//            // Handle the Intent
-//            //do stuff here
-//        }
-//    }
 }

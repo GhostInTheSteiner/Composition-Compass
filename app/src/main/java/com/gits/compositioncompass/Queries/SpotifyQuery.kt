@@ -52,7 +52,7 @@ class SpotifyQuery: IStreamingServiceQuery, Query {
         api = api ?: apiBuilder.build()
     }
 
-    override suspend fun searchArtist(name: String): List<ArtistItem> {
+    override suspend fun searchArtist(name: String, completeData: Boolean): List<ArtistItem> {
         val list = mutableListOf<ArtistItem>()
         val artists =
             if (name == "") null

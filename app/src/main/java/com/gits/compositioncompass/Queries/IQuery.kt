@@ -23,7 +23,7 @@ interface IQuery {
 
 //Spotify / LastFM
 interface IStreamingServiceQuery: IQuery {
-    suspend fun searchArtist(name: String) : List<ArtistItem>
+    suspend fun searchArtist(name: String, completeData: Boolean = false) : List<ArtistItem>
     suspend fun searchTrack(name: String, artist: String, album: String) : List<TrackItem>
     suspend fun searchAlbum(name: String, artist: String) : List<AlbumItem>
     suspend fun searchGenre(name: String, artist: String = "") : List<String>

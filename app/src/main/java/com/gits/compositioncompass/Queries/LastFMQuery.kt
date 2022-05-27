@@ -45,7 +45,7 @@ class LastFMQuery
         addedAlbums = mutableListOf()
     }
 
-    override suspend fun searchArtist(name: String): List<ArtistItem> {
+    override suspend fun searchArtist(name: String, completeData: Boolean): List<ArtistItem> {
         val params = mutableListOf(
             "method", "artist.search",
             "artist", name,
@@ -54,6 +54,18 @@ class LastFMQuery
 
         val json = sendRequest(params)
 
+        var biography = ""
+        var genres = listOf<String>()
+
+        if (completeData) {
+            val info = getArtistInfo(name)
+            val tags = info.getJSONObject("artist").getJSONObject("tags")
+            val bio = info.getJSONObject("artist").getJSONObject("bio")
+            val content = bio.getString("content")
+            genres = tags.getJSONArray("tag").toList<JSONObject>().map { it.getString("name") }
+            biography = content.split("<a ").first()
+        }
+
         val artists = json
             .getJSONObject("results")
             .getJSONObject("artistmatches")
@@ -61,7 +73,8 @@ class LastFMQuery
             .toList<JSONObject>()
             .map {
                 ArtistItem(getId(), it.getString("name"),
-                    popularity = it.getString("listeners").toInt())}
+                    popularity = it.getString("listeners").toInt(),
+                    genres = genres, biography = biography)}
 
         return artists
     }
