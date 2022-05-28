@@ -48,6 +48,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     private var targetLike: String = ""
     private var targetDislike: String = ""
     private var currentAudio: ArgAudio? = null
+    private var audioList: ArgAudioList = ArgAudioList(false)
     private lateinit var query: LastFMQuery
     private lateinit var preferencesReader: SharedPreferences
     private lateinit var preferencesWriter: SharedPreferences.Editor
@@ -153,48 +154,62 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
                 unmute() //station still open, restore previous volume
 
                 if (ignoreUp) ignoreUp = false
-                else {
-                    // like(findViewById(R.id.like))
-                    vibrator.vibrateLong()
-                }
+                else like(findViewById(R.id.like))
 
                 return true
+
             } else if (keyUp && keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
                 if (ignoreUp) ignoreUp = false
                 else {
                     unmute() //station is closed anyway, no reason to restore previous volume
-                    // dislike(findViewById(R.id.dislike))
-                    vibrator.vibrateLong()
+                    dislike(findViewById(R.id.dislike))
                 }
 
                 return true
+
             } else if (keyDown && keyCode == KeyEvent.KEYCODE_VOLUME_UP && event!!.repeatCount == 5) {
                 ignoreUp = true
                 unmute()
-                // like(findViewById(R.id.like), true)
-                vibrator.vibrateLong()
+                like(findViewById(R.id.like), true)
+
                 return true
+
             } else if (keyDown && keyCode == KeyEvent.KEYCODE_VOLUME_DOWN && event!!.repeatCount == 5) {
                 ignoreUp = true
                 close()
-                vibrator.vibrateVeryLong()
+
                 return true
+
             }
         }
 
         return false
     }
 
-    fun like(view: View) {
+    fun like(view: View) = like(view, false)
+
+    fun like(view: View, toMoreInteresting: Boolean = false) {
         val source = File(currentAudio!!.path)
-        val target = File("$targetLike/${source.name}")
-        source.renameTo(target)
+        val target =
+            if (toMoreInteresting)
+                File("$favoritesMoreInteresting/${source.name}")
+            else
+                File("$targetLike/${source.name}")
+
+        if (source.renameTo(target))
+            vibrator.vibrateLong()
+
+        player.seekTo(player.duration.toInt())
     }
 
     fun dislike(view: View) {
         val source = File(currentAudio!!.path)
         val target = File("$targetDislike/${source.name}")
-        source.renameTo(target)
+
+        if (source.renameTo(target))
+            vibrator.vibrateLong()
+
+        player.seekTo(player.duration.toInt())
     }
 
     fun browse(view: View) {
@@ -207,6 +222,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
         mute()
         player.stop()
         wakeLock.release()
+        vibrator.vibrateVeryLong()
         finish()
     }
 
@@ -228,7 +244,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     }
 
     private fun playFolder(path: String) {
-        val audioList = ArgAudioList(false)
+        audioList = ArgAudioList(false)
         LocalFile(path).listFiles().forEach {
             audioList.add(
                 ArgAudio.createFromFilePath(
@@ -277,7 +293,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
                 }
             }
             catch (e: Exception) {
-                logger.error(e)
+                logger.warn(e)
             }
         }
     }

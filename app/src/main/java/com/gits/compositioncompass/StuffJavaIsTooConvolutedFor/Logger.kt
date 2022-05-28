@@ -16,4 +16,8 @@ class Logger(private val options: CompositionCompassOptions, private val notifie
         notifier.post(e)
         file.appendText(e.toString() + "\n\n" +  e.stackTraceToString() + "\n\n")
     }
+
+    fun warn(e: Exception) {
+        file.appendText(e.toString() + "\n\n" +  e.stackTraceToString() + "\n\n")
+    }
 }
