@@ -46,7 +46,7 @@ class CompositionRoot {
         query = SpotifyQuery(options) //default query
     }
 
-    //dependant on activity (need to be re-instantiated once activity changes)
+    //dependant on activity (need to be re-instantiated or updated once activity changes)
     private fun initWithActivity(options: CompositionCompassOptions, activity: Activity) {
         downloader = YoutubeDownloader(options, activity)
         logger = Logger(options, Notifier(options, activity))

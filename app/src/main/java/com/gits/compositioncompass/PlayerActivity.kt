@@ -2,6 +2,7 @@ package com.gits.compositioncompass
 
 import QuerySource
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
 import android.media.AudioManager
@@ -16,8 +17,10 @@ import android.widget.CompoundButton
 import android.widget.EditText
 import android.widget.TextView
 import androidx.activity.result.ActivityResult
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.arges.sepan.argmusicplayer.Callbacks.OnErrorListener
+import com.arges.sepan.argmusicplayer.Callbacks.OnPlayingListener
 import com.arges.sepan.argmusicplayer.Callbacks.OnPlaylistAudioChangedListener
 import com.arges.sepan.argmusicplayer.Enums.ErrorType
 import com.arges.sepan.argmusicplayer.Models.ArgAudio
@@ -31,6 +34,7 @@ import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.LocalFile
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.Logger
 import com.gits.compositioncompass.databinding.ActivityPlayerBinding
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.newSingleThreadContext
 import vibrateLong
@@ -39,7 +43,9 @@ import java.io.File
 
 
 class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnErrorListener,
-    CompoundButton.OnCheckedChangeListener {
+    CompoundButton.OnCheckedChangeListener, DialogInterface.OnClickListener {
+    private var playerValue: String = ""
+    private var triggersValue: Boolean = false
     private var ignoreUp: Boolean = false
     private var favorites: String = ""
     private var recylebin: String = ""
@@ -108,20 +114,34 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
             vibrator = applicationContext.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
             audioManager = applicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
-            player = findViewById(R.id.argmusicplayer)
+            //get views
+            player = findViewById<ArgPlayerLargeView>(R.id.argmusicplayer)
+            val triggers = findViewById<CheckBox>(R.id.volume_button_triggers)
+            val description = findViewById<EditText>(R.id.description)
+
+            //get preferences
+            triggersValue = preferencesReader.getBoolean("view:${triggers.id}", false)
+            playerValue = preferencesReader.getString("view:${player.id}", "")!!
+
             player.setOnPlaylistAudioChangedListener(this)
             player.setOnErrorListener(this)
             player.enableNotification(this)
-
-            val triggers = findViewById<CheckBox>(R.id.volume_button_triggers)
-            val triggersValue = preferencesReader.getBoolean("view:${triggers.id}", false)
-            val description = findViewById<EditText>(R.id.description)
 
             triggers.setOnCheckedChangeListener(this)
             triggers.isChecked = triggersValue
 
             description.setVerticalScrollBarEnabled(true)
             description.setMovementMethod(ScrollingMovementMethod())
+
+            if (playerValue.isNotEmpty())
+                AlertDialog.Builder(this).let {
+                    //vice-versa so we can instantly press "Load" without waiting for the volume-slider to disappear
+                    it.setPositiveButton("Ignore", this)
+                    it.setNegativeButton("Load", this)
+                    it.setMessage("Should I load the last station for you?")
+                    it.setTitle("Load last station")
+                    it.show()
+                }
 
         } catch (e: Exception) {
             logger.error(e)
@@ -213,6 +233,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     fun close() {
         mute()
         player.stop()
+        logger.notifier.cancelAll()
 
         if (findViewById<CheckBox>(R.id.volume_button_triggers).isChecked)
             vibrator.vibrateVeryLong()
@@ -220,11 +241,11 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
         finish()
     }
 
-    private fun mute() =
-        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, AudioManager.FLAG_SHOW_UI)
+    private fun mute(showUI: Int = AudioManager.FLAG_SHOW_UI) =
+        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, showUI)
 
-    private fun unmute() =
-        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 4, AudioManager.FLAG_SHOW_UI)
+    private fun unmute(showUI: Int = AudioManager.FLAG_SHOW_UI) =
+        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 4, showUI)
 
     private fun setTarget(path: String) {
 
@@ -250,26 +271,30 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
         }
 
         player.playPlaylist(audioList)
+
         unmute_ifVolumeTrigger()
+
+        preferencesWriter.putString("view:${R.id.argmusicplayer}", path)
+        preferencesWriter.apply()
     }
 
-    private fun unmute_ifVolumeTrigger() {
+    private fun unmute_ifVolumeTrigger(showUI: Int = AudioManager.FLAG_SHOW_UI) {
         val triggers = findViewById<CheckBox>(R.id.volume_button_triggers)
-        if (triggers.isChecked) unmute()
+        if (triggers.isChecked) unmute(showUI)
     }
 
-    private fun mute_ifVolumeTrigger() {
+    private fun mute_ifVolumeTrigger(showUI: Int = AudioManager.FLAG_SHOW_UI) {
         val triggers = findViewById<CheckBox>(R.id.volume_button_triggers)
-        if (triggers.isChecked) mute()
+        if (triggers.isChecked) mute(showUI)
     }
 
-    private fun sourceSuccess(result: ActivityResult, file: File) {
-        val filePath = file.absolutePath
+    private fun sourceSuccess(result: ActivityResult, file: File) = sourceSuccess(file.absolutePath)
+
+    private fun sourceSuccess(filePath: String) {
         setTarget(filePath)
         playFolder(filePath)
         playerControls.forEach { it.isEnabled = true }
     }
-
 
     private fun sourceError(activityResult: ActivityResult) {
         logger.error(Exception("Couldn't select folder: ${activityResult.resultCode}\n\n$activityResult"))
@@ -278,16 +303,20 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     override fun onPlaylistAudioChanged(playlist: ArgAudioList?, currentAudioIndex: Int) {
         currentAudio = playlist?.get(currentAudioIndex)
 
-        findViewById<TextView>(R.id.description_title).text = "Artist"
-        findViewById<TextView>(R.id.description).text = ""
-        findViewById<TextView>(R.id.genres).text = ""
-
         GlobalScope.launch(newSingleThreadContext("search-artist")) {
             try {
+                runOnUiThread {
+                    findViewById<TextView>(R.id.description_title).text = "Artist"
+                    findViewById<TextView>(R.id.description).text = ""
+                    findViewById<TextView>(R.id.genres).text = ""
+                }
+
                 query.searchArtist(currentAudio!!.singer, true).first().let {
-                    findViewById<TextView>(R.id.description_title).text = it.name
-                    findViewById<TextView>(R.id.description).text = it.biography
-                    findViewById<TextView>(R.id.genres).text = it.genres.joinToString()
+                    runOnUiThread {
+                        findViewById<TextView>(R.id.description_title).text = it.name
+                        findViewById<TextView>(R.id.description).text = it.biography
+                        findViewById<TextView>(R.id.genres).text = it.genres.joinToString()
+                    }
                 }
             }
             catch (e: Exception) {
@@ -310,6 +339,13 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
                 preferencesWriter.putBoolean("view:${R.id.volume_button_triggers}", checked)
                 preferencesWriter.apply()
             }
+        }
+    }
+
+    override fun onClick(dialog: DialogInterface?, which: Int) {
+        when (which) {
+            DialogInterface.BUTTON_POSITIVE -> {} // ignore
+            DialogInterface.BUTTON_NEGATIVE -> sourceSuccess(playerValue)
         }
     }
 

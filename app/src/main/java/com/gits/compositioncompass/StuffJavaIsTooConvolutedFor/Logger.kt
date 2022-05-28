@@ -3,7 +3,7 @@ package com.gits.compositioncompass.StuffJavaIsTooConvolutedFor
 import com.gits.compositioncompass.Configuration.CompositionCompassOptions
 import java.io.File
 
-class Logger(private val options: CompositionCompassOptions, private val notifier: Notifier) {
+class Logger(private val options: CompositionCompassOptions, val notifier: Notifier) {
 
     private val file: File = File(options.rootDirectory  + "/" + options.logName)
 

@@ -15,6 +15,7 @@ import java.util.*
 
 class Notifier(private val options: CompositionCompassOptions, private val activity: Activity) {
 
+    private lateinit var notificationManager: NotificationManager
     private var id: String
 
     init {
@@ -36,6 +37,8 @@ class Notifier(private val options: CompositionCompassOptions, private val activ
         NotificationManagerCompat.from(activity!!).notify(Random().nextInt(Int.MAX_VALUE), mBuilder.build())
     }
 
+    fun cancelAll() = notificationManager.cancelAll()
+
     private fun createNotificationChannel(id: String): String {
         // Create the NotificationChannel, but only on API 26+ because
         // the NotificationChannel class is new and not in the support library
@@ -48,8 +51,7 @@ class Notifier(private val options: CompositionCompassOptions, private val activ
             }
 
             // Register the channel with the system
-            val notificationManager: NotificationManager =
-                activity!!.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager = activity!!.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
         }
 
