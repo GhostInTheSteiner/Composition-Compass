@@ -6,11 +6,11 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.media.AudioManager
 import android.os.Bundle
-import android.os.PowerManager
 import android.os.Vibrator
 import android.text.method.ScrollingMovementMethod
 import android.view.KeyEvent
 import android.view.View
+import android.view.WindowManager
 import android.widget.CheckBox
 import android.widget.CompoundButton
 import android.widget.EditText
@@ -52,8 +52,6 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     private lateinit var query: LastFMQuery
     private lateinit var preferencesReader: SharedPreferences
     private lateinit var preferencesWriter: SharedPreferences.Editor
-    private lateinit var wakeLock: PowerManager.WakeLock
-    private lateinit var powerManager: PowerManager
     private lateinit var audioManager: AudioManager
     private lateinit var source: ItemPicker
     private lateinit var vibrator: Vibrator
@@ -71,6 +69,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     override fun onResume() {
         super.onResume();
         CompositionRoot.getInstance(this)
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         unmute_ifVolumeTrigger()
     }
 
@@ -107,14 +106,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
             playerControls.forEach { it.isEnabled = false }
 
             vibrator = applicationContext.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-            audioManager =
-                applicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            powerManager =
-                applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager
-
-            wakeLock =
-                powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyApp::MyWakelockTag");
-            wakeLock.acquire()
+            audioManager = applicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
             player = findViewById(R.id.argmusicplayer)
             player.setOnPlaylistAudioChangedListener(this)
@@ -167,7 +159,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
 
                 return true
 
-            } else if (keyDown && keyCode == KeyEvent.KEYCODE_VOLUME_UP && event!!.repeatCount == 5) {
+            } else if (keyDown && keyCode == KeyEvent.KEYCODE_VOLUME_UP && event!!.repeatCount > 5) {
                 ignoreUp = true
                 unmute()
                 like(findViewById(R.id.like), true)
@@ -196,7 +188,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
             else
                 File("$targetLike/${source.name}")
 
-        if (source.renameTo(target))
+        if (source.renameTo(target) && findViewById<CheckBox>(R.id.volume_button_triggers).isChecked)
             vibrator.vibrateLong()
 
         player.seekTo(player.duration.toInt())
@@ -206,7 +198,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
         val source = File(currentAudio!!.path)
         val target = File("$targetDislike/${source.name}")
 
-        if (source.renameTo(target))
+        if (source.renameTo(target) && findViewById<CheckBox>(R.id.volume_button_triggers).isChecked)
             vibrator.vibrateLong()
 
         player.seekTo(player.duration.toInt())
@@ -221,8 +213,10 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     fun close() {
         mute()
         player.stop()
-        wakeLock.release()
-        vibrator.vibrateVeryLong()
+
+        if (findViewById<CheckBox>(R.id.volume_button_triggers).isChecked)
+            vibrator.vibrateVeryLong()
+
         finish()
     }
 
@@ -283,6 +277,10 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
 
     override fun onPlaylistAudioChanged(playlist: ArgAudioList?, currentAudioIndex: Int) {
         currentAudio = playlist?.get(currentAudioIndex)
+
+        findViewById<TextView>(R.id.description_title).text = "Artist"
+        findViewById<TextView>(R.id.description).text = ""
+        findViewById<TextView>(R.id.genres).text = ""
 
         GlobalScope.launch(newSingleThreadContext("search-artist")) {
             try {

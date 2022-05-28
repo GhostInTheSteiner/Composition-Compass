@@ -21,7 +21,7 @@
                 android:layout_height="0dp"
                 android:layout_width="match_parent"
                 android:id="@+id/description_title"
-                android:text="Description   "
+                android:text="Artist   "
                 android:textStyle="bold|italic"
                 android:textSize="20dp"></TextView>
             <ScrollView
