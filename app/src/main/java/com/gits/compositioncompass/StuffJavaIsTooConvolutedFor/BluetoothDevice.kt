@@ -1,6 +1,8 @@
 package com.gits.compositioncompass.StuffJavaIsTooConvolutedFor
 
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.media.AudioManager
 import android.media.MediaMetadata
 import android.media.session.MediaSession
@@ -13,18 +15,10 @@ import androidx.core.content.ContextCompat.getSystemService
 import com.gits.compositioncompass.PlayerActivity
 
 
-class BluetoothDevice(private val activity: AppCompatActivity) {
+class BluetoothDevice(private val activity: Activity) {
 
     private var audioManager: AudioManager?
     private var mediaSession: MediaSession
-
-    var _artist: String = ""
-    var artist: String
-        get() = _artist
-        set(value) {
-            _artist = value
-
-        }
 
     init {
         mediaSession = MediaSession(activity, "YourAppName")
@@ -63,7 +57,7 @@ class BluetoothDevice(private val activity: AppCompatActivity) {
         })
     }
 
-    fun sendTextOverAVRCP() {
+    fun sendAVRCP(title: String, artist: String, albumArtist: String, album: String) {
         val state = PlaybackState.Builder()
             .setActions(
                 PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PLAY_PAUSE or
@@ -76,18 +70,26 @@ class BluetoothDevice(private val activity: AppCompatActivity) {
         //if the strings are too long they might be cut off
         //you need to experiment with the receiving device to know max length
         val metadata = MediaMetadata.Builder()
-            .putString(MediaMetadata.METADATA_KEY_TITLE, "Titel")
-            .putString(MediaMetadata.METADATA_KEY_ARTIST, "Künstler")
-            .putString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST, "Album Künstler")
-            .putString(MediaMetadata.METADATA_KEY_ALBUM, "Album")
-            .putLong(MediaMetadata.METADATA_KEY_NUM_TRACKS, 123)
-            .putLong(MediaMetadata.METADATA_KEY_DURATION, 456)
+            .putString(MediaMetadata.METADATA_KEY_TITLE, title)
+            .putString(MediaMetadata.METADATA_KEY_ARTIST, artist)
+            .putString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST, albumArtist)
+            .putString(MediaMetadata.METADATA_KEY_ALBUM, album)
+            .putLong(MediaMetadata.METADATA_KEY_NUM_TRACKS, 10)
+            .putLong(MediaMetadata.METADATA_KEY_DURATION, 300)
             .build()
         //setting this active makes the metadata you pass show up
         //other metadata from apps will not be shown
         mediaSession.setActive(true)
         mediaSession.setMetadata(metadata)
         mediaSession.setPlaybackState(state)
+    }
+
+    fun sendAVRCP2(title: String, artist: String, albumArtist: String, album: String) {
+        val avrcp = Intent("com.android.music.metachanged")
+        avrcp.putExtra("track", title)
+        avrcp.putExtra("artist", artist)
+        avrcp.putExtra("album", album)
+        activity.sendBroadcast(avrcp)
     }
 
     private fun clearText() {

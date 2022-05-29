@@ -12,15 +12,11 @@ import android.text.method.ScrollingMovementMethod
 import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
-import android.widget.CheckBox
-import android.widget.CompoundButton
-import android.widget.EditText
-import android.widget.TextView
+import android.widget.*
 import androidx.activity.result.ActivityResult
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.arges.sepan.argmusicplayer.Callbacks.OnErrorListener
-import com.arges.sepan.argmusicplayer.Callbacks.OnPlayingListener
 import com.arges.sepan.argmusicplayer.Callbacks.OnPlaylistAudioChangedListener
 import com.arges.sepan.argmusicplayer.Enums.ErrorType
 import com.arges.sepan.argmusicplayer.Models.ArgAudio
@@ -34,7 +30,6 @@ import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.LocalFile
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.Logger
 import com.gits.compositioncompass.databinding.ActivityPlayerBinding
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.newSingleThreadContext
 import vibrateLong
@@ -43,7 +38,8 @@ import java.io.File
 
 
 class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnErrorListener,
-    CompoundButton.OnCheckedChangeListener, DialogInterface.OnClickListener {
+    CompoundButton.OnCheckedChangeListener, DialogInterface.OnClickListener,
+    View.OnLongClickListener {
     private var playerValue: String = ""
     private var triggersValue: Boolean = false
     private var ignoreUp: Boolean = false
@@ -55,6 +51,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     private var targetDislike: String = ""
     private var currentAudio: ArgAudio? = null
     private var audioList: ArgAudioList = ArgAudioList(false)
+    private lateinit var bluetoothDevice: BluetoothDevice
     private lateinit var query: LastFMQuery
     private lateinit var preferencesReader: SharedPreferences
     private lateinit var preferencesWriter: SharedPreferences.Editor
@@ -111,6 +108,8 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
             playerControls = listOf(findViewById(R.id.like), findViewById(R.id.dislike))
             playerControls.forEach { it.isEnabled = false }
 
+            bluetoothDevice = BluetoothDevice(this)
+
             vibrator = applicationContext.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
             audioManager = applicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
@@ -118,6 +117,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
             player = findViewById<ArgPlayerLargeView>(R.id.argmusicplayer)
             val triggers = findViewById<CheckBox>(R.id.volume_button_triggers)
             val description = findViewById<EditText>(R.id.description)
+            val like = findViewById<Button>(R.id.like)
 
             //get preferences
             triggersValue = preferencesReader.getBoolean("view:${triggers.id}", false)
@@ -132,6 +132,8 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
 
             description.setVerticalScrollBarEnabled(true)
             description.setMovementMethod(ScrollingMovementMethod())
+
+            like.setOnLongClickListener(this)
 
             if (playerValue.isNotEmpty())
                 AlertDialog.Builder(this).let {
@@ -198,6 +200,11 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
         return false
     }
 
+    override fun onLongClick(button: View?): Boolean {
+        like(findViewById(R.id.like), true)
+        return true
+    }
+
     fun like(view: View) = like(view, false)
 
     fun like(view: View, toMoreInteresting: Boolean = false) {
@@ -260,16 +267,39 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
 
     private fun playFolder(path: String) {
         audioList = ArgAudioList(false)
-        LocalFile(path).listFiles().forEach {
-            audioList.add(
-                ArgAudio.createFromFilePath(
-                    it.nameWithoutExtension.split(" - ").first(),
-                    it.nameWithoutExtension.split(" - ").last(),
-                    it.originalPath
-                )
-            )
+        LocalFile(path).listFiles().filter { it -> it.isFile }.forEach { file ->
+
+            file.nameWithoutExtension.split(" - ").let { fileParts ->
+                val regex = Regex("(\\(|\\{|\\<|\\[| ft\\.? | feat\\.? )")
+                var singer = ""
+                var track = ""
+
+                if (fileParts.count() > 2) {
+                    singer = fileParts.first() //let's just assume first part is singer lol
+                    track = fileParts.drop(1).joinToString()
+                }
+
+                else if (fileParts.count() > 1) {
+                    singer = fileParts.first().split(regex).first()
+                    track = fileParts.last()
+                }
+
+                else if (fileParts.count() > 0) {
+                    singer = fileParts.first().split(regex).first()
+                    track = fileParts.first().split(regex).last()
+                }
+
+                else {
+                    singer = "Unknown Artist"
+                    track = "Unknown Track"
+                }
+
+                audioList.add(ArgAudio.createFromFilePath(singer, track, file.originalPath))
+            }
         }
 
+        player.stop()
+        player = findViewById(R.id.argmusicplayer)
         player.playPlaylist(audioList)
 
         unmute_ifVolumeTrigger()
@@ -301,8 +331,6 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     }
 
     override fun onPlaylistAudioChanged(playlist: ArgAudioList?, currentAudioIndex: Int) {
-        currentAudio = playlist?.get(currentAudioIndex)
-
         GlobalScope.launch(newSingleThreadContext("search-artist")) {
             try {
                 runOnUiThread {
@@ -322,6 +350,17 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
             catch (e: Exception) {
                 logger.warn(e)
             }
+        }
+
+        try {
+            currentAudio = playlist?.get(currentAudioIndex)
+
+            if (currentAudio != null)
+                bluetoothDevice.sendAVRCP(currentAudio!!.title, currentAudio!!.singer, currentAudio!!.singer, currentAudio!!.singer)
+
+        }
+        catch (e: Exception) {
+            logger.error(e)
         }
     }
 
@@ -346,29 +385,6 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
         when (which) {
             DialogInterface.BUTTON_POSITIVE -> {} // ignore
             DialogInterface.BUTTON_NEGATIVE -> sourceSuccess(playerValue)
-        }
-    }
-
-    fun testAVRCP1(view: View) {
-        try {
-            val device = BluetoothDevice(this)
-            device.sendTextOverAVRCP()
-        }
-        catch (e: Exception) {
-            logger.error(e)
-        }
-    }
-
-    fun testAVRCP2(view: View) {
-        try {
-            val avrcp = Intent("com.android.music.metachanged")
-            avrcp.putExtra("track", "song title")
-            avrcp.putExtra("artist", "artist name")
-            avrcp.putExtra("album", "album name")
-            applicationContext.sendBroadcast(avrcp)
-        }
-        catch (e: Exception) {
-            logger.error(e)
         }
     }
 }

@@ -572,14 +572,14 @@ class MainActivity : AppCompatActivity() {
     fun printError(e: Throwable) {
         runOnUiThread {
             error.text = getErrorMessage(e.message ?: "Unknown cause", e.stackTraceToString())
-            logger.error(Exception(e.message, e.cause))
+            logger.warn(Exception(e.message, e.cause))
         }
     }
 
     fun printError(e: Exception) {
         runOnUiThread {
             error.text = getErrorMessage(e.message ?: "Unknown cause", e.stackTraceToString())
-            logger.error(e)
+            logger.warn(e)
         }
     }
 
