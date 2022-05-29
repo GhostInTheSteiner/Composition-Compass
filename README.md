@@ -88,7 +88,7 @@ The triggers are mainly implemented to sort out tracks without looking on the sc
 
 **Keep in mind activating the triggers will cause your volume level to be kept at a value of `4`, and pressing the volume buttons will always reset the level!** This has been implemented to prevent your Android device from muting the stream (and to keep you from messing around with your phone while driving ;) )
 
-Also, due to limitations with Android's wake lock, **you must keep the screen turned on when using the volume button triggers!**. Don't worry about your screen timeout, Composition Compass will prevent your screen from automatically turning off for as long as the player is open.
+Also, due to limitations with Android's wake lock, **you must keep the screen turned on when using the volume button triggers!** Don't worry about your screen timeout, Composition Compass will prevent your screen from automatically turning off for as long as the player is open.
 
 One last important piece of information: As long as the triggers are active, **leaving the player and turning off the screen will mute the volume to prevent accidental playback**. If you keep the triggers disabled the volume level won't be affected.
 
