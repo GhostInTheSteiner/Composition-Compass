@@ -1,5 +1,3 @@
-**THIS README IS CURRENTLY IN THE PROCESS OF BEING REWRITTEN!!!**
-
 # Composition Compass
 
 Composition Compass is a set of Android apps that allow you to download similar songs to a given input sample. You can then play those songs back and sort them out without even looking on your screen, which is especially useful while driving long distances in your car.
@@ -49,16 +47,16 @@ https://www.last.fm/api/account/create
 
 The downloader essentially allows you to download songs from YouTube. **The interesting part is that it's able to fetch data from Spotify or Last.fm, and query YouTube accordingly**. Using the world's most famous streaming services as backend the downloader is supposed to fulfill two main purposes:
 
-- Fetch similar tracks, albums and artists
-- Fetch specified tracks, albums and artists
+- Fetch similar tracks, albums and artists  
+- Fetch specified tracks, albums and artists  
 
 Similar tracks will be downloaded to so-called "Stations", stored in `Pandora/Stations/<name>`.
 
 Specified tracks will be downloaded to...
 
-`Pandora/Artists/<name>` if only an artist has been provided.
-`Pandora/Artists/<name>` if an artist and a track has been provided (same as above).
-`Pandora/Albums/<name>` if an artist and an album has been provided.
+`Pandora/Artists/<name>` if only an artist has been provided.  
+`Pandora/Artists/<name>` if an artist and a track has been provided (same as above).  
+`Pandora/Albums/<name>` if an artist and an album has been provided.  
 
 
 ## The player
@@ -72,12 +70,12 @@ First, tap on the `Open Player` button, then on the `Browse` button to select on
 
 Playback of Stations works by pressing the `Volume Up` and `Volume Down` keys to move them to...
 
-`Pandora/!automated/Favorites` and
+`Pandora/!automated/Favorites` and  
 `Pandora/!automated/Recycle Bin`
 
 ...respectively. If you keep pressing `Volume Up` for a second or more, the current track will be moved straight to...
 
-`Pandora/!automated/Favorites/More Interesting`
+`Pandora/!automated/Favorites/More Interesting`  
 
 ..., skipping the `Favorites` folder. If you encounter a track you like *especially*, you can give it a special place right away. This way you'll have an easier time finding it later on ;)
 
@@ -99,5 +97,5 @@ One last important piece of information: As long as the triggers are active, **l
  
 Playback of Favorites is especially useful if you have a lot of tracks in your `Favorites` folder and want to sort out the ones you don't like. It effectively works like the Playback of Stations described above, except for the fact that you need to select the `Favorites` folder. Then...
 
-`Pandora/!automated/Favorites/More Interesting` is used to "like" a track, and
-`Pandora/!automated/Favorites/Less Interesting` is used to "dislike" a track.
+`Pandora/!automated/Favorites/More Interesting` is used to "like" a track, and  
+`Pandora/!automated/Favorites/Less Interesting` is used to "dislike" a track.  
