@@ -43,27 +43,59 @@ https://www.last.fm/api/account/create
 9. You're done!
 
 
-## Usage
-
-Open VLC Media Player. After a few seconds an icon resembling a radio station will appear on the right. Initially, you'll always be in `Anything` mode, so you're able to play back an arbitrary track and check artist info. If you want to switch to the other modes tap on `Open Menu`.
-
-
 ## The downloader:
 
-This application essentially allows you to download songs from YouTube. The interesting part is that it's able to fetch data from Spotify and query YouTube accordingly. Using the world's most famous streaming service as backend the downloader is supposed to fulfill two main purposes:
+The downloader essentially allows you to download songs from YouTube. **The interesting part is that it's able to fetch data from Spotify or Last.fm, and query YouTube accordingly**. Using the world's most famous streaming services as backend the downloader is supposed to fulfill two main purposes:
 
-- Fetch similar tracks, albums and artists
-- Fetch specified tracks, albums and artists
+- Fetch similar tracks, albums and artists  
+- Fetch specified tracks, albums and artists  
+
+Similar tracks will be downloaded to so-called "Stations", stored in `Pandora/Stations/<name>`.
+
+Specified tracks will be downloaded to...
+
+`Pandora/Artists/<name>` if only an artist has been provided.  
+`Pandora/Artists/<name>` if an artist and a track has been provided (same as above).  
+`Pandora/Albums/<name>` if an artist and an album has been provided.  
+
 
 ## The player
 
-The player is supposed to play back your previously downloaded tracks. It only works with VLC Media Player and allows to view artist meta info (provided by Last.fm) and to sort out tracks you don't like. Generally, it offers three modes:
+The player is supposed to play back your previously downloaded tracks. It displays the biography of the currently played back song's artist, and the typical genres said artist is affiliated with. However, **the real benefit of using the integrated player is to separate tracks you like from tracks you don't like.**
 
-- **Anything**: Allows to play back an arbitrary track.
-- **Station**: Allows to play back your downloaded similar tracks.
-- **Favorites**: Allows to play back liked tracks.
 
-Similar tracks will be downloaded to so-called "Stations", stored in `Pandora/Stations/<name>`. Using the `Stations` mode you'll be able to play those back in VLC and press Volume Up and Down keys to move them to `Pandora/!automated/Favorites` and `Pandora/!automated/Recycle Bin` respectively. The current track will also be skipped in VLC at the same time, so you don't have to listen to it until the very end.
+### Playback of Stations
 
-The `Favorites` mode is essentially the same, however it plays back the `Pandora/!automated/Favorites` folder instead. This is especially useful if you have a lot of tracks in that folder and want to sort out the ones you don't like.
+First, tap on the `Open Player` button, then on the `Browse` button to select one of the folders you downloaded tracks to before.
 
+Playback of Stations works by pressing the `Volume Up` and `Volume Down` keys to move them to...
+
+`Pandora/!automated/Favorites` and  
+`Pandora/!automated/Recycle Bin`
+
+...respectively. If you keep pressing `Volume Up` for a second or more, the current track will be moved straight to...
+
+`Pandora/!automated/Favorites/More Interesting`  
+
+..., skipping the `Favorites` folder. If you encounter a track you like *especially*, you can give it a special place right away. This way you'll have an easier time finding it later on ;)
+
+The current track will also be skipped at the same time, so you don't have to listen to it until the very end. Of course, you can also press the `Like` and `Dislike` buttons displayed on-screen. The volume button triggers can be enabled and disabled by checking the checkbox below the player.
+
+The triggers are mainly implemented to sort out tracks without looking on the screen, which is useful while driving long distances in your car (assuming you have an automatic gearbox, otherwise you should probably reconsider that use-case lol)
+
+
+#### IMPORTANT
+
+**Keep in mind activating the triggers will cause your volume level to be kept at a value of `4`, and pressing the volume buttons will always reset the level!** This has been implemented to prevent your Android device from muting the stream (and to keep you from messing around with your phone while driving ;) )
+
+Also, due to limitations with Android's wake lock, **you must keep the screen turned on when using the volume button triggers!** Don't worry about your screen timeout, Composition Compass will prevent your screen from automatically turning off for as long as the player is open.
+
+One last important piece of information: As long as the triggers are active, **leaving the player and turning off the screen will mute the volume to prevent accidental playback**. If you keep the triggers disabled the volume level won't be affected.
+
+
+### Playback of Favorites
+ 
+Playback of Favorites is especially useful if you have a lot of tracks in your `Favorites` folder and want to sort out the ones you don't like. It effectively works like the Playback of Stations described above, except for the fact that you need to select the `Favorites` folder. Then...
+
+`Pandora/!automated/Favorites/More Interesting` is used to "like" a track, and  
+`Pandora/!automated/Favorites/Less Interesting` is used to "dislike" a track.  
