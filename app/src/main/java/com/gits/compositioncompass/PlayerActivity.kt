@@ -6,6 +6,7 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
 import android.media.AudioManager
+import android.media.session.MediaSession
 import android.os.Bundle
 import android.os.Vibrator
 import android.text.method.ScrollingMovementMethod
@@ -29,6 +30,7 @@ import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.ItemPicker
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.LocalFile
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.Logger
 import com.gits.compositioncompass.databinding.ActivityPlayerBinding
+import com.google.android.material.button.MaterialButtonToggleGroup
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.newSingleThreadContext
@@ -126,6 +128,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
             player.setOnPlaylistAudioChangedListener(this)
             player.setOnErrorListener(this)
             player.enableNotification(this)
+            player.continuePlaylistWhenError()
 
             triggers.setOnCheckedChangeListener(this)
             triggers.isChecked = triggersValue
@@ -134,6 +137,8 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
             description.setMovementMethod(ScrollingMovementMethod())
 
             like.setOnLongClickListener(this)
+
+            setUpCallBack()
 
             if (playerValue.isNotEmpty())
                 AlertDialog.Builder(this).let {
@@ -148,6 +153,65 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
         } catch (e: Exception) {
             logger.error(e)
         }
+    }
+
+    private fun setUpCallBack() {
+        bluetoothDevice.mediaSession.setFlags(
+            MediaSession.FLAG_HANDLES_MEDIA_BUTTONS or
+                    MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS
+        )
+        bluetoothDevice.mediaSession.setCallback(object : MediaSession.Callback() {
+            override fun onPlay() {
+                super.onPlay()
+                player.resume()
+            }
+
+            override fun onPause() {
+                super.onPause()
+                player.pause()
+            }
+
+            override fun onSkipToNext() {
+                super.onSkipToNext()
+
+                if (findViewById<CheckBox>(R.id.volume_button_triggers).isChecked)
+                    like(findViewById<Button>(R.id.like))
+                else
+                    player.seekTo(player.duration.toInt())
+            }
+
+            override fun onFastForward() {
+                super.onFastForward()
+
+                if (findViewById<CheckBox>(R.id.volume_button_triggers).isChecked)
+                    like(findViewById<Button>(R.id.like), true)
+                else
+                    player.forward(5000, true)
+            }
+
+            override fun onSkipToPrevious() {
+                super.onSkipToPrevious()
+
+                if (findViewById<CheckBox>(R.id.volume_button_triggers).isChecked)
+                    dislike(findViewById<Button>(R.id.dislike))
+                else
+                    player.seekTo(0)
+            }
+
+            override fun onRewind() {
+                super.onRewind()
+
+                if (findViewById<CheckBox>(R.id.volume_button_triggers).isChecked)
+                    close()
+                else
+                    player.backward(5000, true)
+            }
+
+            override fun onStop() {
+                super.onStop()
+                close()
+            }
+        })
     }
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean =

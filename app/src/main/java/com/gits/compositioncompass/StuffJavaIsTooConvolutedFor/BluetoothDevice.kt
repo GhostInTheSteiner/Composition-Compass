@@ -12,49 +12,18 @@ import android.os.SystemClock
 import android.provider.MediaStore
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat.getSystemService
+import com.arges.sepan.argmusicplayer.PlayerViews.ArgPlayerLargeView
 import com.gits.compositioncompass.PlayerActivity
 
 
 class BluetoothDevice(private val activity: Activity) {
 
-    private var audioManager: AudioManager?
-    private var mediaSession: MediaSession
+    var audioManager: AudioManager?
+    var mediaSession: MediaSession
 
     init {
         mediaSession = MediaSession(activity, "YourAppName")
         audioManager = activity.getSystemService(Context.AUDIO_SERVICE) as AudioManager?
-        setUpCallBack()
-    }
-
-    private fun setUpCallBack() {
-        //capture media events like play, stop
-        //you don't actually use these callbacks
-        //but you have to have this in order to pretend to be a media application
-        mediaSession.setFlags(
-            MediaSession.FLAG_HANDLES_MEDIA_BUTTONS or
-                    MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS
-        )
-        mediaSession.setCallback(object : MediaSession.Callback() {
-            override fun onPlay() {
-                super.onPlay()
-            }
-
-            override fun onPause() {
-                super.onPause()
-            }
-
-            override fun onSkipToNext() {
-                super.onSkipToNext()
-            }
-
-            override fun onSkipToPrevious() {
-                super.onSkipToPrevious()
-            }
-
-            override fun onStop() {
-                super.onStop()
-            }
-        })
     }
 
     fun sendAVRCP(title: String, artist: String, albumArtist: String, album: String) {
