@@ -168,7 +168,11 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
 
             override fun onPause() {
                 super.onPause()
-                player.pause()
+
+                if (player.isPlaying)
+                    player.pause()
+                else
+                    player.resume()
             }
 
             override fun onSkipToNext() {
@@ -365,6 +369,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
         player.stop()
         player = findViewById(R.id.argmusicplayer)
         player.playPlaylist(audioList)
+        player.continuePlaylistWhenError()
 
         unmute_ifVolumeTrigger()
 
