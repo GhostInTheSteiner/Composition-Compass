@@ -1,46 +1,39 @@
 # Composition Compass
 
-Composition Compass is a set of Android apps that allow you to download similar songs to a given input sample. You can then play those songs back and sort them out without even looking on your screen, which is especially useful while driving long distances in your car.
+Inspired by the Music Genome Project's `Pandora Radio`, Composition Compass is an Android app that will help you to find new artists you like, or generally other music that may suit your tastes. Contrary to Pandora though, **this application doesn't require a constant internet connection and is completely free.**
 
-Composition Compass is based on an equally named Tasker-only project:
+Conceptionally Composition Compass works by downloading similar songs to a given input sample. You can then play those songs back and sort them out either directly on your device or **by using your car stereo.** The latter is especially useful while driving long distances in your car ;)
+
+
+## Background
+
+Composition Compass is based on an equally named Tasker project:
 
 https://github.com/GhostInTheSteiner/Composition-Compass-Legacy
 
-Contrary to the original Composition Compass its successor consists of two separate applications: A downloader and a player. The downloader has been written in Kotlin and is provided as simple APK file. The player is still a Tasker project and therefore provided as XML.
-
-Note #1: To use the player you need to purchase [Tasker for Android](https://play.google.com/store/apps/details?id=net.dinglisch.android.taskerm).
-
-Note #2: You **no longer need root** to use Composition Compass ;)
+Contrary to the original Composition Compass its successor is a proper Android app written entirely in Kotlin. A release can therefore be provided as a simple APK file. Another advantage is that **root permissions are NO LONGER MANDATORY**.
 
 
 ## Setup
 
-The setup process has been greatly simplified, but you'll still need to configure a few things. The following is a step-by-step guide:
-
-1. Download the latest ZIP from the `releases` page.
-
-2. Place the contained `Pandora` folder in a `Music` directory on your internal storage (e.g. `/storage/emulated/0/Music/Pandora`).  
-**This is important! If there's already another folder named `Pandora` it has to be removed.**
-
-3. Open Tasker and import the XML inside the `Pandora/!resources` folder.
-
-4. Once imported, launch the `CarPlayer.OpenItem` Task. It'll prompt you for all required dependencies. If you're missing one of them Composition Compass will automatically install it and ask you to restart the Task.
-
-5. After you're done you should see the main menu. Tap on the `Open Downloader` button. The downloader app will open and ask you to configure missing fields in the configuration.  
 **Note: You need to have at least one text editor installed on your system! I recommend `Acode` or `Markor` for a nicely rendered view of the config file.**
 
-6. To obtain your Spotify API credentials visit the following link and create an app:  
+0. Create a Spotify and a Last.fm account, unless you already have one. At least one of both is required if you want to fetch track information from there.
+
+1. Obtain your Spotify API credentials. You can do so by visiting the following link and creating an app:  
 https://developer.spotify.com/dashboard/  
 Your app will then contain your Client ID and Secret.  
 **Note: Those values are NOT identical with your Spotify username and password. They're special keys required for access to the API.**
 
-7. To obtain your LastFM API key visit the following link:  
+2. Obtain your LastFM API key. You can do so by visiting the following link:  
 https://www.last.fm/api/account/create  
 **Note: This key is NOT identical with your LastFM username or password. It's a special key required for access to the API.**
 
-8. Go back to Composition Compass' config file and paste your API credentials at the corresponding fields. Remember to save the file!
+3. Install the `composition-compass.apk` from the releases page. On first launch it'll open the config file, where you need to insert your Spotify and Last.fm API credentials. **Remember to save the file!**
 
-9. You're done!
+4. Restart the Composition Compass app. If it doesn't detect the changes to the config, force close the app and restart.
+
+4. You're done!
 
 
 ## The downloader:
@@ -66,6 +59,8 @@ The player is supposed to play back your previously downloaded tracks. It displa
 
 ### Playback of Stations
 
+#### Without a car stereo / via AUX
+
 First, tap on the `Open Player` button, then on the `Browse` button to select one of the folders you downloaded tracks to before.
 
 Playback of Stations works by pressing the `Volume Up` and `Volume Down` keys to move them to...
@@ -81,7 +76,17 @@ Playback of Stations works by pressing the `Volume Up` and `Volume Down` keys to
 
 The current track will also be skipped at the same time, so you don't have to listen to it until the very end. Of course, you can also press the `Like` and `Dislike` buttons displayed on-screen. The volume button triggers can be enabled and disabled by checking the checkbox below the player.
 
-The triggers are mainly implemented to sort out tracks without looking on the screen, which is useful while driving long distances in your car (assuming you have an automatic gearbox, otherwise you should probably reconsider that use-case lol)
+#### With a car stereo
+
+The triggers were mainly implemented to sort out tracks without looking on the screen, which is useful while driving long distances in your car. However – while the volume button triggers work with any car stereo – they're far from ideal. You'll still have to keep you smartphone around you, and make sure it doesn't drop to the floor while pushing the breaks.
+
+Hence, **it's also possible (and very recommendable!) to use the buttons on your car stereo directly.**. As long your phone is paired with the stereo via a Bluetooth connection (AVRCP), the following will work:
+
+`Skip Forward`: Like a track (to `Favorites`
+`Play / Pause`: Like a track (to `Favorites/More Interesting`)
+`Skip Backwards`: Dislike a track (to `Recycle Bin`)
+
+Please note this only works while the volume button triggers are enabled. Disabling them will cause your car stereo's controls to work as expected.
 
 
 #### IMPORTANT
