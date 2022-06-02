@@ -80,11 +80,11 @@ The current track will also be skipped at the same time, so you don't have to li
 
 The triggers were mainly implemented to sort out tracks without looking on the screen, which is useful while driving long distances in your car. However – while the volume button triggers work with any car stereo – they're far from ideal. You'll still have to keep you smartphone around you, and make sure it doesn't drop to the floor while pushing the breaks.
 
-Hence, **it's also possible (and very recommendable!) to use the buttons on your car stereo directly.**. As long your phone is paired with the stereo via a Bluetooth connection (AVRCP), the following will work:
+Hence, **it's also possible (and very recommendable!) to use the buttons on your car stereo directly.** As long your phone is paired with the stereo via a Bluetooth connection (AVRCP), the following will work:
 
-`Skip Forward`: Like a track (to `Favorites`
-`Play / Pause`: Like a track (to `Favorites/More Interesting`)
-`Skip Backwards`: Dislike a track (to `Recycle Bin`)
+`Skip Forward`: Like a track (to `Favorites`  
+`Play / Pause`: Like a track (to `Favorites/More Interesting`)  
+`Skip Backwards`: Dislike a track (to `Recycle Bin`)  
 
 Please note this only works while the volume button triggers are enabled. Disabling them will cause your car stereo's controls to work as expected.
 
