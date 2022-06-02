@@ -127,7 +127,7 @@ class CompositionCompassOptions {
 
         options_[::maxParallelDownloads.name] = 100 as Object
         options_[::commaReplacer.name] = "<comma>" as Object
-        options_[::exceptions.name] = "<insert_exceptions_here>" as Object
+        options_[::exceptions.name] = "live|remix| mix|add_other_exceptions_here" as Object
 
         return options_
     }
