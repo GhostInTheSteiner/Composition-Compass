@@ -168,14 +168,14 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
 
             override fun onPause() {
                 super.onPause()
-//
-//                if (player.isPlaying)
-//                    player.pause()
-//                else
-//                    player.resume()
 
                 // abuse the play button for that feature; it's just a lot more important...
-                this.onFastForward()
+                if (findViewById<CheckBox>(R.id.volume_button_triggers).isChecked)
+                    like(findViewById<Button>(R.id.like), true)
+                else if (player.isPlaying)
+                    player.pause()
+                else
+                    player.resume()
             }
 
             override fun onSkipToNext() {
