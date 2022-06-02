@@ -39,7 +39,7 @@ https://developer.spotify.com/dashboard/
 Your app will then contain your Client ID and Secret.  
 **Note: Those values are NOT identical with your Spotify username and password. They're special keys required for access to the API.**
 
-2. Obtain your LastFM API key. You can do so by visiting the following link:  
+2. Obtain your LastFM API key. You can do so by visiting the following link and creating an app:
 https://www.last.fm/api/account/create  
 **Note: This key is NOT identical with your LastFM username or password. It's a special key required for access to the API.**
 
