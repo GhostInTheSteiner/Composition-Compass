@@ -36,7 +36,6 @@ import java.io.File
 import java.util.*
 import kotlin.system.exitProcess
 
-
 class MainActivity : AppCompatActivity() {
 
     private lateinit var logger: Logger

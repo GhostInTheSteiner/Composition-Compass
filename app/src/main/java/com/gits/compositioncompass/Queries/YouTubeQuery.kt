@@ -35,8 +35,8 @@ class YouTubeQuery : IYoutubeQuery {
 
     private fun getSubFolder(searchOrUrl: String): String =
         if ((searchOrUrl.startsWith("http://") || searchOrUrl.startsWith("https://")) && searchOrUrl.contains("list="))
-            //playlist; quick and dirty alternative to avoid extracting the id ;(
-            "!Playlist (" + UUID.randomUUID().toString() + ")"
+            //playlist; quick and dirty alternative to avoid getting the title ;(
+            "!Playlist (" + searchOrUrl.replace("\\W+".toRegex(), "").replace("https?".toRegex(), "") + ")"
 
         else if (searchOrUrl.startsWith("http://") || searchOrUrl.startsWith("https://"))
             //single video

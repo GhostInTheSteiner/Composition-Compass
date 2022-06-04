@@ -262,7 +262,7 @@
                 android:text="Successfully started!"
                 android:textColor="@color/white"
                 android:background="#1b7ba2"
-                android:padding="5dp"
+                android:padding="10dp"
                 />
         </TableRow>
 
@@ -282,7 +282,7 @@
                 android:text="-"
                 android:background="#1b7ba2"
                 android:textColor="@color/white"
-                android:padding="5dp"
+                android:padding="10dp"
 
                 />
         </TableRow>

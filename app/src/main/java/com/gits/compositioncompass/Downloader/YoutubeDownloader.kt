@@ -5,7 +5,6 @@ import android.app.Activity
 import com.gits.compositioncompass.Models.SearchQuery
 import com.gits.compositioncompass.Models.TargetDirectory
 import com.gits.compositioncompass.Configuration.CompositionCompassOptions
-import android.app.Application
 import com.yausername.ffmpeg.FFmpeg
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
@@ -13,6 +12,7 @@ import kotlinx.coroutines.*
 import java.io.File
 
 class YoutubeDownloader {
+    private var downloadArchiv: File
     private var activity: Activity
     private var options: CompositionCompassOptions
     private var dl: YoutubeDL
@@ -27,6 +27,11 @@ class YoutubeDownloader {
         ffmpeg.init(activity)
 
         jobs = listOf()
+
+        downloadArchiv = File(options.rootDirectory + "/downloaded.txt")
+
+        if (!downloadArchiv.exists())
+            downloadArchiv.createNewFile()
 
         this.options = options
         this.activity = activity
@@ -61,7 +66,7 @@ class YoutubeDownloader {
             jobs =
                 it.map { trackPair ->
 
-                    val searchQuery = trackPair.second.toString()
+                    val searchQuery = trackPair.second
                     val directory = trackPair.first
 
                     GlobalScope.launch(newSingleThreadContext("youtubedl-download")) {
@@ -73,7 +78,7 @@ class YoutubeDownloader {
                                 onUpdate(status)
                             },
                             onFailure = { exception ->
-                                onFailure(searchQuery, exception)
+                                onFailure(searchQuery.toString(), exception)
                             })
                     }
                 }
@@ -86,23 +91,41 @@ class YoutubeDownloader {
         dl.updateYoutubeDL(activity);
     }
 
-    private fun runYoutubeDL(searchQuery: String, directory: String, onUpdate: (Float) -> Unit, onFailure: (Exception) -> Unit) {
+    private fun runYoutubeDL(searchQuery: SearchQuery, directory: String, onUpdate: (Float) -> Unit, onFailure: (Exception) -> Unit) {
         try {
-
-            val request = YoutubeDLRequest(searchQuery)
-
+            val request = YoutubeDLRequest(searchQuery.toString())
             val downloadDir = File(directory)
+            val formatTitle = "%(title)s"
+
+            var searchQueryArtist = searchQuery.artists.firstOrNull() ?: ""
+            var searchQueryTrack = searchQuery.track
+
+            if (searchQuery.artists.count() > 1)
+                searchQueryTrack += " (feat. ${searchQuery.artists.drop(1).joinToString(", ")})"
+
+            var searchQueryText = ""
+
+            if(searchQueryArtist.length > 0 && searchQueryTrack.length > 0)
+                searchQueryText = "$searchQueryArtist - $searchQueryTrack"
+
+            else
+                searchQueryText = formatTitle
 
             downloadDir.mkdirs()
 
             request.addOption("--extract-audio")
             request.addOption("--ignore-errors")
-
-            request.addOption("--output", downloadDir.absolutePath + "/%(title)s.%(ext)s")
             request.addOption("--match-filter", "duration < 600")
+
             //for meta-data keep in mind that adding it might break the CarPlayer in Tasker!
 
-            val directoryNames = directory.split("/").reversed().take(2)
+            val directoryParts = directory.split("/").reversed().take(2)
+            val subFolder = directoryParts.first()
+
+            val isURL = subFolder.startsWith("!Singles") || subFolder.startsWith("!Playlist")
+            val isSearch = subFolder.startsWith("!Search")
+            val isFile = subFolder.startsWith("!File")
+            val isSpecified = directoryParts.any { it in listOf(DownloadFolder.Artists.folderName, DownloadFolder.Albums.folderName)}
 
             /*
             Single Video:   /Stations/!Singles/Avicii - Levels HQ Upload.opus
@@ -110,20 +133,39 @@ class YoutubeDownloader {
             Search Query:   /Stations/!Search (best techno songs 2021)/<list_of_tracks>
             */
 
-            if (directoryNames.first().equals("!Singles") || directoryNames.first().startsWith("!Playlist (")) { }
-                //pass =>   video or playlist; search with URL
+            if (isURL) {
+                //Single Video or Playlist; search with URL; get title from YouTube
+                request.addOption("--output", downloadDir.absolutePath + "/$formatTitle.%(ext)s")
+            }
 
-            else if (directoryNames.first().startsWith("!Search ("))
-                //          search query; download first 50 results
+            else if (isSearch) {
+                //Search query; search with unstructured text; download first 50 results; get title from YouTube
                 request.addOption("--default-search", "ytsearch50")
-            else
-                //          other download mode; download single track only
-                request.addOption("--default-search", "ytsearch")
+                request.addOption("--output", downloadDir.absolutePath + "/$formatTitle.%(ext)s")
+            }
 
-            if (directoryNames.any { it in listOf(DownloadFolder.Artists.folderName, DownloadFolder.Albums.folderName)}) { }
-                //pass => redownloads allowed
+            else if (isFile) {
+                //Search query; search with unstructured text; download single track only; get title from YouTube
+                request.addOption("--default-search", "ytsearch")
+                request.addOption("--output", downloadDir.absolutePath + "/$formatTitle.%(ext)s")
+            }
+
             else {
-                //request.addOption("--download-archive", options.rootDirectory + "/downloaded.txt")
+                //Other download mode; search with structured text; download single track only; get title from SearchQuery
+                request.addOption("--default-search", "ytsearch")
+                request.addOption("--output", downloadDir.absolutePath + "/$searchQueryText.%(ext)s")
+            }
+
+            if (isSpecified || isURL|| isSearch || isFile)
+                //pass => redownloads allowed
+
+            else if (downloadArchiv.readLines().contains(searchQuery.toString())) {
+                onFailure(Exception("Ignoring item, as it has already been downloaded. Delete downloaded.txt to allow redownloads."))
+                return
+            }
+
+            else {
+                downloadArchiv.appendText(searchQuery.toString()+ "\n")
                 request.addOption("--match-title", "^((?!(${options.exceptions})).)*$")
             }
 

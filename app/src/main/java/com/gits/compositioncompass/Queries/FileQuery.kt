@@ -28,7 +28,7 @@ class FileQuery(val options: CompositionCompassOptions) : IFileQuery {
         File(options.rootDirectory + "/Files").listFiles().map {
             TargetDirectory(
                 getPath(DownloadFolder.Stations, "!File (${it.name})"),
-                it.readLines().map { SearchQuery(it) })
+                it.readLines().map { SearchQuery(track = it) })
         }
 
 
