@@ -79,7 +79,7 @@ abstract class Query(
                     addedGenres.map { "'" + it + "'" }.joinToString(" & ")
                 )
                     .filter { it.length > 0 }
-                    .joinToString(" | ") +
+                    .joinToString("; ") +
                 ")"
 
     protected fun getSubFolder_Station(): String {

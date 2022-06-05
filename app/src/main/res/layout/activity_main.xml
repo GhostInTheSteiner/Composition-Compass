@@ -261,13 +261,13 @@
                 android:gravity="center"
                 android:text="Successfully started!"
                 android:textColor="@color/white"
-                android:background="#1b7ba2"
+                android:background="@drawable/main_info"
                 android:padding="10dp"
                 />
         </TableRow>
 
         <TableRow
-            android:layout_marginTop="5dp">
+            android:layout_marginTop="10dp">
 
             <TextView
                 style="@style/margin_labels"
@@ -279,12 +279,18 @@
                 android:layout_span="2"
                 android:id="@+id/error"
                 android:gravity="left"
-                android:text="-"
-                android:background="#1b7ba2"
+                android:background="@drawable/main_info"
                 android:textColor="@color/white"
                 android:padding="10dp"
-
                 />
+        </TableRow>
+
+        <TableRow>
+            <Space
+                android:layout_span="2"
+                android:layout_height="50dp"
+                android:layout_width="match_parent"
+                ></Space>
         </TableRow>
 
     </TableLayout>

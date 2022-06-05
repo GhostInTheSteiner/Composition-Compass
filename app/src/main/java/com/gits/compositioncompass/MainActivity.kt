@@ -17,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.FileProvider
+import androidx.core.view.setPadding
 import com.gits.compositioncompass.Configuration.CompositionRoot
 import com.gits.compositioncompass.Models.TargetDirectory
 import com.gits.compositioncompass.Queries.IFileQuery
@@ -577,6 +578,7 @@ class MainActivity : AppCompatActivity() {
 
     fun printError(e: Exception) {
         runOnUiThread {
+            error.setPadding(15)
             error.text = getErrorMessage(e.message ?: "Unknown cause", e.stackTraceToString())
             logger.warn(e)
         }

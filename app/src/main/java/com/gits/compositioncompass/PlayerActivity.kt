@@ -8,6 +8,7 @@ import android.content.SharedPreferences
 import android.media.AudioManager
 import android.media.session.MediaSession
 import android.os.Bundle
+import android.os.PowerManager
 import android.os.Vibrator
 import android.text.method.ScrollingMovementMethod
 import android.view.KeyEvent
@@ -58,6 +59,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     private lateinit var preferencesReader: SharedPreferences
     private lateinit var preferencesWriter: SharedPreferences.Editor
     private lateinit var audioManager: AudioManager
+    private lateinit var powerManager: PowerManager
     private lateinit var source: ItemPicker
     private lateinit var vibrator: Vibrator
     private lateinit var player: ArgPlayerLargeView
@@ -68,7 +70,8 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
 
     override fun onPause() {
         super.onPause();
-        mute_ifVolumeTrigger()
+        if (powerManager.isInteractive)
+            mute_ifVolumeTrigger()
     }
 
     override fun onResume() {
@@ -114,6 +117,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
 
             vibrator = applicationContext.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
             audioManager = applicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            powerManager = applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager
 
             //get views
             player = findViewById<ArgPlayerLargeView>(R.id.argmusicplayer)
