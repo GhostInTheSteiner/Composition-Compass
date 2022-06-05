@@ -112,7 +112,7 @@ Please note this only works while the volume button triggers are enabled. Disabl
 
 Also, due to limitations with Android's wake lock, **you must keep the screen turned on when using the volume button triggers!** Don't worry about your screen timeout, Composition Compass will prevent your screen from automatically turning off for as long as the player is open.
 
-One last important piece of information: As long as the triggers are active, **leaving the player and turning off the screen will mute the volume to prevent accidental playback**. If you keep the triggers disabled the volume level won't be affected.
+One last important piece of information: As long as the triggers are active, **leaving the player will mute the volume to prevent accidental playback**. If you keep the triggers disabled the volume level won't be affected.
 
 
 ### Playback of Favorites
