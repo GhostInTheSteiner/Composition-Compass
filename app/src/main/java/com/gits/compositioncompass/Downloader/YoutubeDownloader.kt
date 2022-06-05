@@ -12,7 +12,6 @@ import kotlinx.coroutines.*
 import java.io.File
 
 class YoutubeDownloader {
-    private var downloadArchiv: File
     private var activity: Activity
     private var options: CompositionCompassOptions
     private var dl: YoutubeDL
@@ -27,11 +26,6 @@ class YoutubeDownloader {
         ffmpeg.init(activity)
 
         jobs = listOf()
-
-        downloadArchiv = File(options.rootDirectory + "/downloaded.txt")
-
-        if (!downloadArchiv.exists())
-            downloadArchiv.createNewFile()
 
         this.options = options
         this.activity = activity
@@ -94,8 +88,12 @@ class YoutubeDownloader {
     private fun runYoutubeDL(searchQuery: SearchQuery, directory: String, onUpdate: (Float) -> Unit, onFailure: (Exception) -> Unit) {
         try {
             val request = YoutubeDLRequest(searchQuery.toString())
-            val downloadDir = File(directory)
             val formatTitle = "%(title)s"
+            val downloadDir = File(directory)
+            val downloadArchiv = File(options.rootDirectory + "/downloaded.txt")
+
+            if (!downloadArchiv.exists())
+                downloadArchiv.createNewFile()
 
             var searchQueryArtist = searchQuery.artists.firstOrNull() ?: ""
             var searchQueryTrack = searchQuery.track
@@ -160,7 +158,7 @@ class YoutubeDownloader {
                 //pass => redownloads allowed
 
             else if (downloadArchiv.readLines().contains(searchQuery.toString())) {
-                onFailure(Exception("Ignoring item, as it has already been downloaded. Delete downloaded.txt to allow redownloads."))
+                onFailure(Exception("Ignoring item, as it has already been downloaded. Delete record in downloaded.txt to allow redownloads."))
                 return
             }
 

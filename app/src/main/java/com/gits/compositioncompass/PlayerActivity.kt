@@ -18,6 +18,7 @@ import android.widget.*
 import androidx.activity.result.ActivityResult
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import audioNameN
 import com.arges.sepan.argmusicplayer.Callbacks.OnErrorListener
 import com.arges.sepan.argmusicplayer.Callbacks.OnPlaylistAudioChangedListener
 import com.arges.sepan.argmusicplayer.Enums.ErrorType
@@ -38,7 +39,6 @@ import kotlinx.coroutines.newSingleThreadContext
 import vibrateLong
 import vibrateVeryLong
 import java.io.File
-
 
 class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnErrorListener,
     CompoundButton.OnCheckedChangeListener, DialogInterface.OnClickListener,
@@ -342,7 +342,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
 
     private fun playFolder(path: String) {
         audioList = ArgAudioList(false)
-        LocalFile(path).listFiles().filter { it -> it.isFile }.forEach { file ->
+        LocalFile(path).listFiles().filter { it.isFile }.sortedBy { it.extension == "part" }.forEach { file ->
 
             file.nameWithoutExtension.split(" - ").let { fileParts ->
                 val regex = Regex("(\\(|\\{|\\<|\\[| ft\\.? | feat\\.? )")
@@ -368,6 +368,9 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
                     singer = "Unknown Artist"
                     track = "Unknown Track"
                 }
+
+                //for the .part-files
+                track = track.replace("\\.(webm|mp3|mp4|m4a|opus|wav)$".toRegex(), "")
 
                 audioList.add(ArgAudio.createFromFilePath(singer, track, file.originalPath))
             }
@@ -407,36 +410,34 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     }
 
     override fun onPlaylistAudioChanged(playlist: ArgAudioList?, currentAudioIndex: Int) {
-        GlobalScope.launch(newSingleThreadContext("search-artist")) {
-            try {
-                runOnUiThread {
-                    findViewById<TextView>(R.id.description_title).text = "Artist"
-                    findViewById<TextView>(R.id.description).text = ""
-                    findViewById<TextView>(R.id.genres).text = ""
-                }
-
-                query.searchArtist(currentAudio!!.singer, true).first().let {
-                    runOnUiThread {
-                        findViewById<TextView>(R.id.description_title).text = it.name
-                        findViewById<TextView>(R.id.description).text = it.biography
-                        findViewById<TextView>(R.id.genres).text = it.genres.joinToString()
-                    }
-                }
-            }
-            catch (e: Exception) {
-                logger.warn(e)
-            }
-        }
-
         try {
             currentAudio = playlist?.get(currentAudioIndex)
 
             if (currentAudio != null)
-                bluetoothDevice.sendAVRCP(currentAudio!!.title, currentAudio!!.singer, currentAudio!!.singer, currentAudio!!.singer)
+                bluetoothDevice.sendAVRCP(currentAudio!!.audioNameN, currentAudio!!.singer, currentAudio!!.singer, currentAudio!!.singer)
 
+            GlobalScope.launch(newSingleThreadContext("search-artist")) {
+                try {
+                    runOnUiThread {
+                        findViewById<TextView>(R.id.description_title).text = "Artist"
+                        findViewById<TextView>(R.id.description).text = ""
+                        findViewById<TextView>(R.id.genres).text = ""
+                    }
+
+                    query.searchArtist(currentAudio!!.singer, true).first().let {
+                        runOnUiThread {
+                            findViewById<TextView>(R.id.description_title).text = it.name
+                            findViewById<TextView>(R.id.description).text = it.biography
+                            findViewById<TextView>(R.id.genres).text = it.genres.joinToString()
+                        }
+                    }
+                } catch (e: Exception) {
+                    logger.warn(Exception("Couldn't find artist info", e))
+                }
+            }
         }
         catch (e: Exception) {
-            logger.error(e)
+            logger.error(Exception("Couldn't change playlist audio", e))
         }
     }
 

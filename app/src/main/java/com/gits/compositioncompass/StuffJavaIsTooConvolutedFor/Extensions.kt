@@ -6,6 +6,7 @@ import android.text.TextWatcher
 import android.view.View
 import android.widget.*
 import androidx.core.widget.addTextChangedListener
+import com.arges.sepan.argmusicplayer.Models.ArgAudio
 import kotlinx.coroutines.yield
 import org.json.JSONArray
 import org.json.JSONObject
@@ -93,3 +94,11 @@ fun Vibrator.vibrateLong() =
 
 fun Vibrator.vibrateVeryLong() =
     this.vibrate(VibrationEffect.createOneShot(1000, VibrationEffect.DEFAULT_AMPLITUDE))
+
+//ffs, ArgPlayer's audioName returns 'path'... Let's fix this bug in a dirty fashion
+val ArgAudio.audioNameN: String
+    get() = title.split(" - ").let { it ->
+        if (it.count() > 2) return it[1]
+        else if (it.count() > 1 && it.last().isNotEmpty()) return it.last()
+        else return title
+    }
