@@ -34,12 +34,13 @@ interface IStreamingServiceQuery: IQuery {
     suspend fun addGenre(name: String) : Boolean //might not work for LastFM!
 
     //Similar results to the comma-separated keywords
-    suspend fun getSimilarTracks(): List<TargetDirectory> //contains only one group
+    suspend fun getSimilarTracks(): List<TargetDirectory> //contains only one directory
     suspend fun getSimilarAlbums(): List<TargetDirectory>
     suspend fun getSimilarArtists(): List<TargetDirectory>
 
     //Only for the comma-separated keywords
-    suspend fun getSpecified(): List<TargetDirectory> //contains only one group
+    suspend fun getSpecified(): List<TargetDirectory> //contains only one directory
+//    suspend fun getSpecifiedFavorites(): List<TargetDirectory> //contains only one directory
 }
 
 interface IYoutubeQuery: IQuery {

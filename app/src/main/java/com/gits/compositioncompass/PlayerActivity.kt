@@ -293,9 +293,10 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
                 else
                     File("$targetLike/${source.name}")
 
-            if (source.renameTo(target) && findViewById<CheckBox>(R.id.volume_button_triggers).isChecked) {
+            likeMoved = source.renameTo(target)
+
+            if (likeMoved && findViewById<CheckBox>(R.id.volume_button_triggers).isChecked) {
                 vibrator.vibrateLong()
-                likeMoved = true
 
                 //acoustical indicator that track was moved.
                 //this isn't obvious to the listener, as we're not skipping to the next yet

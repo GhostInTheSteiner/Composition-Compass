@@ -495,6 +495,7 @@ class MainActivity : AppCompatActivity() {
                             QueryMode.SimilarAlbums -> serviceQuery.getSimilarAlbums()
                             QueryMode.SimilarArtists -> serviceQuery.getSimilarArtists()
                             QueryMode.Specified -> serviceQuery.getSpecified()
+                            QueryMode.SpecifiedFavorites -> serviceQuery.getSpecified()
                         }
 
                     downloadDirectories(directories)
