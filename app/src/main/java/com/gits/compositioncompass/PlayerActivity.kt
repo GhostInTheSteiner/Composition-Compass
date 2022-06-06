@@ -3,7 +3,6 @@ package com.gits.compositioncompass
 import QuerySource
 import android.content.Context
 import android.content.DialogInterface
-import android.content.Intent
 import android.content.SharedPreferences
 import android.media.AudioManager
 import android.media.session.MediaSession
@@ -32,8 +31,8 @@ import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.ItemPicker
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.LocalFile
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.Logger
 import com.gits.compositioncompass.databinding.ActivityPlayerBinding
-import com.google.android.material.button.MaterialButtonToggleGroup
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.newSingleThreadContext
 import vibrateLong
@@ -43,6 +42,7 @@ import java.io.File
 class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnErrorListener,
     CompoundButton.OnCheckedChangeListener, DialogInterface.OnClickListener,
     View.OnLongClickListener {
+    private var likeMoved: Boolean = false
     private var playerValue: String = ""
     private var triggersValue: Boolean = false
     private var ignoreUp: Boolean = false
@@ -256,7 +256,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
 
                 return true
 
-            } else if (keyDown && keyCode == KeyEvent.KEYCODE_VOLUME_UP && event!!.repeatCount > 5) {
+            } else if (keyDown && keyCode == KeyEvent.KEYCODE_VOLUME_UP && event!!.repeatCount == 5) {
                 ignoreUp = true
                 unmute()
                 like(findViewById(R.id.like), true)
@@ -283,17 +283,35 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     fun like(view: View) = like(view, false)
 
     fun like(view: View, toMoreInteresting: Boolean = false) {
-        val source = File(currentAudio!!.path)
-        val target =
-            if (toMoreInteresting)
-                File("$favoritesMoreInteresting/${source.name}")
-            else
-                File("$targetLike/${source.name}")
 
-        if (source.renameTo(target) && findViewById<CheckBox>(R.id.volume_button_triggers).isChecked)
-            vibrator.vibrateLong()
+        //only skip track on second click, so we can listen to the current one until the end
+        if (!likeMoved) {
+            val source = File(currentAudio!!.path)
+            val target =
+                if (toMoreInteresting)
+                    File("$favoritesMoreInteresting/${source.name}")
+                else
+                    File("$targetLike/${source.name}")
 
-        player.seekTo(player.duration.toInt())
+            if (source.renameTo(target) && findViewById<CheckBox>(R.id.volume_button_triggers).isChecked) {
+                vibrator.vibrateLong()
+                likeMoved = true
+
+                //acoustical indicator that track was moved.
+                //this isn't obvious to the listener, as we're not skipping to the next yet
+                GlobalScope.launch {
+                    runOnUiThread { player.pause() }
+                    delay(500)
+                    runOnUiThread { player.resume() }
+                }
+
+            }
+        }
+
+        else {
+            player.seekTo(player.duration.toInt())
+            likeMoved = false
+        }
     }
 
     fun dislike(view: View) {
@@ -411,6 +429,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
 
     override fun onPlaylistAudioChanged(playlist: ArgAudioList?, currentAudioIndex: Int) {
         try {
+            likeMoved = false
             currentAudio = playlist?.get(currentAudioIndex)
 
             if (currentAudio != null)
