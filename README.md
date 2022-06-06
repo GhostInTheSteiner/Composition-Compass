@@ -91,7 +91,10 @@ Playback of Stations works by pressing the `Volume Up` and `Volume Down` keys to
 
 ..., skipping the `Favorites` folder. If you encounter a track you like *especially*, you can give it a special place right away. This way you'll have an easier time finding it later on ;)
 
-The current track will also be skipped at the same time, so you don't have to listen to it until the very end. Of course, you can also press the `Like` and `Dislike` buttons displayed on-screen. The volume button triggers can be enabled and disabled by checking the checkbox below the player.
+Of course, you can also press the `Like` and `Dislike` buttons displayed on-screen. The volume button triggers can be enabled and disabled by checking the checkbox below the player.
+
+**Note:** If you dislike a track it'll be skipped at the same time, so you don't have to listen to it until the very end. **If you like a track it won't be skipped immediately, which allows you to hear all of it**. If you still want to skip you just need to press the like button once again.
+
 
 #### With a car stereo
 
