@@ -16,7 +16,7 @@ class YoutubeDownloader {
     private var options: CompositionCompassOptions
     private var dl: YoutubeDL
     private var ffmpeg: FFmpeg
-    private var jobs: List<Job>
+    private var jobs: MutableList<Job>
 
     constructor(options: CompositionCompassOptions, activity: Activity) {
         dl = YoutubeDL.getInstance()
@@ -25,60 +25,64 @@ class YoutubeDownloader {
         ffmpeg = FFmpeg.getInstance()
         ffmpeg.init(activity)
 
-        jobs = listOf()
+        jobs = mutableListOf()
 
         this.options = options
         this.activity = activity
     }
 
+    //needs to be blocking for as long as download runs!
     suspend fun start(targetDirectories: List<TargetDirectory>, onUpdate: (DownloadStatus) -> Unit, onFailure: (String, Exception) -> Unit) {
 
         val status = DownloadStatus()
-        val queriesGrouped: MutableList<MutableList<Pair<String, SearchQuery>>> = mutableListOf()
-        var indexGroup = -1
-        var indexTotal = 0
 
-        targetDirectories.forEach() { directory ->
-            directory.searchQueries.forEach { search ->
-                if (indexTotal % options.maxParallelDownloads == 0) {
-                    queriesGrouped.add(mutableListOf())
-                    indexGroup++
-                }
+        targetDirectories.forEach { directory -> directory.searchQueries
+            .map { search ->
 
                 //use a sufficiently unique key: download path + search
-                var key = Pair(directory.targetPath, search)
+                var trackPair = Pair(directory.targetPath, search)
 
-                status.updateJob(key, 0.0F)
+                //is added anew each time; falsifies total percent
+                status.updateJob(trackPair, 0.0F)
 
-                //group (to allow for maxParallelDownloads) and flatten
-                queriesGrouped[indexGroup].add(key)
-                indexTotal++
+                trackPair
+            }
+            .forEach { trackPair ->
+                while (true) {
+                    val targetPath = trackPair.first
+                    val search = trackPair.second
+
+                    val removed = jobs.removeAll { it.isCompleted }
+
+                    if (jobs.count() < options.maxParallelDownloads) {
+
+                        //once returned job completes the download is finished
+                        val job = GlobalScope.launch(newSingleThreadContext("youtubedl-download")) {
+                            runYoutubeDL(
+                                search,
+                                targetPath,
+                                onUpdate = { progress ->
+                                    status.updateJob(trackPair, progress)
+                                    onUpdate(status)
+                                },
+                                onFailure = { exception ->
+                                    status.updateJob(trackPair, 100.0F)
+                                    onFailure(search.toString(), exception)
+                                })
+                        }
+
+                        jobs.add(job)
+                        break
+                    }
+                    else
+                        delay(100)
+                }
+
+                val x = ""
             }
         }
 
-        queriesGrouped.forEach {
-            jobs =
-                it.map { trackPair ->
-
-                    val searchQuery = trackPair.second
-                    val directory = trackPair.first
-
-                    GlobalScope.launch(newSingleThreadContext("youtubedl-download")) {
-                        runYoutubeDL(
-                            searchQuery,
-                            directory,
-                            onUpdate = { progress ->
-                                status.updateJob(trackPair, progress)
-                                onUpdate(status)
-                            },
-                            onFailure = { exception ->
-                                onFailure(searchQuery.toString(), exception)
-                            })
-                    }
-                }
-
-            jobs.joinAll()
-        }
+        jobs.joinAll()
     }
     
     fun update() {

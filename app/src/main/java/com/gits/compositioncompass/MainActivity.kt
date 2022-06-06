@@ -507,8 +507,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private suspend fun downloadDirectories(directories: List<TargetDirectory>) {
-        //the below needs to be removed from this scope!
-
         runOnUiThread { info.text = "Fetching tracks from YouTube..." }
 
         composition.downloader.start(

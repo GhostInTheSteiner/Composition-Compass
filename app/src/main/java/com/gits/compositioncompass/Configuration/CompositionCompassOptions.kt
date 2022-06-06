@@ -125,7 +125,7 @@ class CompositionCompassOptions {
         options_[::resultsSimilarArtists.name] = 5 as Object
         options_[::resultsSimilarAlbums.name] = 5 as Object
 
-        options_[::maxParallelDownloads.name] = 100 as Object
+        options_[::maxParallelDownloads.name] = 5 as Object
         options_[::commaReplacer.name] = "<comma>" as Object
         options_[::exceptions.name] = "live|remix| mix|add_other_exceptions_here" as Object
 
