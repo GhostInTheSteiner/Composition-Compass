@@ -49,6 +49,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var album: InstantMultiAutoCompleteTextView
     private lateinit var searchQuery: InstantMultiAutoCompleteTextView
     private lateinit var file: InstantMultiAutoCompleteTextView
+    private lateinit var favorites: InstantMultiAutoCompleteTextView
     private lateinit var mode: Spinner
     private lateinit var source: Spinner
     private lateinit var download: Button
@@ -67,7 +68,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
 
     override fun onResume() {
-        super.onResume(); CompositionRoot.getInstance(this)
+        super.onResume(); CompositionRoot.initialize(this)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -79,7 +80,7 @@ class MainActivity : AppCompatActivity() {
 
             notificationChannelId = createNotificationChannel("composition-compass")
 
-            composition = CompositionRoot.getInstance(this)
+            composition = CompositionRoot.initialize(this)
             logger = composition.logger
 
             preferencesReader = composition.preferencesReader
@@ -177,14 +178,15 @@ class MainActivity : AppCompatActivity() {
         genre = getView(Fields.Genre)
         searchQuery = getView(Fields.SearchQuery)
         file = getView(Fields.File)
+        favorites = getView(Fields.Favorites)
 
         download = findViewById(R.id.download)
         update = findViewById(R.id.update)
 
-        queryParameters = listOf(artist, track, album, genre, searchQuery, file)
+        queryParameters = listOf(artist, track, album, genre, searchQuery, file, favorites)
 
         queryParameters.forEach {
-            //load last inouts
+            //load last inputs
             it.setText(preferencesReader.getString("view:" + it.id.toString(), ""))
 
             //register event handler for autocomplete feature
@@ -199,7 +201,8 @@ class MainActivity : AppCompatActivity() {
             SpinnerItem(QueryMode.SimilarTracks, "Similar Tracks"),
             SpinnerItem(QueryMode.SimilarArtists, "Similar Artists"),
             SpinnerItem(QueryMode.SimilarAlbums, "Similar Albums"),
-            SpinnerItem(QueryMode.Specified, "Specified")
+            SpinnerItem(QueryMode.Specified, "Specified"),
+            SpinnerItem(QueryMode.SpecifiedFavorites, "Specified Favorites"),
         )
 
         source.adapter = getSpinnerAdapter(
@@ -495,7 +498,7 @@ class MainActivity : AppCompatActivity() {
                             QueryMode.SimilarAlbums -> serviceQuery.getSimilarAlbums()
                             QueryMode.SimilarArtists -> serviceQuery.getSimilarArtists()
                             QueryMode.Specified -> serviceQuery.getSpecified()
-                            QueryMode.SpecifiedFavorites -> serviceQuery.getSpecified()
+                            QueryMode.SpecifiedFavorites -> serviceQuery.getSpecifiedFavorites()
                         }
 
                     downloadDirectories(directories)

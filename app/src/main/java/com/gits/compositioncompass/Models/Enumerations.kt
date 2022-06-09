@@ -5,6 +5,7 @@ enum class Fields(val viewName: String) {
     Album("album"),
     SearchQuery("searchQuery"),
     File("file"),
+    Favorites("favorites"),
     Info("info"),
     Mode("mode"),
     Source("source"),

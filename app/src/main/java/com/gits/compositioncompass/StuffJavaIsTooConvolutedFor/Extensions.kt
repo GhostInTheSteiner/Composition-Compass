@@ -98,7 +98,7 @@ fun Vibrator.vibrateVeryLong() =
 //ffs, ArgPlayer's audioName returns 'path'... Let's fix this bug in a dirty fashion
 val ArgAudio.audioNameN: String
     get() = title.split(" - ").let { it ->
-        if (it.count() > 2) return it[1]
+        if (it.count() > 2) return it.drop(1).joinToString(" - ")
         else if (it.count() > 1 && it.last().isNotEmpty()) return it.last()
         else return title
     }

@@ -76,7 +76,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
 
     override fun onResume() {
         super.onResume();
-        CompositionRoot.getInstance(this)
+        CompositionRoot.initialize(this)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         unmute_ifVolumeTrigger()
     }
@@ -87,7 +87,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
         binding = ActivityPlayerBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        composition = CompositionRoot.getInstance(this)
+        composition = CompositionRoot.initialize(this)
         logger = composition.logger
 
         try {
@@ -108,7 +108,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
             listOf(recylebin, favorites, favoritesMoreInteresting, favoritesLessInteresting)
                 .forEach { File(it).mkdirs() }
 
-            source = ItemPicker(this, ::sourceSuccess, ::sourceError)
+            source = composition.picker
 
             playerControls = listOf(findViewById(R.id.like), findViewById(R.id.dislike))
             playerControls.forEach { it.isEnabled = false }
@@ -326,7 +326,14 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     }
 
     fun browse(view: View) {
-        source.folder()
+        GlobalScope.launch {
+            val folder = source.folder()
+
+            runOnUiThread {
+                if(folder == null) sourceError()
+                else sourceSuccess(folder.absolutePath)
+            }
+        }
     }
 
     fun close(view: View) = close()
@@ -369,7 +376,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
                 var track = ""
 
                 if (fileParts.count() > 2) {
-                    singer = fileParts.first() //let's just assume first part is singer lol
+                    singer = fileParts.first() //first part is singer
                     track = fileParts.drop(1).joinToString()
                 }
 
@@ -416,16 +423,14 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
         if (triggers.isChecked) mute(showUI)
     }
 
-    private fun sourceSuccess(result: ActivityResult, file: File) = sourceSuccess(file.absolutePath)
-
     private fun sourceSuccess(filePath: String) {
         setTarget(filePath)
         playFolder(filePath)
         playerControls.forEach { it.isEnabled = true }
     }
 
-    private fun sourceError(activityResult: ActivityResult) {
-        logger.error(Exception("Couldn't select folder: ${activityResult.resultCode}\n\n$activityResult"))
+    private fun sourceError() {
+        logger.error(Exception("Couldn't select folder!"))
     }
 
     override fun onPlaylistAudioChanged(playlist: ArgAudioList?, currentAudioIndex: Int) {

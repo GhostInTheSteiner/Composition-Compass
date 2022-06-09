@@ -14,8 +14,12 @@ import com.adamratzman.spotify.SpotifyAppApiBuilder
 import com.adamratzman.spotify.models.*
 import com.adamratzman.spotify.spotifyAppApi
 import com.adamratzman.spotify.utils.Market
+import com.gits.compositioncompass.R
 import contains
 import kotlinx.coroutines.*
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
 import kotlin.math.roundToInt
 
 class SpotifyQuery: IStreamingServiceQuery, Query {
@@ -30,8 +34,9 @@ class SpotifyQuery: IStreamingServiceQuery, Query {
     }
 
     override val supportedFields: List<Fields> get() = when (mode) {
-        QueryMode.Specified -> listOf(Fields.Track, Fields.Artist, Fields.Album)
-        else                -> listOf(Fields.Track, Fields.Artist, Fields.Genre)
+        QueryMode.SpecifiedFavorites    -> listOf(Fields.Favorites)
+        QueryMode.Specified             -> listOf(Fields.Track, Fields.Artist, Fields.Album)
+        else                            -> listOf(Fields.Track, Fields.Artist, Fields.Genre)
     }
 
     constructor(options: CompositionCompassOptions): super(options) {

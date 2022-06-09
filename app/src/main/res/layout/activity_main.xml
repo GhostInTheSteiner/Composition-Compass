@@ -147,6 +147,26 @@
         </TableRow>
 
         <TableRow
+            android:id="@+id/rowFavorites" >
+
+            <TextView
+                android:id="@+id/favoritesLabel"
+                style="@style/margin_labels"
+                android:text="Favs."
+                android:gravity="right"
+                android:padding="3dip" />
+            <com.gits.compositioncompass.ui.controls.InstantMultiAutoCompleteTextView
+                android:maxWidth="@dimen/activity_horizontal_margin"
+                android:hint="Pandora/!automated/[Favorites]"
+                android:enabled="false"
+                android:id="@+id/favorites"
+                android:padding="3dip"
+                android:backgroundTint="#48b4e0"
+                android:drawableTint="#48b4e0"
+                />
+        </TableRow>
+
+        <TableRow
             android:id="@+id/rowSource" >
 
             <TextView

@@ -40,7 +40,7 @@ interface IStreamingServiceQuery: IQuery {
 
     //Only for the comma-separated keywords
     suspend fun getSpecified(): List<TargetDirectory> //contains only one directory
-//    suspend fun getSpecifiedFavorites(): List<TargetDirectory> //contains only one directory
+    suspend fun getSpecifiedFavorites(): List<TargetDirectory> //contains only one directory
 }
 
 interface IYoutubeQuery: IQuery {

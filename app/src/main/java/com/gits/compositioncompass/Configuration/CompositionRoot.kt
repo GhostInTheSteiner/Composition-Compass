@@ -7,6 +7,7 @@ import android.app.Activity
 import com.gits.compositioncompass.Downloader.YoutubeDownloader
 import android.content.SharedPreferences
 import android.os.Environment
+import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.ItemPicker
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.Logger
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.Notifier
 
@@ -30,6 +31,7 @@ class CompositionRoot {
     lateinit var query: IQuery //replaceable
     lateinit var downloader: YoutubeDownloader
     lateinit var logger: Logger
+    lateinit var picker: ItemPicker
 
     private constructor(options: CompositionCompassOptions, activity: Activity) {
         initWithoutActivity(options)
@@ -50,6 +52,7 @@ class CompositionRoot {
     private fun initWithActivity(options: CompositionCompassOptions, activity: Activity) {
         downloader = YoutubeDownloader(options, activity)
         logger = Logger(options, Notifier(options, activity))
+        picker = ItemPicker(options, activity)
         preferencesReader = activity.getSharedPreferences(options.packageName, 0)
         preferencesWriter = preferencesReader.edit()
     }
@@ -71,7 +74,7 @@ class CompositionRoot {
     companion object {
         private var instance: CompositionRoot? = null
 
-        fun getInstance(newActivity: Activity) : CompositionRoot {
+        fun initialize(newActivity: Activity) : CompositionRoot {
             if (instance == null) {
                 val extStoragePath = Environment.getExternalStorageDirectory().absolutePath
                 val configFile = extStoragePath + "/Music/Pandora/config.ini"
