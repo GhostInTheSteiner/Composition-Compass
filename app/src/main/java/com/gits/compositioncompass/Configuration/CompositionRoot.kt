@@ -10,6 +10,9 @@ import android.os.Environment
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.ItemPicker
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.Logger
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.Notifier
+import java.io.File
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 //CompositionRoot:  Configures its own components based on CompositionRootOptions
 //Activities:       Merely acquire a reference to CompositionRoot via getInstance()
@@ -25,7 +28,7 @@ import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.Notifier
 class CompositionRoot {
 
     val options: CompositionCompassOptions
-    var lastActivity: Activity
+    var activity: Activity
     lateinit var preferencesReader: SharedPreferences
     lateinit var preferencesWriter: SharedPreferences.Editor
     lateinit var query: IQuery //replaceable
@@ -34,18 +37,20 @@ class CompositionRoot {
     lateinit var picker: ItemPicker
 
     private constructor(options: CompositionCompassOptions, activity: Activity) {
-        initWithoutActivity(options)
         initWithActivity(options, activity)
+        initWithoutActivity(options)
 
         instance = this
 
         this.options = options
-        this.lastActivity = activity
+        this.activity = activity
+
+
     }
 
     //not dependant on activity (one-time only instantiation)
     private fun initWithoutActivity(options: CompositionCompassOptions) {
-        query = SpotifyQuery(options) //default query
+        query = SpotifyQuery(options, picker) //default query
     }
 
     //dependant on activity (need to be re-instantiated or updated once activity changes)
@@ -60,8 +65,8 @@ class CompositionRoot {
     fun changeQuerySource(source: QuerySource) {
         query =
             when(source) {
-                QuerySource.Spotify -> SpotifyQuery(options)
-                QuerySource.LastFM -> LastFMQuery(options)
+                QuerySource.Spotify -> SpotifyQuery(options, picker)
+                QuerySource.LastFM -> LastFMQuery(options, picker)
                 QuerySource.YouTube -> YouTubeQuery(options)
                 QuerySource.File -> FileQuery(options)
             }
@@ -83,10 +88,10 @@ class CompositionRoot {
                 return CompositionRoot(options, newActivity)
             }
 
-            else if (instance!!.lastActivity != newActivity) {
+            else if (instance!!.activity != newActivity) {
                 //re-init with currently displayed activity
                 instance!!.initWithActivity(instance!!.options, newActivity)
-                instance!!.lastActivity = newActivity
+                instance!!.activity = newActivity
                 return instance!!
             }
 

@@ -1,18 +1,31 @@
 package com.gits.compositioncompass.Configuration
 
 import android.app.Activity
-import android.app.Application
 import java.io.File
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 class CompositionCompassOptions {
+
+    //private fields
     private var activity: Activity
     private var configFile: File
     private var options: MutableMap<String, Object>
 
+    //technical fields
     var __requiredFields: List<String>
     var __requiredFieldsSet: Boolean
     var __filePath: String
 
+    //generated fields
+    lateinit var automated: String
+    lateinit var recylebin: String
+    lateinit var favorites: String
+    lateinit var favoritesBase: String
+    lateinit var favoritesMoreInteresting: String
+    lateinit var favoritesLessInteresting: String
+
+    //user configurable fields
     var spotifyClientId: String
         get() = options[::spotifyClientId.name] as String
         set(value) { options[::spotifyClientId.name] = value as Object }
@@ -100,6 +113,8 @@ class CompositionCompassOptions {
         __filePath = filePath
         __requiredFields = listOf(::spotifyClientId.name, ::spotifyClientSecret.name, ::lastfmApiKey.name)
         __requiredFieldsSet = __requiredFields.map { options[it] }.all { (it as String).length > 0 }
+
+        setGeneratedFields()
     }
 
     private fun loadDefaults(): MutableMap<String, Object> {
@@ -166,5 +181,21 @@ class CompositionCompassOptions {
 
         //remove backup
         tmp.delete()
+    }
+
+    private fun setGeneratedFields() {
+        val time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+        val favoritesName = "Favorites (${time})"
+        val favoritesNameBase = "Favorites"
+
+        automated = rootDirectory + "/" + automatedDirectory
+        recylebin = "$automated/Recycle Bin"
+        favorites = "$automated/$favoritesName"
+        favoritesBase = "$automated/$favoritesNameBase"
+        favoritesMoreInteresting = "$favorites/More Interesting"
+        favoritesLessInteresting = "$favorites/Less Interesting"
+
+        listOf(recylebin, favorites, favoritesMoreInteresting, favoritesLessInteresting)
+            .forEach { File(it).mkdirs() }
     }
 }

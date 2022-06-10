@@ -42,7 +42,6 @@ class YoutubeDownloader {
                 //use a sufficiently unique key: download path + search
                 var trackPair = Pair(directory.targetPath, search)
 
-                //is added anew each time; falsifies total percent
                 status.updateJob(trackPair, 0.0F)
 
                 trackPair
@@ -162,13 +161,13 @@ class YoutubeDownloader {
                 //pass => redownloads allowed
 
             else if (downloadArchiv.readLines().contains(searchQuery.toString())) {
-                onFailure(Exception("Ignoring item, as it has already been downloaded. Delete record in downloaded.txt to allow redownloads."))
-                return
+//                onFailure(Exception("Ignoring item, as it has already been downloaded. Delete record in downloaded.txt to allow redownloads."))
+//                return
             }
 
             else {
-                downloadArchiv.appendText(searchQuery.toString()+ "\n")
-                request.addOption("--match-title", "^((?!(${options.exceptions})).)*$")
+//                downloadArchiv.appendText(searchQuery.toString()+ "\n")
+//                request.addOption("--match-title", "^((?!(${options.exceptions})).)*$")
             }
 
             dl.execute(request) { progress, etaInSeconds -> onUpdate(progress) }

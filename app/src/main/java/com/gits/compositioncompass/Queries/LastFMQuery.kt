@@ -11,6 +11,7 @@ import com.gits.compositioncompass.Models.SearchQuery
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.WebService
 import com.gits.compositioncompass.Models.TargetDirectory
 import com.gits.compositioncompass.Models.TrackItem
+import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.ItemPicker
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.WebRequestErrorException
 import kotlinx.coroutines.*
 import org.json.JSONObject
@@ -34,7 +35,7 @@ class LastFMQuery
     private var mode: QueryMode
     private var service: WebService
 
-    constructor(options: CompositionCompassOptions): super(options) {
+    constructor(options: CompositionCompassOptions, picker: ItemPicker): super(options, picker) {
         this.mode = QueryMode.SimilarTracks
         this.options = options
         this.service = WebService("https://ws.audioscrobbler.com").setEndpoint("2.0")

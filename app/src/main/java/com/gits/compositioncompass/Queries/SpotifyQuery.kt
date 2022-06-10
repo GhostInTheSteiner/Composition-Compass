@@ -14,12 +14,9 @@ import com.adamratzman.spotify.SpotifyAppApiBuilder
 import com.adamratzman.spotify.models.*
 import com.adamratzman.spotify.spotifyAppApi
 import com.adamratzman.spotify.utils.Market
-import com.gits.compositioncompass.R
+import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.ItemPicker
 import contains
 import kotlinx.coroutines.*
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.*
 import kotlin.math.roundToInt
 
 class SpotifyQuery: IStreamingServiceQuery, Query {
@@ -29,8 +26,9 @@ class SpotifyQuery: IStreamingServiceQuery, Query {
     private var mode: QueryMode
 
     override val requiredFields: List<List<Fields>> get() = when (mode) {
-        QueryMode.Specified -> listOf(listOf(Fields.Artist), listOf(Fields.Artist, Fields.Track), listOf(Fields.Artist, Fields.Album))
-        else                -> listOf(listOf(Fields.Artist), listOf(Fields.Artist, Fields.Track), listOf(Fields.Artist, Fields.Track, Fields.Genre), listOf(Fields.Artist, Fields.Genre))
+        QueryMode.SpecifiedFavorites    -> listOf(listOf())
+        QueryMode.Specified             -> listOf(listOf(Fields.Artist), listOf(Fields.Artist, Fields.Track), listOf(Fields.Artist, Fields.Album))
+        else                            -> listOf(listOf(Fields.Artist), listOf(Fields.Artist, Fields.Track), listOf(Fields.Artist, Fields.Track, Fields.Genre), listOf(Fields.Artist, Fields.Genre))
     }
 
     override val supportedFields: List<Fields> get() = when (mode) {
@@ -39,7 +37,7 @@ class SpotifyQuery: IStreamingServiceQuery, Query {
         else                            -> listOf(Fields.Track, Fields.Artist, Fields.Genre)
     }
 
-    constructor(options: CompositionCompassOptions): super(options) {
+    constructor(options: CompositionCompassOptions, picker: ItemPicker): super(options, picker) {
         this.options = options
 
         mode = QueryMode.SimilarTracks

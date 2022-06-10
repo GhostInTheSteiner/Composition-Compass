@@ -38,6 +38,8 @@ import kotlinx.coroutines.newSingleThreadContext
 import vibrateLong
 import vibrateVeryLong
 import java.io.File
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnErrorListener,
     CompoundButton.OnCheckedChangeListener, DialogInterface.OnClickListener,
@@ -94,19 +96,10 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
             preferencesWriter = composition.preferencesWriter
             preferencesReader = composition.preferencesReader
 
-            val automated =
-                composition.options.rootDirectory + "/" + composition.options.automatedDirectory
-
             composition.changeQuerySource(QuerySource.LastFM)
             query = composition.query as LastFMQuery
 
-            recylebin = "$automated/Recycle Bin"
-            favorites = "$automated/Favorites"
-            favoritesMoreInteresting = "$favorites/More Interesting"
-            favoritesLessInteresting = "$favorites/Less Interesting"
-
-            listOf(recylebin, favorites, favoritesMoreInteresting, favoritesLessInteresting)
-                .forEach { File(it).mkdirs() }
+            setDirectories()
 
             source = composition.picker
 
@@ -157,6 +150,14 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
         } catch (e: Exception) {
             logger.error(e)
         }
+    }
+
+    //TODO: Include station name in favorites folder name
+    private fun setDirectories() {
+        recylebin = composition.options.recylebin
+        favorites = composition.options.favorites
+        favoritesMoreInteresting = composition.options.favoritesMoreInteresting
+        favoritesLessInteresting = composition.options.favoritesLessInteresting
     }
 
     private fun setUpCallBack() {

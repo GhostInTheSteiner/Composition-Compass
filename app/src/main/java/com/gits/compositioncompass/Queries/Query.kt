@@ -1,16 +1,16 @@
 package com.gits.compositioncompass.Queries
 
 import DownloadFolder
-import com.adamratzman.spotify.models.Track
 import com.gits.compositioncompass.Configuration.CompositionCompassOptions
 import com.gits.compositioncompass.Models.*
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.ItemPicker
 import java.io.File
-import java.lang.Exception
-import java.text.SimpleDateFormat
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 abstract class Query(
     protected var options: CompositionCompassOptions,
+    protected var picker: ItemPicker,
 ) {
 
     protected var addedArtists: MutableList<ArtistItem> = mutableListOf()
@@ -76,19 +76,34 @@ abstract class Query(
     abstract suspend fun addArtist(name: String) : Boolean
 
     suspend fun getSpecifiedFavorites(): List<TargetDirectory> {
-//        val favorites = .folder() //use folder picker here
-//        val artists = favorites.map { it.nameWithoutExtension.split(" - ").first() }
-//        artists.forEach { addArtist(it) }
-//
-//        val time = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-//        val targetDirectories = getSpecified()
-//        val targetDirectoriesAltered = targetDirectories.map { TargetDirectory( // to new TargetDirectory with an altered path
-//            getPath(DownloadFolder.Stations, "!Favorites MI (${time})"),
-//            it.searchQueries
-//        )}
-//
-//        return targetDirectoriesAltered
-        return listOf()
+        val folder = picker.folder()
+
+        if (folder == null)
+            throw Exception("No folder selected!")
+        else if (!folder.absolutePath.startsWith(options.favoritesBase))
+            throw Exception("No Favorites folder selected!")
+        else
+            {
+            val favorites = folder.listFiles().filter { it.isFile } //use folder picker here
+            val artists = favorites.map { it.nameWithoutExtension.split(" - ").first() }
+            artists.forEach { addArtist(it) }
+
+            val specifiedDirectories = getSpecified()
+            val searchQueries = specifiedDirectories.flatMap { it.searchQueries }
+
+            val folderName =
+                if (folder.name == File(options.favoritesMoreInteresting).name)
+                    folder.parentFile.name + " [MI]" //"More Interesting"
+                else
+                    folder.name
+
+            val targetDirectories = listOf(TargetDirectory(
+                getPath(DownloadFolder.Stations, "!${folderName}"),
+                searchQueries
+            ))
+
+            return targetDirectories
+        }
     }
 
     protected fun getSubFolder_Similar() =

@@ -5,6 +5,7 @@ import DownloadFolder
 import Fields
 import QueryMode
 import com.gits.compositioncompass.Models.*
+import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.ItemPicker
 import java.lang.Exception
 
 interface IQuery {

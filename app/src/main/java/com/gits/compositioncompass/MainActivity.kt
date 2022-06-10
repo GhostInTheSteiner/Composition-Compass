@@ -446,9 +446,14 @@ class MainActivity : AppCompatActivity() {
                     var genreSuccess = true
 
                     runBlocking {
-                        val artistView =
-                            (supportedFields.filter { it.id == R.id.artist }.first() as TextView)
-                        val artists = getTextViewValues(artistView)
+
+                        var artists =
+                            if (supportedFields.all { it.id == R.id.favorites })
+                                listOf() // artists will be fathomed from favorites folder
+                            else {
+                                val artistView = (supportedFields.filter { it.id == R.id.artist }.first() as TextView)
+                                getTextViewValues(artistView)
+                            }
 
                         runOnUiThread { info.text = "Fetching data from source..." }
 
