@@ -93,7 +93,7 @@ Playback of Stations works by pressing the `Volume Up` and `Volume Down` keys to
 
 Of course, you can also press the `Like` and `Dislike` buttons displayed on-screen. The volume button triggers can be enabled and disabled by checking the checkbox below the player.
 
-**Note:** If you dislike a track it'll be skipped at the same time, so you don't have to listen to it until the very end. **If you like a track it won't be skipped immediately, which allows you to hear all of it**. If you still want to skip you just need to press the like button once again.
+**Note:** Upon liking or disliking a track it won't be skipped immediately, which allows you to hear all of if. **You can still initiate a skip to the next track by pressing the like or dislike button once again.**
 
 
 #### With a car stereo
