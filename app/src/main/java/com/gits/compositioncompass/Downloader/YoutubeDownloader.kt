@@ -93,7 +93,7 @@ class YoutubeDownloader {
             val request = YoutubeDLRequest(searchQuery.toString())
             val formatTitle = "%(title)s"
             val downloadDir = File(directory)
-            val downloadArchiv = File(options.rootDirectory + "/downloaded.txt")
+            val downloadArchiv = File(options.rootDirectoryPath + "/downloaded.txt")
 
             if (!downloadArchiv.exists())
                 downloadArchiv.createNewFile()
@@ -118,7 +118,8 @@ class YoutubeDownloader {
             request.addOption("--ignore-errors")
             request.addOption("--match-filter", "duration < 600")
 
-            //for meta-data keep in mind that adding it might break the CarPlayer in Tasker!
+            //TODO: perhaps add meta-data now, that tasker / vlc is no longer required?
+            //previously meta-data broke the tasker implementation
 
             val directoryParts = directory.split("/").reversed().take(2)
             val subFolder = directoryParts.first()
@@ -126,6 +127,7 @@ class YoutubeDownloader {
             val isURL = subFolder.startsWith("!Singles") || subFolder.startsWith("!Playlist")
             val isSearch = subFolder.startsWith("!Search")
             val isFile = subFolder.startsWith("!File")
+            val isFavorites = subFolder.startsWith("!${options.favoritesBaseDirectory}")
             val isSpecified = directoryParts.any { it in listOf(DownloadFolder.Artists.folderName, DownloadFolder.Albums.folderName)}
 
             /*
@@ -157,17 +159,17 @@ class YoutubeDownloader {
                 request.addOption("--output", downloadDir.absolutePath + "/$searchQueryText.%(ext)s")
             }
 
-            if (isSpecified || isURL|| isSearch || isFile)
+            if (isSpecified || isURL|| isSearch || isFile || isFavorites)
                 //pass => redownloads allowed
 
             else if (downloadArchiv.readLines().contains(searchQuery.toString())) {
-//                onFailure(Exception("Ignoring item, as it has already been downloaded. Delete record in downloaded.txt to allow redownloads."))
-//                return
+                onFailure(Exception("Ignoring item, as it has already been downloaded. Delete record in downloaded.txt to allow redownloads."))
+                return
             }
 
             else {
-//                downloadArchiv.appendText(searchQuery.toString()+ "\n")
-//                request.addOption("--match-title", "^((?!(${options.exceptions})).)*$")
+                downloadArchiv.appendText(searchQuery.toString()+ "\n")
+                request.addOption("--match-title", "^((?!(${options.exceptions})).)*$")
             }
 
             dl.execute(request) { progress, etaInSeconds -> onUpdate(progress) }

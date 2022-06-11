@@ -5,8 +5,6 @@ import com.gits.compositioncompass.Configuration.CompositionCompassOptions
 import com.gits.compositioncompass.Models.*
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.ItemPicker
 import java.io.File
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 abstract class Query(
     protected var options: CompositionCompassOptions,
@@ -21,7 +19,7 @@ abstract class Query(
     protected val resultsSimilarArtists_Tracks: Int = 10 //spotify doesn't allow more than 10
 
     protected fun getPath(folder: DownloadFolder, subFolderName: String): String {
-        return options.rootDirectory + "/" + folder.folderName + "/" + subFolderName
+        return options.rootDirectoryPath + "/" + folder.folderName + "/" + subFolderName
     }
 
     suspend fun getSpecified(): List<TargetDirectory> {
@@ -80,19 +78,22 @@ abstract class Query(
 
         if (folder == null)
             throw Exception("No folder selected!")
-        else if (!folder.absolutePath.startsWith(options.favoritesBase))
+        else if (!folder.absolutePath.startsWith(options.favoritesBaseDirectoryPath))
             throw Exception("No Favorites folder selected!")
         else
             {
-            val favorites = folder.listFiles().filter { it.isFile } //use folder picker here
+            val favorites = folder.walkTopDown().toList().filter { it.isFile }
             val artists = favorites.map { it.nameWithoutExtension.split(" - ").first() }
             artists.forEach { addArtist(it) }
 
             val specifiedDirectories = getSpecified()
-            val searchQueries = specifiedDirectories.flatMap { it.searchQueries }
+            val searchQueries = specifiedDirectories.flatMapIndexed { currentArtist, it ->
+                it.searchQueries.map {
+                    //ensure source artist is used, and not one of the "featured" artists
+                    SearchQuery(it.track, listOf(artists[currentArtist]), it.album, it.genre) } }
 
             val folderName =
-                if (folder.name == File(options.favoritesMoreInteresting).name)
+                if (folder.name == options.moreInterestingDirectory)
                     folder.parentFile.name + " [MI]" //"More Interesting"
                 else
                     folder.name

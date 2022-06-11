@@ -24,6 +24,7 @@ import com.arges.sepan.argmusicplayer.Enums.ErrorType
 import com.arges.sepan.argmusicplayer.Models.ArgAudio
 import com.arges.sepan.argmusicplayer.Models.ArgAudioList
 import com.arges.sepan.argmusicplayer.PlayerViews.ArgPlayerLargeView
+import com.gits.compositioncompass.Configuration.CompositionCompassOptions
 import com.gits.compositioncompass.Configuration.CompositionRoot
 import com.gits.compositioncompass.Queries.LastFMQuery
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.BluetoothDevice
@@ -99,7 +100,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
             composition.changeQuerySource(QuerySource.LastFM)
             query = composition.query as LastFMQuery
 
-            setDirectories()
+            setDirectories(composition.options)
 
             source = composition.picker
 
@@ -153,11 +154,11 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     }
 
     //TODO: Include station name in favorites folder name
-    private fun setDirectories() {
-        recylebin = composition.options.recylebin
-        favorites = composition.options.favorites
-        favoritesMoreInteresting = composition.options.favoritesMoreInteresting
-        favoritesLessInteresting = composition.options.favoritesLessInteresting
+    private fun setDirectories(options: CompositionCompassOptions) {
+        recylebin = options.recyclebinDirectoryPath
+        favorites = options.favoritesDirectoryPath
+        favoritesMoreInteresting = options.moreInterestingDirectoryPath
+        favoritesLessInteresting = options.lessInterestingDirectoryPath
     }
 
     private fun setUpCallBack() {

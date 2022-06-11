@@ -6,7 +6,6 @@ import Fields
 import QueryMode
 import com.gits.compositioncompass.Models.SearchQuery
 import com.gits.compositioncompass.Models.TargetDirectory
-import java.util.*
 
 class YouTubeQuery : IYoutubeQuery {
     private var addedSearchQueries: MutableList<String>
@@ -59,6 +58,6 @@ class YouTubeQuery : IYoutubeQuery {
     }
 
     private fun getPath(folder: DownloadFolder, subFolderName: String): String {
-        return options.rootDirectory + "/" + folder.folderName + "/" + subFolderName
+        return options.rootDirectoryPath + "/" + folder.folderName + "/" + subFolderName
     }
 }

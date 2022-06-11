@@ -25,7 +25,7 @@ class FileQuery(val options: CompositionCompassOptions) : IFileQuery {
     }
 
     override fun getSpecifiedTracks(): List<TargetDirectory> =
-        File(options.rootDirectory + "/Files").listFiles().map {
+        File(options.rootDirectoryPath + "/Files").listFiles().map {
             TargetDirectory(
                 getPath(DownloadFolder.Stations, "!File (${it.name})"),
                 it.readLines().map { SearchQuery(track = it) })
@@ -33,6 +33,6 @@ class FileQuery(val options: CompositionCompassOptions) : IFileQuery {
 
 
     private fun getPath(folder: DownloadFolder, subFolderName: String): String {
-        return options.rootDirectory + "/" + folder.folderName + "/" + subFolderName
+        return options.rootDirectoryPath + "/" + folder.folderName + "/" + subFolderName
     }
 }

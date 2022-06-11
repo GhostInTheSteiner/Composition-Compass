@@ -5,7 +5,7 @@ import java.io.File
 
 class Logger(private val options: CompositionCompassOptions, val notifier: Notifier) {
 
-    private val file: File = File(options.rootDirectory  + "/" + options.logName)
+    private val file: File = File(options.rootDirectoryPath  + "/" + options.logName)
 
     init {
         if (!file.exists())

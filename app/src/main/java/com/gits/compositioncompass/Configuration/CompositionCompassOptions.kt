@@ -12,20 +12,38 @@ class CompositionCompassOptions {
     private var configFile: File
     private var options: MutableMap<String, Object>
 
-    //technical fields
+    //public fields
     var __requiredFields: List<String>
     var __requiredFieldsSet: Boolean
     var __filePath: String
+    var __exceptionsList: List<String> = listOf()
 
-    //generated fields
-    lateinit var automated: String
-    lateinit var recylebin: String
-    lateinit var favorites: String
-    lateinit var favoritesBase: String
-    lateinit var favoritesMoreInteresting: String
-    lateinit var favoritesLessInteresting: String
+    //constants
+    var tempDirectory: String = "!temporary"
+    var automatedDirectory: String = "!automated"
+    var resourcesDirectory: String = "!resources"
+    var recyclebinDirectory: String = "Recycle Bin"
+    var favoritesBaseDirectory: String = "Favorites"
+    var moreInterestingDirectory: String = "More Interesting"
+    var lessInterestingDirectory: String = "Less Interesting"
+
+    lateinit var tempDirectoryPath: String
+    lateinit var automatedDirectoryPath: String
+    lateinit var resourcesDirectoryPath: String
+    lateinit var recyclebinDirectoryPath: String
+    lateinit var favoritesBaseDirectoryPath: String
+    lateinit var favoritesDirectoryPath: String
+    lateinit var moreInterestingDirectoryPath: String
+    lateinit var lessInterestingDirectoryPath: String
+
+
+
 
     //user configurable fields
+    var rootDirectoryPath: String
+        get() = options[::rootDirectoryPath.name] as String
+        set(value) { options[::rootDirectoryPath.name] = value as Object }
+
     var spotifyClientId: String
         get() = options[::spotifyClientId.name] as String
         set(value) { options[::spotifyClientId.name] = value as Object }
@@ -33,22 +51,6 @@ class CompositionCompassOptions {
     var spotifyClientSecret: String
         get() = options[::spotifyClientSecret.name] as String
         set(value) { options[::spotifyClientSecret.name] = value as Object }
-
-    var rootDirectory: String
-        get() = options[::rootDirectory.name] as String
-        set(value) { options[::rootDirectory.name] = value as Object }
-
-    var tempDirectory: String
-        get() = options[::tempDirectory.name] as String
-        set(value) { options[::tempDirectory.name] = value as Object }
-
-    var automatedDirectory: String
-        get() = options[::automatedDirectory.name] as String
-        set(value) { options[::automatedDirectory.name] = value as Object }
-
-    var resourcesDirectory: String
-        get() = options[::resourcesDirectory.name] as String
-        set(value) { options[::resourcesDirectory.name] = value as Object }
 
     var appName: String
         get() = options[::appName.name] as String
@@ -94,12 +96,15 @@ class CompositionCompassOptions {
         get() = options[::commaReplacer.name] as String
         set(value) { options[::commaReplacer.name] = value as Object }
 
-    var exceptionsList: List<String> = listOf()
+
+
 
     constructor(filePath: String, activity: Activity) {
         this.configFile = File(filePath)
         this.activity = activity
         this.options = loadDefaults()
+
+        setDirectories()
 
         File(configFile.parent).mkdirs()
 
@@ -113,18 +118,24 @@ class CompositionCompassOptions {
         __filePath = filePath
         __requiredFields = listOf(::spotifyClientId.name, ::spotifyClientSecret.name, ::lastfmApiKey.name)
         __requiredFieldsSet = __requiredFields.map { options[it] }.all { (it as String).length > 0 }
+    }
 
-        setGeneratedFields()
+    private fun setDirectories() {
+        tempDirectoryPath = "$rootDirectoryPath/$tempDirectory"
+        automatedDirectoryPath = "$rootDirectoryPath/$automatedDirectory"
+        resourcesDirectoryPath = "$rootDirectoryPath/$resourcesDirectory"
+        recyclebinDirectoryPath = "$automatedDirectoryPath/$recyclebinDirectory"
+        favoritesBaseDirectoryPath = "$automatedDirectoryPath/$favoritesBaseDirectory"
+        favoritesDirectoryPath = "$favoritesBaseDirectoryPath (${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))})"
+        moreInterestingDirectoryPath = "$favoritesDirectoryPath/$moreInterestingDirectory"
+        lessInterestingDirectoryPath = "$favoritesDirectoryPath/$lessInterestingDirectory"
     }
 
     private fun loadDefaults(): MutableMap<String, Object> {
         val options_ = mutableMapOf<String, Object>()
         val rootDirectory_ = configFile.parent
 
-        options_[::rootDirectory.name] = rootDirectory_ as Object
-        options_[::tempDirectory.name] = "!temporary" as Object
-        options_[::automatedDirectory.name] = "!automated" as Object
-        options_[::resourcesDirectory.name] = "!resources" as Object
+        options_[::rootDirectoryPath.name] = rootDirectory_ as Object
 
         options_[::appName.name] = "Composition Compass" as Object
         options_[::packageName.name] = activity.packageName as Object
@@ -158,7 +169,7 @@ class CompositionCompassOptions {
                 val number = value.toIntOrNull()
 
                 if (key.equals("exceptions"))
-                    exceptionsList = value.split("|")
+                    __exceptionsList = value.split("|")
 
                 if (number == null)
                     options[key] = value as Object
@@ -166,6 +177,9 @@ class CompositionCompassOptions {
                     options[key] = number as Object
             }
         }
+
+        listOf(recyclebinDirectoryPath, favoritesDirectoryPath, moreInterestingDirectoryPath, lessInterestingDirectoryPath)
+            .forEach { File(it).mkdirs() }
     }
 
     private fun save() {
@@ -181,21 +195,5 @@ class CompositionCompassOptions {
 
         //remove backup
         tmp.delete()
-    }
-
-    private fun setGeneratedFields() {
-        val time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-        val favoritesName = "Favorites (${time})"
-        val favoritesNameBase = "Favorites"
-
-        automated = rootDirectory + "/" + automatedDirectory
-        recylebin = "$automated/Recycle Bin"
-        favorites = "$automated/$favoritesName"
-        favoritesBase = "$automated/$favoritesNameBase"
-        favoritesMoreInteresting = "$favorites/More Interesting"
-        favoritesLessInteresting = "$favorites/Less Interesting"
-
-        listOf(recylebin, favorites, favoritesMoreInteresting, favoritesLessInteresting)
-            .forEach { File(it).mkdirs() }
     }
 }
