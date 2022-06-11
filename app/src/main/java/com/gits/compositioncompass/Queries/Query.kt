@@ -79,7 +79,7 @@ abstract class Query(
         if (folder == null)
             throw Exception("No folder selected!")
         else if (!folder.absolutePath.startsWith(options.favoritesBaseDirectoryPath))
-            throw Exception("No Favorites folder selected!")
+            throw Exception("Selected folder isn't a 'Favorites' folder!")
         else
             {
             val favorites = folder.walkTopDown().toList().filter { it.isFile }
