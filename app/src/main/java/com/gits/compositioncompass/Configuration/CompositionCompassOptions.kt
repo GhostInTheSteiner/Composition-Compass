@@ -88,6 +88,10 @@ class CompositionCompassOptions {
         get() = options[::resultsSimilarAlbums.name] as Int
         set(value) { options[::resultsSimilarAlbums.name] = value as Object }
 
+    var resultsSpecifiedFavorites: Int
+        get() = options[::resultsSpecifiedFavorites.name] as Int
+        set(value) { options[::resultsSpecifiedFavorites.name] = value as Object }
+
     var lastfmApiKey: String
         get() = options[::lastfmApiKey.name] as String
         set(value) { options[::lastfmApiKey.name] = value as Object }
@@ -150,6 +154,7 @@ class CompositionCompassOptions {
 
         options_[::resultsSimilarArtists.name] = 5 as Object
         options_[::resultsSimilarAlbums.name] = 5 as Object
+        options_[::resultsSpecifiedFavorites.name] = 5 as Object
 
         options_[::maxParallelDownloads.name] = 5 as Object
         options_[::commaReplacer.name] = "<comma>" as Object
@@ -178,7 +183,7 @@ class CompositionCompassOptions {
             }
         }
 
-        listOf(recyclebinDirectoryPath, favoritesDirectoryPath, moreInterestingDirectoryPath, lessInterestingDirectoryPath)
+        listOf(automatedDirectoryPath, tempDirectoryPath, resourcesDirectoryPath)
             .forEach { File(it).mkdirs() }
     }
 

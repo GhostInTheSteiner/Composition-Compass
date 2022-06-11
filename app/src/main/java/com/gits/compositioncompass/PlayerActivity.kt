@@ -14,7 +14,6 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.*
-import androidx.activity.result.ActivityResult
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import audioNameN
@@ -39,8 +38,6 @@ import kotlinx.coroutines.newSingleThreadContext
 import vibrateLong
 import vibrateVeryLong
 import java.io.File
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnErrorListener,
     CompoundButton.OnCheckedChangeListener, DialogInterface.OnClickListener,
@@ -51,12 +48,13 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     private var ignoreUp: Boolean = false
     private var favorites: String = ""
     private var recylebin: String = ""
-    private var favoritesMoreInteresting: String = ""
-    private var favoritesLessInteresting: String = ""
+    private var moreInteresting: String = ""
+    private var lessInteresting: String = ""
     private var targetLike: String = ""
     private var targetDislike: String = ""
     private var currentAudio: ArgAudio? = null
     private var audioList: ArgAudioList = ArgAudioList(false)
+    private lateinit var directories: List<String>
     private lateinit var bluetoothDevice: BluetoothDevice
     private lateinit var query: LastFMQuery
     private lateinit var preferencesReader: SharedPreferences
@@ -157,8 +155,10 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     private fun setDirectories(options: CompositionCompassOptions) {
         recylebin = options.recyclebinDirectoryPath
         favorites = options.favoritesDirectoryPath
-        favoritesMoreInteresting = options.moreInterestingDirectoryPath
-        favoritesLessInteresting = options.lessInterestingDirectoryPath
+        moreInteresting = options.moreInterestingDirectoryPath
+        lessInteresting = options.lessInterestingDirectoryPath
+
+        directories = listOf(recylebin, favorites, moreInteresting, lessInteresting)
     }
 
     private fun setUpCallBack() {
@@ -286,12 +286,14 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
 
     fun like(view: View, toMoreInteresting: Boolean = false) {
 
+        directories.forEach { File(it).mkdirs() }
+
         //only skip track on second click, so we can listen to the current one until the end
         if (!likeMoved) {
             val source = File(currentAudio!!.path)
             val target =
                 if (toMoreInteresting)
-                    File("$favoritesMoreInteresting/${source.name}")
+                    File("$moreInteresting/${source.name}")
                 else
                     File("$targetLike/${source.name}")
 
@@ -318,6 +320,9 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     }
 
     fun dislike(view: View) {
+
+        directories.forEach { File(it).mkdirs() }
+
         val source = File(currentAudio!!.path)
         val target = File("$targetDislike/${source.name}")
 
@@ -360,8 +365,8 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     private fun setTarget(path: String) {
 
         if (path.startsWith(favorites)) {
-            targetLike = favoritesMoreInteresting
-            targetDislike = favoritesLessInteresting
+            targetLike = moreInteresting
+            targetDislike = lessInteresting
         } else {
             targetLike = favorites
             targetDislike = recylebin

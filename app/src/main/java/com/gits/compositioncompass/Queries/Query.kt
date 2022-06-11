@@ -82,13 +82,13 @@ abstract class Query(
             throw Exception("Selected folder isn't a 'Favorites' folder!")
         else
             {
-            val favorites = folder.walkTopDown().toList().filter { it.isFile }
-            val artists = favorites.map { it.nameWithoutExtension.split(" - ").first() }
+            val favorites = folder.walkTopDown().toList().filter { it.parentFile.name != options.lessInterestingDirectory && it.isFile }
+            val artists = favorites.map { it.nameWithoutExtension.split(" - ").first() }.toSet().toList() //remove duplicates
             artists.forEach { addArtist(it) }
 
             val specifiedDirectories = getSpecified()
             val searchQueries = specifiedDirectories.flatMapIndexed { currentArtist, it ->
-                it.searchQueries.map {
+                it.searchQueries.take(options.resultsSpecifiedFavorites).map {
                     //ensure source artist is used, and not one of the "featured" artists
                     SearchQuery(it.track, listOf(artists[currentArtist]), it.album, it.genre) } }
 
