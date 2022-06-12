@@ -1,8 +1,8 @@
 # Composition Compass
 
-![Screenshot_20220612-102005_Samsung Notes](https://user-images.githubusercontent.com/28263040/173224317-7e94ba6a-1550-47d0-89e6-a6164e6cfacc.jpg)
-
 Inspired by the Music Genome Project's `Pandora Radio`, Composition Compass is an Android app that will help you to find new artists you like, or generally other music that may suit your tastes. Contrary to Pandora though, **this application doesn't require a constant internet connection and is completely free.**
+
+![Screenshot_20220612-102005_Samsung Notes](https://user-images.githubusercontent.com/28263040/173224317-7e94ba6a-1550-47d0-89e6-a6164e6cfacc.jpg)
 
 Composition Compass effectively consists of two components:
  
