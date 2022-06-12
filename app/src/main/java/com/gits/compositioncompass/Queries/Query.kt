@@ -73,38 +73,29 @@ abstract class Query(
 
     abstract suspend fun addArtist(name: String) : Boolean
 
-    suspend fun getSpecifiedFavorites(): List<TargetDirectory> {
-        val folder = picker.folder()
+    //downloads the top tracks to each artist found inside the 'More Interesting' folder
+    suspend fun getSpecifiedMoreInteresting(): List<TargetDirectory> {
 
-        if (folder == null)
-            throw Exception("No folder selected!")
-        else if (!folder.absolutePath.startsWith(options.favoritesBaseDirectoryPath))
-            throw Exception("Selected folder isn't a 'Favorites' folder!")
-        else
-            {
-            val favorites = folder.walkTopDown().toList().filter { it.parentFile.name != options.lessInterestingDirectory && it.isFile }
-            val artists = favorites.map { it.nameWithoutExtension.split(" - ").first() }.toSet().toList() //remove duplicates
-            artists.forEach { addArtist(it) }
+        val moreInteresting = File(options.moreInterestingDirectoryPath).listFiles()
+        val moreInterestingArtists = moreInteresting
+            .map { it.nameWithoutExtension.split(" - ").first() }
+            .toSet().toList() //remove duplicates
 
-            val specifiedDirectories = getSpecified()
-            val searchQueries = specifiedDirectories.flatMapIndexed { currentArtist, it ->
-                it.searchQueries.take(options.resultsSpecifiedFavorites).map {
-                    //ensure source artist is used, and not one of the "featured" artists
-                    SearchQuery(it.track, listOf(artists[currentArtist]), it.album, it.genre) } }
+        moreInterestingArtists.forEach { addArtist(it) }
 
-            val folderName =
-                if (folder.name == options.moreInterestingDirectory)
-                    folder.parentFile.name + " [MI]" //"More Interesting"
-                else
-                    folder.name
+        val specifiedDirectories = getSpecified()
+        val searchQueries = specifiedDirectories.flatMapIndexed { currentArtist, it ->
+            it.searchQueries.take(options.resultsLikedArtists).map {
+                //ensure source artist is used, and not one of the "featured" artists
+                SearchQuery(it.track, listOf(moreInterestingArtists[currentArtist]), it.album, it.genre) } }
 
-            val targetDirectories = listOf(TargetDirectory(
-                getPath(DownloadFolder.Stations, "!${folderName}"),
-                searchQueries
-            ))
+        val targetDirectoriesNames = "!Artists (${moreInterestingArtists.take(3).joinToString(", ")})"
+        val targetDirectories = listOf(TargetDirectory(
+            getPath(DownloadFolder.Stations, targetDirectoriesNames),
+            searchQueries
+        ))
 
-            return targetDirectories
-        }
+        return targetDirectories
     }
 
     protected fun getSubFolder_Similar() =

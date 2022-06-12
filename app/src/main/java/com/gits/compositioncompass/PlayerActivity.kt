@@ -43,6 +43,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     CompoundButton.OnCheckedChangeListener, DialogInterface.OnClickListener,
     View.OnLongClickListener {
     private var likeMoved: Boolean = false
+    private var dislikeMoved: Boolean = false
     private var playerValue: String = ""
     private var triggersValue: Boolean = false
     private var ignoreUp: Boolean = false
@@ -157,8 +158,6 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
         favorites = options.favoritesDirectoryPath
         moreInteresting = options.moreInterestingDirectoryPath
         lessInteresting = options.lessInterestingDirectoryPath
-
-        directories = listOf(recylebin, favorites, moreInteresting, lessInteresting)
     }
 
     private fun setUpCallBack() {
@@ -286,8 +285,6 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
 
     fun like(view: View, toMoreInteresting: Boolean = false) {
 
-        directories.forEach { File(it).mkdirs() }
-
         //only skip track on second click, so we can listen to the current one until the end
         if (!likeMoved) {
             val source = File(currentAudio!!.path)
@@ -321,15 +318,32 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
 
     fun dislike(view: View) {
 
-        directories.forEach { File(it).mkdirs() }
+        //only skip track on second click, so we can listen to the current one until the end
+        if (!dislikeMoved) {
 
-        val source = File(currentAudio!!.path)
-        val target = File("$targetDislike/${source.name}")
+            val source = File(currentAudio!!.path)
+            val target = File("$targetDislike/${source.name}")
 
-        if (source.renameTo(target) && findViewById<CheckBox>(R.id.volume_button_triggers).isChecked)
-            vibrator.vibrateLong()
+            dislikeMoved = source.renameTo(target)
 
-        player.seekTo(player.duration.toInt())
+            if (dislikeMoved && findViewById<CheckBox>(R.id.volume_button_triggers).isChecked) {
+                vibrator.vibrateLong()
+
+                //acoustical indicator that track was moved.
+                //this isn't obvious to the listener, as we're not skipping to the next yet
+                GlobalScope.launch {
+                    runOnUiThread { player.pause() }
+                    delay(500)
+                    runOnUiThread { player.resume() }
+                }
+
+            }
+        }
+
+        else {
+            player.seekTo(player.duration.toInt())
+            dislikeMoved = true
+        }
     }
 
     fun browse(view: View) {
@@ -360,7 +374,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
         audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, showUI)
 
     private fun unmute(showUI: Int = AudioManager.FLAG_SHOW_UI) =
-        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 4, showUI)
+        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, composition.options.playerVolumeLevel, showUI)
 
     private fun setTarget(path: String) {
 
@@ -402,8 +416,8 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
                     track = "Unknown Track"
                 }
 
-                //for the .part-files
-                track = track.replace("\\.(webm|mp3|mp4|m4a|opus|wav)$".toRegex(), "")
+                singer = singer.trimStart('!') //for the 'Liked Artists' source tracks
+                track = track.replace("\\.(webm|mp3|mp4|m4a|opus|wav)$".toRegex(), "") //for the .part-files
 
                 audioList.add(ArgAudio.createFromFilePath(singer, track, file.originalPath))
             }
@@ -443,6 +457,8 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     override fun onPlaylistAudioChanged(playlist: ArgAudioList?, currentAudioIndex: Int) {
         try {
             likeMoved = false
+            dislikeMoved = false
+
             currentAudio = playlist?.get(currentAudioIndex)
 
             if (currentAudio != null)

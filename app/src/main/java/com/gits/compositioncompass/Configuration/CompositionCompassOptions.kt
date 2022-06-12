@@ -2,8 +2,6 @@ package com.gits.compositioncompass.Configuration
 
 import android.app.Activity
 import java.io.File
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 class CompositionCompassOptions {
 
@@ -23,7 +21,7 @@ class CompositionCompassOptions {
     var automatedDirectory: String = "!automated"
     var resourcesDirectory: String = "!resources"
     var recyclebinDirectory: String = "Recycle Bin"
-    var favoritesBaseDirectory: String = "Favorites"
+    var favoritesDirectory: String = "Favorites"
     var moreInterestingDirectory: String = "More Interesting"
     var lessInterestingDirectory: String = "Less Interesting"
 
@@ -31,7 +29,6 @@ class CompositionCompassOptions {
     lateinit var automatedDirectoryPath: String
     lateinit var resourcesDirectoryPath: String
     lateinit var recyclebinDirectoryPath: String
-    lateinit var favoritesBaseDirectoryPath: String
     lateinit var favoritesDirectoryPath: String
     lateinit var moreInterestingDirectoryPath: String
     lateinit var lessInterestingDirectoryPath: String
@@ -88,9 +85,13 @@ class CompositionCompassOptions {
         get() = options[::resultsSimilarAlbums.name] as Int
         set(value) { options[::resultsSimilarAlbums.name] = value as Object }
 
-    var resultsSpecifiedFavorites: Int
-        get() = options[::resultsSpecifiedFavorites.name] as Int
-        set(value) { options[::resultsSpecifiedFavorites.name] = value as Object }
+    var resultsLikedArtists: Int
+        get() = options[::resultsLikedArtists.name] as Int
+        set(value) { options[::resultsLikedArtists.name] = value as Object }
+
+    var playerVolumeLevel: Int
+        get() = options[::playerVolumeLevel.name] as Int
+        set(value) { options[::playerVolumeLevel.name] = value as Object }
 
     var lastfmApiKey: String
         get() = options[::lastfmApiKey.name] as String
@@ -129,8 +130,7 @@ class CompositionCompassOptions {
         automatedDirectoryPath = "$rootDirectoryPath/$automatedDirectory"
         resourcesDirectoryPath = "$rootDirectoryPath/$resourcesDirectory"
         recyclebinDirectoryPath = "$automatedDirectoryPath/$recyclebinDirectory"
-        favoritesBaseDirectoryPath = "$automatedDirectoryPath/$favoritesBaseDirectory"
-        favoritesDirectoryPath = "$favoritesBaseDirectoryPath (${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))})"
+        favoritesDirectoryPath = "$automatedDirectoryPath/$favoritesDirectory"
         moreInterestingDirectoryPath = "$favoritesDirectoryPath/$moreInterestingDirectory"
         lessInterestingDirectoryPath = "$favoritesDirectoryPath/$lessInterestingDirectory"
     }
@@ -154,7 +154,9 @@ class CompositionCompassOptions {
 
         options_[::resultsSimilarArtists.name] = 5 as Object
         options_[::resultsSimilarAlbums.name] = 5 as Object
-        options_[::resultsSpecifiedFavorites.name] = 5 as Object
+        options_[::resultsLikedArtists.name] = 5 as Object
+
+        options_[::playerVolumeLevel.name] = 4 as Object
 
         options_[::maxParallelDownloads.name] = 5 as Object
         options_[::commaReplacer.name] = "<comma>" as Object
@@ -183,8 +185,12 @@ class CompositionCompassOptions {
             }
         }
 
-        listOf(automatedDirectoryPath, tempDirectoryPath, resourcesDirectoryPath)
-            .forEach { File(it).mkdirs() }
+        listOf(
+            automatedDirectoryPath, tempDirectoryPath, resourcesDirectoryPath,
+            recyclebinDirectoryPath, favoritesDirectoryPath,
+            moreInterestingDirectoryPath, lessInterestingDirectoryPath
+        )
+        .forEach { File(it).mkdirs() }
     }
 
     private fun save() {

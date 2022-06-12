@@ -17,6 +17,7 @@ class YoutubeDownloader {
     private var dl: YoutubeDL
     private var ffmpeg: FFmpeg
     private var jobs: MutableList<Job>
+    private var isArtists: Boolean = false
 
     constructor(options: CompositionCompassOptions, activity: Activity) {
         dl = YoutubeDL.getInstance()
@@ -33,6 +34,8 @@ class YoutubeDownloader {
 
     //needs to be blocking for as long as download runs!
     suspend fun start(targetDirectories: List<TargetDirectory>, onUpdate: (DownloadStatus) -> Unit, onFailure: (String, Exception) -> Unit) {
+
+        isArtists = false
 
         val status = DownloadStatus()
 
@@ -81,7 +84,15 @@ class YoutubeDownloader {
             }
         }
 
-        jobs.joinAll()
+        jobs.joinAll() //after this line all downloads are completed
+
+        //move tracks whose artists have already been 'explored' to another directory, to keep the 'More Interesting' folder clean
+        if (isArtists) {
+            File(options.moreInterestingDirectoryPath).listFiles().forEach {
+                it.renameTo(File("${targetDirectories.first().targetPath}/!${it.name}"))
+            }
+        }
+
     }
     
     fun update() {
@@ -127,7 +138,7 @@ class YoutubeDownloader {
             val isURL = subFolder.startsWith("!Singles") || subFolder.startsWith("!Playlist")
             val isSearch = subFolder.startsWith("!Search")
             val isFile = subFolder.startsWith("!File")
-            val isFavorites = subFolder.startsWith("!${options.favoritesBaseDirectory}")
+            val isArtists = subFolder.startsWith("!Artists")
             val isSpecified = directoryParts.any { it in listOf(DownloadFolder.Artists.folderName, DownloadFolder.Albums.folderName)}
 
             /*
@@ -159,7 +170,7 @@ class YoutubeDownloader {
                 request.addOption("--output", downloadDir.absolutePath + "/$searchQueryText.%(ext)s")
             }
 
-            if (isSpecified || isURL|| isSearch || isFile || isFavorites)
+            if (isSpecified || isURL|| isSearch || isFile || isArtists)
                 //pass => redownloads allowed
 
             else if (downloadArchiv.readLines().contains(searchQuery.toString())) {
@@ -171,6 +182,9 @@ class YoutubeDownloader {
                 downloadArchiv.appendText(searchQuery.toString()+ "\n")
                 request.addOption("--match-title", "^((?!(${options.exceptions})).)*$")
             }
+
+            if (isArtists)
+                this.isArtists = true
 
             dl.execute(request) { progress, etaInSeconds -> onUpdate(progress) }
 

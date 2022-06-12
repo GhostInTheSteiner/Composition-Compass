@@ -202,12 +202,15 @@ class MainActivity : AppCompatActivity() {
             SpinnerItem(QueryMode.SimilarArtists, "Similar Artists"),
             SpinnerItem(QueryMode.SimilarAlbums, "Similar Albums"),
             SpinnerItem(QueryMode.Specified, "Specified"),
-            SpinnerItem(QueryMode.SpecifiedFavorites, "Specified Favorites"),
+            SpinnerItem(QueryMode.SpecifiedMoreInteresting, "Liked Artists"),
+            //SpinnerItem(QueryMode.SpecifiedLessInteresting, "Liked Artists (Less Interesting)"),
+            //SpinnerItem(QueryMode.SpecifiedFavorites, "Liked Artists (Favorites)"),
+            //...
         )
 
         source.adapter = getSpinnerAdapter(
             SpinnerItem(QuerySource.Spotify, "Spotify"),
-            SpinnerItem(QuerySource.LastFM, "LastFM"),
+            SpinnerItem(QuerySource.LastFM, "Last.fm"),
             SpinnerItem(QuerySource.YouTube, "YouTube"),
             SpinnerItem(QuerySource.File, "File")
         )
@@ -503,7 +506,10 @@ class MainActivity : AppCompatActivity() {
                             QueryMode.SimilarAlbums -> serviceQuery.getSimilarAlbums()
                             QueryMode.SimilarArtists -> serviceQuery.getSimilarArtists()
                             QueryMode.Specified -> serviceQuery.getSpecified()
-                            QueryMode.SpecifiedFavorites -> serviceQuery.getSpecifiedFavorites()
+                            QueryMode.SpecifiedMoreInteresting -> serviceQuery.getSpecifiedMoreInteresting()
+                            //QueryMode.SpecifiedLessInteresting -> serviceQuery.getSpecifiedLessInteresting()
+                            //QueryMode.SpecifiedFavorites -> serviceQuery.getSpecifiedFavorites()
+                            //...
                         }
 
                     downloadDirectories(directories)

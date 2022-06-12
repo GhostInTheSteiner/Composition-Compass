@@ -26,13 +26,13 @@ class SpotifyQuery: IStreamingServiceQuery, Query {
     private var mode: QueryMode
 
     override val requiredFields: List<List<Fields>> get() = when (mode) {
-        QueryMode.SpecifiedFavorites    -> listOf(listOf())
+        QueryMode.SpecifiedMoreInteresting    -> listOf(listOf())
         QueryMode.Specified             -> listOf(listOf(Fields.Artist), listOf(Fields.Artist, Fields.Track), listOf(Fields.Artist, Fields.Album))
         else                            -> listOf(listOf(Fields.Artist), listOf(Fields.Artist, Fields.Track), listOf(Fields.Artist, Fields.Track, Fields.Genre), listOf(Fields.Artist, Fields.Genre))
     }
 
     override val supportedFields: List<Fields> get() = when (mode) {
-        QueryMode.SpecifiedFavorites    -> listOf(Fields.Favorites)
+        QueryMode.SpecifiedMoreInteresting    -> listOf(Fields.Favorites)
         QueryMode.Specified             -> listOf(Fields.Track, Fields.Artist, Fields.Album)
         else                            -> listOf(Fields.Track, Fields.Artist, Fields.Genre)
     }

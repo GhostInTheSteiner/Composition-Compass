@@ -17,7 +17,7 @@ enum class QueryMode() {
     SimilarAlbums,
     SimilarArtists,
     Specified,
-    SpecifiedFavorites
+    SpecifiedMoreInteresting
 }
 
 enum class DownloadFolder(val folderName: String) {
