@@ -57,7 +57,7 @@ https://www.last.fm/api/account/create
 
 ## The Downloader
 
-The downloader essentially allows you to download songs from YouTube. **The interesting part is that it's able to fetch data from Spotify or Last.fm, and query YouTube accordingly**. Using the world's most famous streaming services as backend the downloader is supposed to fulfill two main purposes:
+The downloader essentially allows you to download songs from YouTube. **The interesting part is that it's able to fetch data from Spotify or Last.fm, and query YouTube accordingly**. Using the world's most famous streaming services as backend the downloader is supposed to fulfill the following purposes:
 
 - Fetch similar tracks, albums and artists  
 - Fetch specified tracks, albums and artists  
