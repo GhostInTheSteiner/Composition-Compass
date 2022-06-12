@@ -53,7 +53,7 @@ https://www.last.fm/api/account/create
 4. You're done!
 
 
-## The downloader:
+## The Downloader
 
 The downloader essentially allows you to download songs from YouTube. **The interesting part is that it's able to fetch data from Spotify or Last.fm, and query YouTube accordingly**. Using the world's most famous streaming services as backend the downloader is supposed to fulfill two main purposes:
 
@@ -75,7 +75,7 @@ For example, `Similar Tracks` are downloaded to...
 Sometimes there's an exclamation mark (`!`) in front of the Station name. It exists to differentiate between the `Similar Tracks` Station (no exclamation mark) and other, more complex stations like `Similar Artists`, `Similar Albums` and `Liked Artists` (all of which use an exclamation mark).
 
 
-## Specified Tracks
+### Specified Tracks
 
 Specified tracks will be downloaded to...
 
@@ -99,7 +99,7 @@ I implemented this download mode mostly for convenience, after I realized all I 
 With the `Liked Artists` mode this is no longer necessary. It's an easy way to "hear more" of what you previously liked, so you should be quickly able to tell whether or not "that one cool band" was just a One-Hit wonder or if you've actually found your next favorite musician.
 
 
-## The player
+## The Player
 
 The player is supposed to play back your previously downloaded tracks. It displays the biography of the currently played back song's artist, and the typical genres said artist is affiliated with. However, **the real benefit of using the integrated player is to separate tracks you like from tracks you don't like.**
 
