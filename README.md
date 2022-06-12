@@ -1,9 +1,5 @@
 # Composition Compass
 
-
-![Screenshot_20220612-102005_Samsung Notes](https://user-images.githubusercontent.com/28263040/173224317-7e94ba6a-1550-47d0-89e6-a6164e6cfacc.jpg)
-
-
 Inspired by the Music Genome Project's `Pandora Radio`, Composition Compass is an Android app that will help you to find new artists you like, or generally other music that may suit your tastes. Contrary to Pandora though, **this application doesn't require a constant internet connection and is completely free.**
 
 Composition Compass effectively consists of two components:
@@ -13,6 +9,10 @@ Composition Compass effectively consists of two components:
 - **An integrated player**, which allows you to play those songs back and "like" the ones you want to hear again, or "dislike" the ones you want to sort out. These songs will then be placed in two different directories, accordingly. If you feel like you discover a true gem, you can also store it in a special folder. This way you'll have an easier time finding it later on.
 
 Of course, you can sort songs out by pressing two buttons on your screen. **But the main advantage of Composition Compass is the possibility of doing so by using your car stereo.** If you regularly drive long distances, you can now discover new songs and artists "on the go" ;)
+
+## Screenshots
+
+![Screenshot_20220612-102005_Samsung Notes](https://user-images.githubusercontent.com/28263040/173224317-7e94ba6a-1550-47d0-89e6-a6164e6cfacc.jpg)
 
 ## Terms of use
 
