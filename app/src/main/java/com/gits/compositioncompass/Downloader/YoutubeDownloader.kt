@@ -88,9 +88,14 @@ class YoutubeDownloader {
 
         //move tracks whose artists have already been 'explored' to another directory, to keep the 'More Interesting' folder clean
         if (isArtists) {
-            File(options.moreInterestingDirectoryPath).listFiles().forEach {
-                it.copyTo(File("${targetDirectories.first().targetPath}/!${it.name}"), true)
-                it.delete()
+            File(options.moreInterestingDirectoryPath).listFiles().forEach { source ->
+                val target = File("${targetDirectories.first().targetPath}/${source.name}")
+                val targetRenamed = File("${targetDirectories.first().targetPath}/!${source.name}")
+
+                source.copyTo(target, true)
+                source.delete()
+
+                target.renameTo(targetRenamed)
             }
         }
 
