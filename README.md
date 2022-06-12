@@ -154,3 +154,4 @@ Playback of Favorites is especially useful if you have a lot of tracks in your `
 
 `Pandora/!automated/Favorites/More Interesting` is used to "like" a track, and  
 `Pandora/!automated/Favorites/Less Interesting` is used to "dislike" a track.  
+
