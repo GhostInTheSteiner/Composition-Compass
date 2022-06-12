@@ -10,13 +10,17 @@ Composition Compass effectively consists of two components:
 
 Of course, you can sort songs out by pressing two buttons on your screen. **But the main advantage of Composition Compass is the possibility of doing so by using your car stereo.** If you regularly drive long distances, you can now discover new songs and artists "on the go" ;)
 
+## Screenshots
+
+![Screenshot_20220612-102005_Samsung Notes](https://user-images.githubusercontent.com/28263040/173224863-2830cb48-7434-463f-82ed-7558c6267fc6.jpg)
+
 ## Terms of use
 
 By using this project or its source code, for any purpose and in any shape or form, you grant your **implicit agreement** to all the following statements:
 
 - You **condemn Russia and its military aggression against Ukraine**
 - You **recognize that Russia is an occupant that unlawfully invaded a sovereign state**
-- You **support Ukraine's territorial integrity, including its claims over temporarily occupied territories of Crimea and Donbas**
+- You **support Ukraine's territorial integrity**
 - You **reject false narratives perpetuated by Russian state propaganda**
 
 To learn more about the war and how you can help, [click here](https://www.comebackalive.in.ua).
@@ -27,8 +31,6 @@ To learn more about the war and how you can help, [click here](https://www.comeb
 Composition Compass is based on an equally named Tasker project:
 
 https://github.com/GhostInTheSteiner/Composition-Compass-Legacy
-
-Contrary to the original Composition Compass its successor is a proper Android app written entirely in Kotlin. A release can therefore be provided as a simple APK file. Another advantage is that **root permissions are NO LONGER MANDATORY**.
 
 
 ## Setup
@@ -53,9 +55,9 @@ https://www.last.fm/api/account/create
 4. You're done!
 
 
-## The downloader:
+## The Downloader
 
-The downloader essentially allows you to download songs from YouTube. **The interesting part is that it's able to fetch data from Spotify or Last.fm, and query YouTube accordingly**. Using the world's most famous streaming services as backend the downloader is supposed to fulfill two main purposes:
+The downloader essentially allows you to download songs from YouTube. **The interesting part is that it's able to fetch data from Spotify or Last.fm, and query YouTube accordingly**. Using the world's most famous streaming services as backend the downloader is supposed to fulfill the following purposes:
 
 - Fetch similar tracks, albums and artists  
 - Fetch specified tracks, albums and artists  
@@ -75,7 +77,7 @@ For example, `Similar Tracks` are downloaded to...
 Sometimes there's an exclamation mark (`!`) in front of the Station name. It exists to differentiate between the `Similar Tracks` Station (no exclamation mark) and other, more complex stations like `Similar Artists`, `Similar Albums` and `Liked Artists` (all of which use an exclamation mark).
 
 
-## Specified Tracks
+### Specified Tracks
 
 Specified tracks will be downloaded to...
 
@@ -99,7 +101,7 @@ I implemented this download mode mostly for convenience, after I realized all I 
 With the `Liked Artists` mode this is no longer necessary. It's an easy way to "hear more" of what you previously liked, so you should be quickly able to tell whether or not "that one cool band" was just a One-Hit wonder or if you've actually found your next favorite musician.
 
 
-## The player
+## The Player
 
 The player is supposed to play back your previously downloaded tracks. It displays the biography of the currently played back song's artist, and the typical genres said artist is affiliated with. However, **the real benefit of using the integrated player is to separate tracks you like from tracks you don't like.**
 
