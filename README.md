@@ -13,6 +13,7 @@ Of course, you can sort songs out by pressing two buttons on your screen. **But 
 ## Screenshots
 
 ![Screenshot_20220612-102005_Samsung Notes](https://user-images.githubusercontent.com/28263040/173224317-7e94ba6a-1550-47d0-89e6-a6164e6cfacc.jpg)
+![Screenshot_20220612-102005_Samsung Notes](https://user-images.githubusercontent.com/28263040/173224863-2830cb48-7434-463f-82ed-7558c6267fc6.jpg)
 
 ## Terms of use
 
