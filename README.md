@@ -59,14 +59,44 @@ The downloader essentially allows you to download songs from YouTube. **The inte
 
 - Fetch similar tracks, albums and artists  
 - Fetch specified tracks, albums and artists  
+- Fetch artists of tracks "liked" in the player (`Liked Artists`)  
 
-Similar tracks will be downloaded to so-called "Stations", stored in `Pandora/Stations/<name>`.
+
+### Similar Tracks
+
+Similar tracks will be downloaded to so-called "Stations", stored in `Pandora/Stations/<name>`. Each download mode (`Similar Tracks`, `Similar Artists` and `Similar Albums`) will download tracks to a different subfolder, which name is based on the given fields (`Artists`, `Tracks` and `Genres`).
+
+For example, `Similar Artists` are downloaded to...
+
+`Pandora/Stations/!Similar ('<given_artist>')/<similar_artist_1>`  
+`Pandora/Stations/!Similar ('<given_artist>')/<similar_artist_2>`  
+`...`  
+
+The exclamation mark (`!`) in front of the folder name exists to differentiate between the most commonly used `Similar Tracks` station (no exclamation mark) and other, more complex stations like `Similar Artists`, `Similar Albums` and `Liked Artists` (all of which use an exclamation mark).
+
+
+## Specified Tracks
 
 Specified tracks will be downloaded to...
 
-`Pandora/Artists/<name>` if only an artist has been provided.  
-`Pandora/Artists/<name>` if an artist and a track has been provided (same as above).  
-`Pandora/Albums/<name>` if an artist and an album has been provided.  
+`Pandora/Artists/<name>` if only an artist has been provided. This directory will contain the most popular tracks of the given artist.  
+
+`Pandora/Artists/<name>` if an artist and a track has been provided (same as above). This directory will only contain the given track.  
+
+`Pandora/Albums/<name>` if an artist and an album has been provided. This directory will contain all tracks of the given album.  
+
+
+### Fetch artists of tracks "liked" in the player (`Liked Artists`)
+
+`Liked Artists` will retrieve the artists from the tracks currently present in...
+
+`Pandora/!automated/Favorites/More Interesting`  
+
+...and download their most popular tracks to a single station called `!Artists (<artists>)`.
+
+I implemented this download mode mostly for convenience, after I realized all I did after "liking" tracks in the player was essentially to download their artists' top tracks and create a station of those "by hand".
+
+With the `Liked Artists` mode this is no longer necessary. It's an easy way to "hear more" of what you previously liked, so you should be quickly able to tell whether or not "that one cool band" was just a One-Hit wonder or if you've actually found your next favorite musician.
 
 
 ## The player
