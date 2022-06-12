@@ -17,17 +17,17 @@ class CompositionCompassOptions {
     var __exceptionsList: List<String> = listOf()
 
     //constants
-    var tempDirectory: String = "!temporary"
+//    var tempDirectory: String = "!temporary"
+//    var resourcesDirectory: String = "!resources"
     var automatedDirectory: String = "!automated"
-    var resourcesDirectory: String = "!resources"
     var recyclebinDirectory: String = "Recycle Bin"
     var favoritesDirectory: String = "Favorites"
     var moreInterestingDirectory: String = "More Interesting"
     var lessInterestingDirectory: String = "Less Interesting"
 
-    lateinit var tempDirectoryPath: String
+//    lateinit var tempDirectoryPath: String
+//    lateinit var resourcesDirectoryPath: String
     lateinit var automatedDirectoryPath: String
-    lateinit var resourcesDirectoryPath: String
     lateinit var recyclebinDirectoryPath: String
     lateinit var favoritesDirectoryPath: String
     lateinit var moreInterestingDirectoryPath: String
@@ -126,9 +126,9 @@ class CompositionCompassOptions {
     }
 
     private fun setDirectories() {
-        tempDirectoryPath = "$rootDirectoryPath/$tempDirectory"
+//        tempDirectoryPath = "$rootDirectoryPath/$tempDirectory"
+//        resourcesDirectoryPath = "$rootDirectoryPath/$resourcesDirectory"
         automatedDirectoryPath = "$rootDirectoryPath/$automatedDirectory"
-        resourcesDirectoryPath = "$rootDirectoryPath/$resourcesDirectory"
         recyclebinDirectoryPath = "$automatedDirectoryPath/$recyclebinDirectory"
         favoritesDirectoryPath = "$automatedDirectoryPath/$favoritesDirectory"
         moreInterestingDirectoryPath = "$favoritesDirectoryPath/$moreInterestingDirectory"
@@ -186,7 +186,7 @@ class CompositionCompassOptions {
         }
 
         listOf(
-            automatedDirectoryPath, tempDirectoryPath, resourcesDirectoryPath,
+            automatedDirectoryPath, /*tempDirectoryPath, resourcesDirectoryPath,*/
             recyclebinDirectoryPath, favoritesDirectoryPath,
             moreInterestingDirectoryPath, lessInterestingDirectoryPath
         )
