@@ -94,7 +94,7 @@ Specified tracks will be downloaded to...
 
 `Pandora/!automated/Favorites/More Interesting`  
 
-...and download their most popular tracks to a single Station called `!Artists (<artists>)`.
+...and download their most popular tracks to a single Station called `!Artists (<artists>)`. Afterwards, the tracks from `More Interesting` are moved to this Station as well (and prefixed with `!`), so your `More Interesting` folder is empty again.
 
 I implemented this download mode mostly for convenience, after I realized all I did after "liking" tracks in the player was essentially to download their artists' top tracks and create a Station of those "by hand".
 
