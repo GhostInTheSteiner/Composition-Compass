@@ -59,14 +59,44 @@ The downloader essentially allows you to download songs from YouTube. **The inte
 
 - Fetch similar tracks, albums and artists  
 - Fetch specified tracks, albums and artists  
+- Fetch artists to tracks "liked" in the player (`Liked Artists`)  
+
+
+### Similar Tracks
 
 Similar tracks will be downloaded to so-called "Stations", stored in `Pandora/Stations/<name>`.
 
+Each download mode (`Similar Tracks`, `Similar Artists` and `Similar Albums`) will download tracks to a dedicated subfolder, which name is based on the fields you filled in.
+
+For example, `Similar Tracks` are downloaded to...
+
+`Pandora/Stations/<artist_name> (<track_name>, <genre_name>)`
+
+Sometimes there's an exclamation mark (`!`) in front of the Station name. It exists to differentiate between the `Similar Tracks` Station (no exclamation mark) and other, more complex stations like `Similar Artists`, `Similar Albums` and `Liked Artists` (all of which use an exclamation mark).
+
+
+## Specified Tracks
+
 Specified tracks will be downloaded to...
 
-`Pandora/Artists/<name>` if only an artist has been provided.  
-`Pandora/Artists/<name>` if an artist and a track has been provided (same as above).  
-`Pandora/Albums/<name>` if an artist and an album has been provided.  
+`Pandora/Artists/<name>` if only an artist has been provided. This directory will contain the most popular tracks of the given artist.  
+
+`Pandora/Artists/<name>` if an artist and a track has been provided (same as above). This directory will only contain the given track.  
+
+`Pandora/Albums/<name>` if an artist and an album has been provided. This directory will contain all tracks of the given album.  
+
+
+### Fetch artists to tracks "liked" in the player (`Liked Artists`)
+
+`Liked Artists` will retrieve the artists from the tracks currently present in...
+
+`Pandora/!automated/Favorites/More Interesting`  
+
+...and download their most popular tracks to a single Station called `!Artists (<artists>)`.
+
+I implemented this download mode mostly for convenience, after I realized all I did after "liking" tracks in the player was essentially to download their artists' top tracks and create a Station of those "by hand".
+
+With the `Liked Artists` mode this is no longer necessary. It's an easy way to "hear more" of what you previously liked, so you should be quickly able to tell whether or not "that one cool band" was just a One-Hit wonder or if you've actually found your next favorite musician.
 
 
 ## The player
@@ -93,7 +123,7 @@ Playback of Stations works by pressing the `Volume Up` and `Volume Down` keys to
 
 Of course, you can also press the `Like` and `Dislike` buttons displayed on-screen. The volume button triggers can be enabled and disabled by checking the checkbox below the player.
 
-**Note:** If you dislike a track it'll be skipped at the same time, so you don't have to listen to it until the very end. **If you like a track it won't be skipped immediately, which allows you to hear all of it**. If you still want to skip you just need to press the like button once again.
+**Note:** Upon liking or disliking a track it won't be skipped immediately, which allows you to hear all of if. **You can still initiate a skip to the next track by pressing the like or dislike button once again.**
 
 
 #### With a car stereo
@@ -124,3 +154,4 @@ Playback of Favorites is especially useful if you have a lot of tracks in your `
 
 `Pandora/!automated/Favorites/More Interesting` is used to "like" a track, and  
 `Pandora/!automated/Favorites/Less Interesting` is used to "dislike" a track.  
+
