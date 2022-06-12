@@ -59,7 +59,7 @@ The downloader essentially allows you to download songs from YouTube. **The inte
 
 - Fetch similar tracks, albums and artists  
 - Fetch specified tracks, albums and artists  
-- Fetch artists of tracks "liked" in the player (`Liked Artists`)  
+- Fetch artists to tracks "liked" in the player (`Liked Artists`)  
 
 
 ### Similar Tracks
@@ -86,7 +86,7 @@ Specified tracks will be downloaded to...
 `Pandora/Albums/<name>` if an artist and an album has been provided. This directory will contain all tracks of the given album.  
 
 
-### Fetch artists of tracks "liked" in the player (`Liked Artists`)
+### Fetch artists to tracks "liked" in the player (`Liked Artists`)
 
 `Liked Artists` will retrieve the artists from the tracks currently present in...
 
