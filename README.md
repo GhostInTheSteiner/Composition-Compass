@@ -64,15 +64,15 @@ The downloader essentially allows you to download songs from YouTube. **The inte
 
 ### Similar Tracks
 
-Similar tracks will be downloaded to so-called "Stations", stored in `Pandora/Stations/<name>`. Each download mode (`Similar Tracks`, `Similar Artists` and `Similar Albums`) will download tracks to a different subfolder, which name is based on the given fields (`Artists`, `Tracks` and `Genres`).
+Similar tracks will be downloaded to so-called "Stations", stored in `Pandora/Stations/<name>`.
 
-For example, `Similar Artists` are downloaded to...
+Each download mode (`Similar Tracks`, `Similar Artists` and `Similar Albums`) will download tracks to a dedicated subfolder, which name is based on the fields you filled in.
 
-`Pandora/Stations/!Similar ('<given_artist>')/<similar_artist_1>`  
-`Pandora/Stations/!Similar ('<given_artist>')/<similar_artist_2>`  
-`...`  
+For example, `Similar Tracks` are downloaded to...
 
-The exclamation mark (`!`) in front of the folder name exists to differentiate between the most commonly used `Similar Tracks` station (no exclamation mark) and other, more complex stations like `Similar Artists`, `Similar Albums` and `Liked Artists` (all of which use an exclamation mark).
+`Pandora/Stations/<artist_name> (<track_name>, <genre_name>)`
+
+Sometimes there's an exclamation mark (`!`) in front of the Station name. It exists to differentiate between the `Similar Tracks` Station (no exclamation mark) and other, more complex stations like `Similar Artists`, `Similar Albums` and `Liked Artists` (all of which use an exclamation mark).
 
 
 ## Specified Tracks
@@ -92,9 +92,9 @@ Specified tracks will be downloaded to...
 
 `Pandora/!automated/Favorites/More Interesting`  
 
-...and download their most popular tracks to a single station called `!Artists (<artists>)`.
+...and download their most popular tracks to a single Station called `!Artists (<artists>)`.
 
-I implemented this download mode mostly for convenience, after I realized all I did after "liking" tracks in the player was essentially to download their artists' top tracks and create a station of those "by hand".
+I implemented this download mode mostly for convenience, after I realized all I did after "liking" tracks in the player was essentially to download their artists' top tracks and create a Station of those "by hand".
 
 With the `Liked Artists` mode this is no longer necessary. It's an easy way to "hear more" of what you previously liked, so you should be quickly able to tell whether or not "that one cool band" was just a One-Hit wonder or if you've actually found your next favorite musician.
 
