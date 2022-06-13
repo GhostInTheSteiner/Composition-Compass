@@ -47,11 +47,8 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     private var playerValue: String = ""
     private var triggersValue: Boolean = false
     private var ignoreUp: Boolean = false
-    private var favorites: String = ""
-    private var recylebin: String = ""
-    private var moreInteresting: String = ""
-    private var lessInteresting: String = ""
     private var targetLike: String = ""
+    private var targetLikeMoreInteresting = ""
     private var targetDislike: String = ""
     private var currentAudio: ArgAudio? = null
     private var audioList: ArgAudioList = ArgAudioList(false)
@@ -97,10 +94,8 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
             preferencesReader = composition.preferencesReader
 
             composition.changeQuerySource(QuerySource.LastFM)
+
             query = composition.query as LastFMQuery
-
-            setDirectories(composition.options)
-
             source = composition.picker
 
             playerControls = listOf(findViewById(R.id.like), findViewById(R.id.dislike))
@@ -113,7 +108,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
             powerManager = applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager
 
             //get views
-            player = findViewById<ArgPlayerLargeView>(R.id.argmusicplayer)
+            player = findViewById(R.id.argmusicplayer)
             val triggers = findViewById<CheckBox>(R.id.volume_button_triggers)
             val description = findViewById<EditText>(R.id.description)
             val like = findViewById<Button>(R.id.like)
@@ -152,12 +147,27 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
         }
     }
 
-    //TODO: Include station name in favorites folder name
-    private fun setDirectories(options: CompositionCompassOptions) {
-        recylebin = options.recyclebinDirectoryPath
-        favorites = options.favoritesDirectoryPath
-        moreInteresting = options.moreInterestingDirectoryPath
-        lessInteresting = options.lessInterestingDirectoryPath
+    private fun setDirectories(options: CompositionCompassOptions, playlistPath: String) {
+        if (playlistPath.startsWith("${options.stationsDirectoryPath}/!Artists")) {
+            targetDislike = "$playlistPath/Less Interesting"
+            targetLike = "$playlistPath/More Interesting"
+            targetLikeMoreInteresting = "$playlistPath/More Interesting"
+        }
+
+        else if (playlistPath.startsWith(options.favoritesDirectoryPath)) {
+            targetDislike = options.lessInterestingDirectoryPath
+            targetLike = options.moreInterestingDirectoryPath
+            targetLikeMoreInteresting = options.moreInterestingDirectoryPath
+        }
+
+        else {
+            targetDislike = options.recyclebinDirectoryPath
+            targetLike = options.favoritesDirectoryPath
+            targetLikeMoreInteresting = options.moreInterestingDirectoryPath
+        }
+
+        listOf(targetDislike, targetLike, targetLikeMoreInteresting)
+            .forEach { File(it).mkdirs() }
     }
 
     private fun setUpCallBack() {
@@ -290,7 +300,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
             val source = File(currentAudio!!.path)
             val target =
                 if (toMoreInteresting)
-                    File("$moreInteresting/${source.name}")
+                    File("$targetLikeMoreInteresting/${source.name}")
                 else
                     File("$targetLike/${source.name}")
 
@@ -376,17 +386,6 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     private fun unmute(showUI: Int = AudioManager.FLAG_SHOW_UI) =
         audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, composition.options.playerVolumeLevel, showUI)
 
-    private fun setTarget(path: String) {
-
-        if (path.startsWith(favorites)) {
-            targetLike = moreInteresting
-            targetDislike = lessInteresting
-        } else {
-            targetLike = favorites
-            targetDislike = recylebin
-        }
-    }
-
     private fun playFolder(path: String) {
         audioList = ArgAudioList(false)
         LocalFile(path).listFiles().filter { it.isFile }.sortedBy { it.extension == "part" }.forEach { file ->
@@ -445,7 +444,7 @@ class PlayerActivity : AppCompatActivity(), OnPlaylistAudioChangedListener, OnEr
     }
 
     private fun sourceSuccess(filePath: String) {
-        setTarget(filePath)
+        setDirectories(composition.options, filePath)
         playFolder(filePath)
         playerControls.forEach { it.isEnabled = true }
     }

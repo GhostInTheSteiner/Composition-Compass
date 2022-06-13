@@ -20,6 +20,7 @@ class CompositionCompassOptions {
 //    var tempDirectory: String = "!temporary"
 //    var resourcesDirectory: String = "!resources"
     var automatedDirectory: String = "!automated"
+    var stationsDirectory: String = "Stations"
     var recyclebinDirectory: String = "Recycle Bin"
     var favoritesDirectory: String = "Favorites"
     var moreInterestingDirectory: String = "More Interesting"
@@ -28,6 +29,7 @@ class CompositionCompassOptions {
 //    lateinit var tempDirectoryPath: String
 //    lateinit var resourcesDirectoryPath: String
     lateinit var automatedDirectoryPath: String
+    lateinit var stationsDirectoryPath: String
     lateinit var recyclebinDirectoryPath: String
     lateinit var favoritesDirectoryPath: String
     lateinit var moreInterestingDirectoryPath: String
@@ -129,6 +131,7 @@ class CompositionCompassOptions {
 //        tempDirectoryPath = "$rootDirectoryPath/$tempDirectory"
 //        resourcesDirectoryPath = "$rootDirectoryPath/$resourcesDirectory"
         automatedDirectoryPath = "$rootDirectoryPath/$automatedDirectory"
+        stationsDirectoryPath = "$rootDirectoryPath/$stationsDirectory"
         recyclebinDirectoryPath = "$automatedDirectoryPath/$recyclebinDirectory"
         favoritesDirectoryPath = "$automatedDirectoryPath/$favoritesDirectory"
         moreInterestingDirectoryPath = "$favoritesDirectoryPath/$moreInterestingDirectory"
