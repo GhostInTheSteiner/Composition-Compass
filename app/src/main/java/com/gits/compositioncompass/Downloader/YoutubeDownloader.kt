@@ -192,7 +192,7 @@ class YoutubeDownloader {
             if (isArtists)
                 this.isArtists = true
 
-            dl.execute(request) { progress, etaInSeconds -> onUpdate(progress) }
+            dl.execute(request) { progress, etaInSeconds, _ -> onUpdate(progress) }
 
         } catch (e: Exception) {
             onFailure(e)
