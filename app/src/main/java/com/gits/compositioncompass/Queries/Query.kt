@@ -4,17 +4,22 @@ import DownloadFolder
 import com.gits.compositioncompass.Configuration.CompositionCompassOptions
 import com.gits.compositioncompass.Models.*
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.ItemPicker
-import java.io.File
+import java.util.Collections
 
 abstract class Query(
     protected var options: CompositionCompassOptions,
     protected var picker: ItemPicker,
 ) {
 
-    protected var addedArtists: MutableList<ArtistItem> = mutableListOf()
-    protected var addedTracks: MutableList<TrackItem> = mutableListOf()
-    protected var addedGenres: MutableList<String> = mutableListOf()
-    protected var addedAlbums: MutableList<AlbumItem> = mutableListOf()
+    //MainActivity.download() adds artists/tracks/albums/genres via separate concurrent
+    //coroutines (one launch{} per field), all appending into these same lists - plain
+    //ArrayLists aren't thread-safe, and concurrent add() calls can silently drop an
+    //entry (one write clobbering another) rather than crash, which is exactly what
+    //produced "LC (Comalies XX)" instead of "LC; CL (Comalies XX, The Long Memory)".
+    protected var addedArtists: MutableList<ArtistItem> = Collections.synchronizedList(mutableListOf())
+    protected var addedTracks: MutableList<TrackItem> = Collections.synchronizedList(mutableListOf())
+    protected var addedGenres: MutableList<String> = Collections.synchronizedList(mutableListOf())
+    protected var addedAlbums: MutableList<AlbumItem> = Collections.synchronizedList(mutableListOf())
 
     protected val resultsSimilarArtists_Tracks: Int = 10 //spotify doesn't allow more than 10
 
@@ -76,9 +81,9 @@ abstract class Query(
     //downloads the top tracks to each artist found inside the 'More Interesting' folder
     suspend fun getSpecifiedMoreInteresting(): List<TargetDirectory> {
 
-        val moreInteresting = File(options.moreInterestingDirectoryPath).listFiles()
+        val moreInteresting = picker.storage.listFileNames(options.moreInterestingDirectoryPath)
         val moreInterestingArtists = moreInteresting
-            .map { it.nameWithoutExtension.split(" - ").first() }
+            .map { it.substringBeforeLast('.').split(" - ").first() }
             .toSet().toList() //remove duplicates
 
         moreInterestingArtists.forEach { addArtist(it) }
@@ -112,15 +117,22 @@ abstract class Query(
                     .joinToString("; ") +
                 ")"
 
+    //e.g. "LC; CL (Comalies XX, The Long Memory)" for artists = [Lacuna Coil, Clara Luzia],
+    //albums = [Comalies XX, The Long Memory]. Previously never referenced addedAlbums at
+    //all, so any album seed silently vanished from the folder name (always "()" for a
+    //pure album-seeded station); fixed to include it alongside tracks/genres.
     protected fun getSubFolder_Station(): String {
-        val genreNames = addedGenres.joinToString("; ")
         val artistNames = addedArtists.map { it.initials }.joinToString("; ")
-        val trackNames = addedTracks.map { it.name }.joinToString("; ")
+        val albumNames = addedAlbums.map { it.name }.joinToString(", ")
+        val trackNames = addedTracks.map { it.name }.joinToString(", ")
+        val genreNames = addedGenres.joinToString(", ")
 
-        val subFolderName =
-            artistNames + " (" + listOf(trackNames, genreNames).joinToString("; ").trim()
-                .trim(';') + ")"
-        return subFolderName
+        val parenthetical =
+            listOf(albumNames, trackNames, genreNames)
+                .filter { it.isNotEmpty() }
+                .joinToString("; ")
+
+        return artistNames + " (" + parenthetical + ")"
     }
 
     protected open fun filterExceptions(tracks: List<TrackItem>): List<TrackItem> =

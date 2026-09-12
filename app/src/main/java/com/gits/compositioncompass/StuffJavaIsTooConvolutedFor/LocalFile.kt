@@ -1,34 +1,16 @@
 package com.gits.compositioncompass.StuffJavaIsTooConvolutedFor
 
-import android.os.Build
-import android.os.Environment
-import com.gits.compositioncompass.BuildConfig
 import java.io.File
 
-//instantiates a normal File() with a full file path, in case a scoped storage path is used
-class LocalFile(path: String) : File(getPath(path)) {
-
-    var originalPath: String = ""
-
-    init {
-        originalPath = path
-    }
-
-    override fun listFiles(): Array<LocalFile> {
-        return super.listFiles().map { LocalFile(it.absolutePath) }.toTypedArray()
-    }
-
-    companion object {
-        fun getPath(path: String) : String {
-            val parts = path.split(":")
-
-            if (parts.count() > 1)
-                // scoped storage path
-                return Environment.getExternalStorageDirectory().absolutePath + "/" + parts.last()
-
-            else
-                // legacy storage path
-                return path
-        }
-    }
+//Thin File wrapper that keeps listFiles() returning LocalFile instances too, so callers
+//like PlayerActivity.playFolder() can keep chaining File-style operations.
+//
+//Previously this class tried to guess a real path from a scoped-storage URI string itself
+//(splitting on ":" and assuming everything after it was a path relative to external
+//storage - broken for anything but the simplest cases, and never persisted the grant).
+//That resolution now happens once, up front, via SafPath - by the time a LocalFile is
+//constructed it's already a normal, valid, real absolute path.
+class LocalFile(path: String) : File(path) {
+    override fun listFiles(): Array<LocalFile> =
+        super.listFiles()?.map { LocalFile(it.absolutePath) }?.toTypedArray() ?: arrayOf()
 }

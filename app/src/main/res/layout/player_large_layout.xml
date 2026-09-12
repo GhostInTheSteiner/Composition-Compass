@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_horizontal"
+    android:paddingStart="2dp"
+    android:paddingEnd="2dp">
+
+    <RelativeLayout
+        android:id="@+id/arg_music_panel_layout"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:paddingBottom="5dp"
+        android:paddingTop="5dp">
+
+        <com.arges.sepan.argmusicplayer.Views.SquareHeightImageView
+            android:id="@+id/imageViewAudio"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            app:srcCompat="@drawable/mergesoft"
+            android:layout_marginEnd="5dp" />
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/tvAudioName"
+            android:layout_width="wrap_content"
+            android:layout_height="50dp"
+            android:layout_above="@+id/tvTimeNow"
+            android:layout_alignParentTop="true"
+            android:gravity="center_vertical"
+            android:padding="5dp"
+            android:text="@string/placeholder_song_title_multiline"
+            android:layout_toEndOf="@+id/imageViewAudio"
+            android:layout_toStartOf="@+id/btnRepeat" />
+
+        <androidx.appcompat.widget.AppCompatImageButton
+            android:id="@+id/btnRepeat"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:background="#00ffffff"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/arg_repeat_not"
+            android:layout_alignParentEnd="true" />
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/tvTimeNow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@+id/seekBar"
+            android:text="@string/placeholder_song_time"
+            android:layout_toEndOf="@id/imageViewAudio"
+            android:layout_marginStart="5dp" />
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/tvTimeTotal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@+id/seekBar"
+            android:text="@string/placeholder_song_time"
+            android:layout_alignParentEnd="true" />
+
+        <SeekBar
+            android:id="@+id/seekBar"
+            style="@style/Widget.AppCompat.SeekBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_gravity="center_horizontal"
+            android:max="2"
+            android:progress="1"
+            android:layout_alignParentEnd="true"
+            android:layout_toEndOf="@+id/imageViewAudio" />
+    </RelativeLayout>
+
+    <LinearLayout
+        android:id="@+id/layControls"
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        android:layout_below="@+id/arg_music_panel_layout"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingBottom="10dp"
+        android:paddingTop="10dp">
+
+        <androidx.appcompat.widget.AppCompatImageButton
+            android:id="@+id/btnPrev"
+            android:layout_width="55dp"
+            android:layout_height="48dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/arg_prev" />
+
+        <androidx.appcompat.widget.AppCompatImageButton
+            android:id="@+id/btnPlayPause"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/arg_play" />
+
+        <androidx.appcompat.widget.AppCompatImageButton
+            android:id="@+id/btnNext"
+            android:layout_width="55dp"
+            android:layout_height="48dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/arg_next" />
+    </LinearLayout>
+
+    <com.arges.sepan.argmusicplayer.Views.ArgProgressView
+        android:id="@+id/arg_music_progress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/arg_music_panel_layout"
+        android:layout_alignTop="@+id/arg_music_panel_layout"
+        android:visibility="gone">
+
+    </com.arges.sepan.argmusicplayer.Views.ArgProgressView>
+
+    <com.arges.sepan.argmusicplayer.Views.ArgErrorView
+        android:id="@+id/arg_music_error_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/arg_music_panel_layout"
+        android:layout_alignTop="@+id/arg_music_panel_layout"
+        android:visibility="gone">
+
+    </com.arges.sepan.argmusicplayer.Views.ArgErrorView>
+
+</RelativeLayout>

@@ -5,21 +5,35 @@ import android.app.Activity
 import com.gits.compositioncompass.Models.SearchQuery
 import com.gits.compositioncompass.Models.TargetDirectory
 import com.gits.compositioncompass.Configuration.CompositionCompassOptions
+import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.SafStorage
 import com.yausername.ffmpeg.FFmpeg
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.File
 
 class YoutubeDownloader {
     private var activity: Activity
     private var options: CompositionCompassOptions
+    private var storage: SafStorage
     private var dl: YoutubeDL
     private var ffmpeg: FFmpeg
     private var jobs: MutableList<Job>
     private var isArtists: Boolean = false
 
-    constructor(options: CompositionCompassOptions, activity: Activity) {
+    //yt-dlp is a native process and can only write to a real filesystem path - it has no
+    //notion of SAF/content Uris. Each search query downloads into this private, always-
+    //accessible scratch directory (mirroring the same relative folder structure as the
+    //final SAF destination), and flushStagingToTree() copies the finished file(s) into
+    //the user's picked folder right after, deleting the staged copy. Guarded by a Mutex
+    //since multiple downloads can run in parallel (options.maxParallelDownloads) and may
+    //share the same staging directory.
+    private val stagingRoot: File
+    private val copyMutex = Mutex()
+
+    constructor(options: CompositionCompassOptions, activity: Activity, storage: SafStorage) {
         dl = YoutubeDL.getInstance()
         dl.init(activity)
 
@@ -30,11 +44,13 @@ class YoutubeDownloader {
 
         this.options = options
         this.activity = activity
+        this.storage = storage
+        this.stagingRoot = File(activity.cacheDir, "download-staging")
     }
 
     //needs to be blocking for as long as download runs!
     suspend fun start(targetDirectories: List<TargetDirectory>, onUpdate: (DownloadStatus) -> Unit, onFailure: (String, Exception) -> Unit) {
-
+    //targetDirectories only contains one element (LP-path)
         isArtists = false
 
         val status = DownloadStatus()
@@ -49,6 +65,10 @@ class YoutubeDownloader {
 
                 trackPair
             }
+
+            // TODO: No compound artist / album names are created (no CL;LP if Clara Luzia, Linkin Park was passed in the artists field),
+            // likely due to trackPairs getting processed individually?
+            //(/Stations/LP (Papercut), Blue on Black, Five Finger Death Punch)
             .forEach { trackPair ->
                 while (true) {
                     val targetPath = trackPair.first
@@ -88,14 +108,10 @@ class YoutubeDownloader {
 
         //move tracks whose artists have already been 'explored' to another directory, to keep the 'More Interesting' folder clean
         if (isArtists) {
-            File(options.moreInterestingDirectoryPath).listFiles().forEach { source ->
-                val target = File("${targetDirectories.first().targetPath}/${source.name}")
-                val targetRenamed = File("${targetDirectories.first().targetPath}/!${source.name}")
+            val targetRelative = targetDirectories.first().targetPath
 
-                source.copyTo(target, true)
-                source.delete()
-
-                target.renameTo(targetRenamed)
+            storage.listFileNames(options.moreInterestingDirectoryPath).forEach { name ->
+                storage.moveFile(options.moreInterestingDirectoryPath, name, targetRelative, "!$name")
             }
         }
 
@@ -105,15 +121,16 @@ class YoutubeDownloader {
         dl.updateYoutubeDL(activity);
     }
 
-    private fun runYoutubeDL(searchQuery: SearchQuery, directory: String, onUpdate: (Float) -> Unit, onFailure: (Exception) -> Unit) {
+    private suspend fun runYoutubeDL(searchQuery: SearchQuery, directory: String, onUpdate: (Float) -> Unit, onFailure: (Exception) -> Unit) {
         try {
             val request = YoutubeDLRequest(searchQuery.toString())
             val formatTitle = "%(title)s"
-            val downloadDir = File(directory)
-            val downloadArchiv = File(options.rootDirectoryPath + "/downloaded.txt")
 
-            if (!downloadArchiv.exists())
-                downloadArchiv.createNewFile()
+            //directory is a SAF-tree-relative path (may have a leading "/" - harmless,
+            //File(parent, child) resolves a leading separator in child as relative to
+            //parent regardless). This is where yt-dlp actually writes; the finished
+            //file(s) get copied into the real SAF destination in flushStagingToTree().
+            val downloadDir = File(stagingRoot, directory)
 
             var searchQueryArtist = searchQuery.artists.firstOrNull() ?: ""
             var searchQueryTrack = searchQuery.track
@@ -179,13 +196,13 @@ class YoutubeDownloader {
             if (isSpecified || isURL|| isSearch || isFile || isArtists)
                 //pass => redownloads allowed
 
-            else if (downloadArchiv.readLines().contains(searchQuery.toString())) {
+            else if (storage.readLines(options.rootDirectoryPath, "downloaded.txt").contains(searchQuery.toString())) {
                 onFailure(Exception("Ignoring item, as it has already been downloaded. Delete record in downloaded.txt to allow redownloads."))
                 return
             }
 
             else {
-                downloadArchiv.appendText(searchQuery.toString()+ "\n")
+                storage.appendText(options.rootDirectoryPath, "downloaded.txt", searchQuery.toString() + "\n")
                 request.addOption("--match-title", "^((?!(${options.exceptions})).)*$")
             }
 
@@ -194,8 +211,24 @@ class YoutubeDownloader {
 
             dl.execute(request) { progress, etaInSeconds, _ -> onUpdate(progress) }
 
+            flushStagingToTree(downloadDir, directory)
+
         } catch (e: Exception) {
             onFailure(e)
+        }
+    }
+
+    //copies every file yt-dlp just staged into the real SAF-tree destination, then
+    //deletes the staged copy. Mutex-guarded since parallel downloads can share a
+    //staging directory (e.g. several tracks going into the same station).
+    private suspend fun flushStagingToTree(stagingDir: File, targetRelativePath: String) {
+        copyMutex.withLock {
+            stagingDir.listFiles()?.forEach { file ->
+                if (file.isFile) {
+                    storage.copyFileInto(file, targetRelativePath, file.name)
+                    file.delete()
+                }
+            }
         }
     }
 

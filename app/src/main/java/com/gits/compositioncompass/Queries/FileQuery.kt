@@ -1,14 +1,14 @@
 package com.gits.compositioncompass.Queries
 
 import com.gits.compositioncompass.Configuration.CompositionCompassOptions
+import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.SafStorage
 import DownloadFolder
 import Fields
 import QueryMode
 import com.gits.compositioncompass.Models.SearchQuery
 import com.gits.compositioncompass.Models.TargetDirectory
-import java.io.File
 
-class FileQuery(val options: CompositionCompassOptions) : IFileQuery {
+class FileQuery(val options: CompositionCompassOptions, val storage: SafStorage) : IFileQuery {
     override val requiredFields: List<List<Fields>> get() = listOf(listOf())
     override val supportedFields: List<Fields> get() = listOf(Fields.File)
     
@@ -25,10 +25,10 @@ class FileQuery(val options: CompositionCompassOptions) : IFileQuery {
     }
 
     override fun getSpecifiedTracks(): List<TargetDirectory> =
-        File(options.rootDirectoryPath + "/Files").listFiles().map {
+        storage.listFiles("Files").mapNotNull { it.name }.map { name ->
             TargetDirectory(
-                getPath(DownloadFolder.Stations, "!File (${it.name})"),
-                it.readLines().map { SearchQuery(track = it) })
+                getPath(DownloadFolder.Stations, "!File ($name)"),
+                storage.readLines("Files", name).map { SearchQuery(track = it) })
         }
 
 
@@ -36,3 +36,4 @@ class FileQuery(val options: CompositionCompassOptions) : IFileQuery {
         return options.rootDirectoryPath + "/" + folder.folderName + "/" + subFolderName
     }
 }
+

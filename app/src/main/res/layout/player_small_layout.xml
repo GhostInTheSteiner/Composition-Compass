@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="48dp"
+    android:layout_gravity="center_horizontal"
+    android:paddingStart="2dp"
+    android:paddingEnd="2dp">
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/arg_music_panel_layout">
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/tvTimeNow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="false"
+            android:text="@string/placeholder_song_time"
+            android:layout_alignParentStart="true" />
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/tvTimeTotal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/placeholder_song_time"
+            android:layout_alignParentEnd="false"
+            android:layout_toStartOf="@+id/layControls"
+            tools:ignore="RelativeOverlap" />
+
+        <SeekBar
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/seekBar"
+            android:layout_gravity="center_horizontal"
+            android:layout_below="@+id/tvTimeTotal"
+            android:layout_toStartOf="@+id/layControls" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:id="@+id/layControls"
+            android:orientation="horizontal"
+            android:padding="0dp"
+            android:layout_alignParentEnd="true">
+
+            <androidx.appcompat.widget.AppCompatImageButton
+                android:id="@+id/btnPrev"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:scaleType="fitXY"
+                android:src="@drawable/arg_prev"
+                android:visibility="gone"
+                android:tint="?android:attr/colorControlNormal"/>
+
+            <androidx.appcompat.widget.AppCompatImageButton
+                android:id="@+id/btnPlayPause"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:scaleType="fitXY"
+                android:src="@drawable/arg_play"
+                android:tint="?android:attr/colorControlNormal"/>
+
+            <androidx.appcompat.widget.AppCompatImageButton
+                android:id="@+id/btnNext"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:scaleType="fitXY"
+                android:src="@drawable/arg_next"
+                android:visibility="gone"
+                android:tint="?android:attr/colorControlNormal"/>
+
+            <androidx.appcompat.widget.AppCompatImageButton
+                android:id="@+id/btnRepeat"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/arg_repeat_not"
+                android:padding="8dp"
+                android:tint="?android:attr/colorControlNormal"/>
+        </LinearLayout>
+    </RelativeLayout>
+
+    <com.arges.sepan.argmusicplayer.Views.ArgProgressView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/arg_music_progress"
+        android:visibility="invisible">
+
+    </com.arges.sepan.argmusicplayer.Views.ArgProgressView>
+    <com.arges.sepan.argmusicplayer.Views.ArgErrorView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/arg_music_error_view"
+        android:visibility="invisible">
+
+    </com.arges.sepan.argmusicplayer.Views.ArgErrorView>
+
+</RelativeLayout>

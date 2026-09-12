@@ -16,7 +16,6 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.FileProvider
 import androidx.core.view.setPadding
 import com.gits.compositioncompass.Configuration.CompositionRoot
 import com.gits.compositioncompass.Models.TargetDirectory
@@ -33,7 +32,6 @@ import hasUserContent
 import kotlinx.coroutines.*
 import registerEventHandler
 import setSelection
-import java.io.File
 import java.util.*
 import kotlin.system.exitProcess
 
@@ -59,7 +57,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var preferencesWriter: SharedPreferences.Editor
     private lateinit var jobsDownload: List<Job>
     private lateinit var fieldViews: MutableMap<Fields, View>
-    private lateinit var notificationChannelId: String
+    private var notificationChannelId: String? = null
 
     private lateinit var downloadingLabel: String
     private lateinit var downloadLabel: String
@@ -67,32 +65,51 @@ class MainActivity : AppCompatActivity() {
     private lateinit var composition: CompositionRoot
     private lateinit var binding: ActivityMainBinding
 
+    private val permissionManager = PermissionManager(this)
+
+    // Used for cancelling in-flight autocomplete queries to prevent stale data races
+    private val autocompleteJobs = mutableMapOf<Int, Job>()
+    // Re-entrancy guard for downloads
+    private var isDownloading = false
+
     override fun onResume() {
-        super.onResume(); CompositionRoot.initialize(this)
+        super.onResume()
+        // Only initialize if we have permission AND haven't already initialized.
+        // This handles the "return from Settings" case on API 30+.
+        if (!::composition.isInitialized && permissionManager.hasStorageAccess()) {
+            initializeApp()
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         try {
             super.onCreate(savedInstanceState)
 
-            val permissions = PermissionManager(this)
-            val storage = permissions.requestStorageLegacy()
+            val outerThis = this
 
             notificationChannelId = createNotificationChannel("composition-compass")
 
-            composition = CompositionRoot.initialize(this)
-            logger = composition.logger
-
-            preferencesReader = composition.preferencesReader
-            preferencesWriter = composition.preferencesWriter
-
-            jobsDownload = listOf()
-
-            prepareView()
-            requestConfig()
+            if (!permissionManager.hasStorageAccess()) {
+                permissionManager.requestStorageAccess(object : PermissionManager.Callback {
+                    override fun onGranted() {
+                        initializeApp()
+                    }
+                    override fun onDenied() {
+                        Toast.makeText(
+                            outerThis,
+                            "Composition Compass needs a folder to store your library in - please pick one.",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        finishAffinity()
+                    }
+                })
+            } else {
+                initializeApp()
+            }
         }
         catch (e: Exception) {
-            val mBuilder: NotificationCompat.Builder = NotificationCompat.Builder(this, notificationChannelId)
+            val channelId = notificationChannelId ?: createNotificationChannel("composition-compass-error")
+            val mBuilder: NotificationCompat.Builder = NotificationCompat.Builder(this, channelId)
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle("An exception occured ;(") // title
                 .setStyle(
@@ -109,6 +126,23 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun initializeApp() {
+        // Idempotent: don't re-init if already done (prevents double-init
+        // when both the permission callback and onResume() fire).
+        if (::composition.isInitialized) return
+
+        composition = CompositionRoot.initialize(this)
+        logger = composition.logger
+
+        preferencesReader = composition.preferencesReader
+        preferencesWriter = composition.preferencesWriter
+
+        jobsDownload = listOf()
+
+        prepareView()
+        requestConfig()
+    }
+
     private fun requestConfig() {
         if (!composition.options.__requiredFieldsSet) {
             AlertDialog.Builder(this)
@@ -119,24 +153,11 @@ class MainActivity : AppCompatActivity() {
                             composition.options.__requiredFields.map { "- " + it }.joinToString(System.lineSeparator()) + System.lineSeparator() + System.lineSeparator() +
                             "Once you're done restart the downloader."
                 )
-                .setPositiveButton(android.R.string.ok, { a, b -> openFile(composition.options.__filePath); this.finishAffinity() })
+                .setPositiveButton(android.R.string.ok, { a, b -> startActivity(Intent(this, SettingsActivity::class.java)) })
                 .setNeutralButton("Help", { a, b -> openWebsite("https://github.com/GhostInTheSteiner/Composition-Compass-Downloader/blob/master/README.md#Setup"); this.finishAffinity() })
                 .setIcon(android.R.drawable.ic_dialog_info)
                 .show()
         }
-    }
-
-    private fun openFile(filePath: String) {
-        val intent = Intent(Intent.ACTION_EDIT)
-        val data = FileProvider.getUriForFile(
-            applicationContext,
-            BuildConfig.APPLICATION_ID + ".provider",
-            File(filePath)
-        );
-        intent.setDataAndType(data, "text/plain")
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-        startActivity(intent)
     }
 
     private fun openWebsite(url: String) {
@@ -211,6 +232,8 @@ class MainActivity : AppCompatActivity() {
         source.adapter = getSpinnerAdapter(
             SpinnerItem(QuerySource.Spotify, "Spotify"),
             SpinnerItem(QuerySource.LastFM, "Last.fm"),
+            SpinnerItem(QuerySource.Pandora, "Pandora"),
+            SpinnerItem(QuerySource.PandoraRest, "Pandora (REST)"),
             SpinnerItem(QuerySource.YouTube, "YouTube"),
             SpinnerItem(QuerySource.File, "File")
         )
@@ -255,17 +278,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun updateYoutubeDL(view: View) {
-        GlobalScope.launch(exceptionHandler()) {
-            resetFormatting()
-            info.text = "Update in progress..."
-            composition.downloader.update();
-            info.text = "Update completed!"
+        // UI touches are executed synchronously on Main thread
+        resetFormatting()
+        info.text = "Update in progress..."
+
+        GlobalScope.launch(Dispatchers.IO + exceptionHandler()) {
+            composition.downloader.update()
+            runOnUiThread {
+                info.text = "Update completed!"
+            }
         }
     }
 
     fun openConfig(view: View) {
-        openFile(composition.options.__filePath)
-        this.finishAffinity()
+        startActivity(Intent(this, SettingsActivity::class.java))
     }
 
     fun openPlayer(view: View) {
@@ -274,57 +300,61 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun queryParameters_AfterChanged(view: InstantMultiAutoCompleteTextView) {
-        GlobalScope.launch(exceptionHandler()) {
+        val viewId = view.id
+        // Extract Editable values eagerly on the main thread
+        val viewText = view.text.toString()
+        val artistText = artist.text.toString()
+        val albumText = album.text.toString()
 
+        // Cancel previous in-flight autocomplete queries to prevent stale overwrites
+        autocompleteJobs[viewId]?.cancel()
+
+        autocompleteJobs[viewId] = GlobalScope.launch(Dispatchers.IO + exceptionHandler()) {
             composition.query.prepare()
 
             var suggestions = listOf<String>()
 
-            runBlocking {
+            when (val query = composition.query) {
+                is IStreamingServiceQuery -> {
+                    val valuesCurrent = viewText.split(",").map { it.trim() }
+                    val valuesArtist = artistText.split(",").map { it.trim() }
+                    val valuesAlbum = albumText.split(",").map { it.trim() }
 
-                when (val query = composition.query) {
-                    is IStreamingServiceQuery -> {
+                    val valuesCurrentLatest = valuesCurrent.lastOrNull() ?: ""
+                    val valuesCurrentLatest_Artist =
+                        if (valuesArtist.count() < valuesCurrent.count()) ""
+                        else valuesArtist[valuesCurrent.count() - 1]
 
-                        //take last value from field
-                        val valuesCurrent = view.text.toString().split(",").map { it.trim() }
-                        val valuesArtist = artist.text.toString().split(",").map { it.trim() }
-                        val valuesAlbum = album.text.toString().split(",").map { it.trim() }
+                    val valuesCurrentLatest_Album =
+                        if (valuesAlbum.count() < valuesCurrent.count()) ""
+                        else valuesAlbum[valuesCurrent.count() - 1]
 
-                        val valuesCurrentLatest = valuesCurrent.last()
-                        val valuesCurrentLatest_Artist =
-                            if (valuesArtist.count() < valuesCurrent.count()) ""
-                            else valuesArtist[valuesCurrent.count() - 1]
+                    suggestions =
+                        when (viewId) {
+                            R.id.track ->
+                                query.searchTrack(valuesCurrentLatest, valuesCurrentLatest_Artist, valuesCurrentLatest_Album)
+                                    .sortedByDescending { it.popularity }.map { it.name }
+                            R.id.album ->
+                                query.searchAlbum(valuesCurrentLatest, valuesCurrentLatest_Artist)
+                                    .sortedByDescending { it.popularity }.map { it.name }
+                            R.id.artist ->
+                                query.searchArtist(valuesCurrentLatest)
+                                    .sortedByDescending { it.popularity }.map { it.name }
+                            R.id.genre ->
+                                query.searchGenre(valuesCurrentLatest, valuesCurrentLatest_Artist)
+                                    .sortedBy { it }
+                            else -> suggestions
+                        }
 
-                        val valuesCurrentLatest_Album =
-                            if (valuesAlbum.count() < valuesCurrent.count()) ""
-                            else valuesAlbum[valuesCurrent.count() - 1]
-
-                        suggestions =
-                            when (view.id) {
-                                R.id.track ->
-                                    query.searchTrack(valuesCurrentLatest, valuesCurrentLatest_Artist, valuesCurrentLatest_Album)
-                                        .sortedByDescending { it.popularity }.map { it.name }
-                                R.id.album ->
-                                    query.searchAlbum(valuesCurrentLatest, valuesCurrentLatest_Artist)
-                                        .sortedByDescending { it.popularity }.map { it.name }
-                                R.id.artist ->
-                                    query.searchArtist(valuesCurrentLatest)
-                                        .sortedByDescending { it.popularity }.map { it.name }
-                                R.id.genre ->
-                                    query.searchGenre(valuesCurrentLatest, valuesCurrentLatest_Artist)
-                                        .sortedBy { it }
-                                else -> suggestions
-                            }
-
-                        suggestions = suggestions.filter { it.contains(valuesCurrentLatest, true) }
-                    }
+                    suggestions = suggestions.filter { it.contains(valuesCurrentLatest, true) }
                 }
-
-                suggestions = suggestions.distinct().map { it.replace(',', ' ') }
-
             }
 
-            runOnUiThread { view.setAdapter(getAutocompleteAdapter(suggestions)) }
+            suggestions = suggestions.distinct().map { it.replace(',', ' ') }
+
+            withContext(Dispatchers.Main) {
+                view.setAdapter(getAutocompleteAdapter(suggestions))
+            }
         }
 
         queryParameters.forEach { preferencesWriter.putString("view:" + it.id.toString(), it.text.toString()) }
@@ -346,20 +376,15 @@ class MainActivity : AppCompatActivity() {
         val mode_ = (mode.selectedItem as SpinnerItem).id as QueryMode
         composition.changeQueryMode(mode_)
 
-//        composition.query.supportedFields.forEach { (fieldViews[it]!!.parent as TableRow).visibility = View.VISIBLE }
-
         //enable supported fields
         queryParameters.forEach {
             val supported = composition.query.supportedFields.map { fieldViews[it] }
 
             if (supported.contains(it))
                 (it.parent as TableRow).visibility = View.VISIBLE
-
             else
                 it.setText("") //clear, so the field doesn't interfer with others while it's invisible
         }
-
-
 
         //enable mode spinner only if supported
         if (source_ in listOf(QuerySource.YouTube, QuerySource.File)) {
@@ -367,7 +392,6 @@ class MainActivity : AppCompatActivity() {
             mode.setSelection(item)
             mode.isEnabled = false
         }
-
         else
             mode.isEnabled = true
 
@@ -381,13 +405,14 @@ class MainActivity : AppCompatActivity() {
         queryParameters.forEach { (it.parent as TableRow).visibility = View.GONE }
     }
 
-
-
-
     fun getTextViewValues(textView: TextView) =
         textView.text.toString().split(",").map { it.trim() }.filter { it.length > 0 }
 
     fun download(view: View) {
+        // Immediate synchronous check for re-entrancy
+        if (isDownloading) return
+        isDownloading = true
+
         try {
             hideKeyboard()
             resetFormatting()
@@ -407,6 +432,7 @@ class MainActivity : AppCompatActivity() {
                             required.map { "\"" + it.map { it.viewName }.joinToString(", ") + "\"" }
                                 .joinToString(System.lineSeparator() + "or ")
 
+                isDownloading = false // Unlock state
                 return
             }
 
@@ -435,88 +461,103 @@ class MainActivity : AppCompatActivity() {
                 GlobalScope.launch(exceptionHandler()) { downloadDirectories(youtubeQuery.getSearchQueryResults()) }
 
             } else if (composition.query is IStreamingServiceQuery) {
-
                 val serviceQuery = composition.query as IStreamingServiceQuery
 
-                //call only the addX() methods whose corresponding fields are (enabled + set)!
-                jobsDownload += GlobalScope.launch(exceptionHandler()) {
+                // Freeze the spinner selection & required views synchronously on Main thread
+                val selectedMode = (mode.selectedItem as SpinnerItem).id as QueryMode
+                val isFavoritesOnly = supportedFields.all { it.id == R.id.favorites }
+                val artistView = supportedFields.firstOrNull { it.id == R.id.artist } as? TextView
+                val artists = if (isFavoritesOnly || artistView == null) listOf() else getTextViewValues(artistView)
+
+                // Structure to pass frozen UI states across thread boundary
+                class FieldData(val id: Int, val values: List<String>, val matchArtistsItems: Boolean)
+                val activeFields = mutableListOf<FieldData>()
+
+                supportedFields.forEach {
+                    val visible = (it.parent as TableRow).visibility == View.VISIBLE
+                    if (visible && it.hasUserContent()) {
+                        val values = getTextViewValues(it as TextView)
+                        activeFields.add(FieldData(it.id, values, artists.lastIndex == values.lastIndex))
+                    }
+                }
+
+                // TODO: Only first artist added, apparently?
+
+                // Call only the addX() methods whose corresponding fields are (enabled + set)!
+                jobsDownload += GlobalScope.launch(Dispatchers.IO + exceptionHandler()) {
                     serviceQuery.clear()
                     serviceQuery.prepare()
 
-                    var artistSuccess = true
-                    var trackSuccess = true
-                    var albumSuccess = true
-                    var genreSuccess = true
+                    var artistSuccess: Boolean? = null
+                    var trackSuccess: Boolean? = null
+                    var albumSuccess: Boolean? = null
+                    var genreSuccess: Boolean? = null
 
                     runBlocking {
-
-                        var artists =
-                            if (supportedFields.all { it.id == R.id.favorites })
-                                listOf() // artists will be fathomed from favorites folder
-                            else {
-                                val artistView = (supportedFields.filter { it.id == R.id.artist }.first() as TextView)
-                                getTextViewValues(artistView)
-                            }
-
                         runOnUiThread { info.text = "Fetching data from source..." }
 
-                        supportedFields.forEach {
-
-                            val visible = (it.parent as TableRow).visibility == View.VISIBLE
-
-                            if (visible && it.hasUserContent()) {
-                                jobsDownload +=
-                                    when (it.id) {
-                                        R.id.artist -> launch(exceptionHandler()) {
-                                            getTextViewValues(it as TextView).forEachIndexed { i, it ->
-                                                artistSuccess = artistSuccess && serviceQuery.addArtist(it)
-                                            }
+                        activeFields.forEach { fieldData ->
+                            jobsDownload += when (fieldData.id) {
+                                R.id.artist -> launch(exceptionHandler()) {
+                                    artistSuccess = false
+                                    fieldData.values.forEach { artistSuccess = serviceQuery.addArtist(it) || artistSuccess!! }
+                                }
+                                R.id.track -> {
+                                    trackSuccess = false
+                                    if (!fieldData.matchArtistsItems)
+                                        throw Exception("Number of tracks must match number of artists! Artist need to be listed several times if multiple tracks by the same artist are desired.")
+                                    launch(exceptionHandler()) {
+                                        fieldData.values.forEachIndexed { i, it ->
+                                            trackSuccess = serviceQuery.addTrack(it, artists[i]) || trackSuccess!!
                                         }
-                                        R.id.track -> launch(exceptionHandler()) {
-                                            getTextViewValues(it as TextView).forEachIndexed { i, it ->
-                                                trackSuccess = trackSuccess && serviceQuery.addTrack(it, artists[i])
-                                            }
-                                        }
-                                        R.id.album -> launch(exceptionHandler()) {
-                                            getTextViewValues(it as TextView).forEachIndexed { i, it ->
-                                                albumSuccess = albumSuccess && serviceQuery.addAlbum(it, artists[i])
-                                            }
-                                        }
-                                        R.id.genre -> launch(exceptionHandler()) {
-                                            getTextViewValues(it as TextView).forEachIndexed { i, it ->
-                                                genreSuccess = genreSuccess && serviceQuery.addGenre(it)
-                                            }
-                                        }
-                                        else -> Job()
                                     }
+                                }
+                                R.id.album -> {
+                                    albumSuccess = false
+                                    if (!fieldData.matchArtistsItems)
+                                        throw Exception("Number of albums must match number of artists! Artist need to be listed several times if multiple tracks by the same artist are desired.")
+                                    launch(exceptionHandler()) {
+                                        fieldData.values.forEachIndexed { i, it ->
+                                            albumSuccess = serviceQuery.addAlbum(it, artists[i]) || albumSuccess!!
+                                        }
+                                    }
+                                }
+                                R.id.genre -> {
+                                    genreSuccess = false
+                                    launch(exceptionHandler()) {
+                                        fieldData.values.forEach { genreSuccess = serviceQuery.addGenre(it) || genreSuccess!! }
+                                    }
+                                }
+                                else -> Job()
                             }
                         }
                     }
 
-                    if (!artistSuccess) { runOnUiThread { info.text = "\"Artist\" not found!"; unlockDownload(); }; return@launch }
-                    if (!trackSuccess) { runOnUiThread { info.text = "\"Track\" not found!"; unlockDownload(); }; return@launch }
-                    if (!albumSuccess) { runOnUiThread { info.text = "\"Album\" not found!"; unlockDownload(); }; return@launch }
-                    if (!genreSuccess) { runOnUiThread { info.text = "\"Genre\" not found!"; unlockDownload(); }; return@launch }
+                    // assume true if not relevant / displayed in current mode
+                    if (!(artistSuccess ?: true)) { runOnUiThread { info.text = "Artist not found!"; unlockDownload() }; return@launch }
+                    if (!(trackSuccess ?: true)) { runOnUiThread { info.text = "Track not found!"; unlockDownload() }; return@launch }
+                    if (!(albumSuccess ?: true)) { runOnUiThread { info.text = "Album not found!"; unlockDownload() }; return@launch }
+                    if (!(genreSuccess ?: true)) { runOnUiThread { info.text = "Genre not found!"; unlockDownload() }; return@launch }
 
-                    val selectedMode = (mode.selectedItem as SpinnerItem).id as QueryMode
+                    // TODO: for some reason only one entry even though multiple artists defined?
 
-                    directories =
-                        when (selectedMode) {
-                            QueryMode.SimilarTracks -> serviceQuery.getSimilarTracks()
-                            QueryMode.SimilarAlbums -> serviceQuery.getSimilarAlbums()
-                            QueryMode.SimilarArtists -> serviceQuery.getSimilarArtists()
-                            QueryMode.Specified -> serviceQuery.getSpecified()
-                            QueryMode.SpecifiedMoreInteresting -> serviceQuery.getSpecifiedMoreInteresting()
-                            //QueryMode.SpecifiedLessInteresting -> serviceQuery.getSpecifiedLessInteresting()
-                            //QueryMode.SpecifiedFavorites -> serviceQuery.getSpecifiedFavorites()
-                            //...
-                        }
+                    directories = when (selectedMode) {
+                        QueryMode.SimilarTracks -> serviceQuery.getSimilarTracks()
+                        QueryMode.SimilarAlbums -> serviceQuery.getSimilarAlbums()
+                        QueryMode.SimilarArtists -> serviceQuery.getSimilarArtists()
+                        QueryMode.Specified -> serviceQuery.getSpecified()
+                        QueryMode.SpecifiedMoreInteresting -> serviceQuery.getSpecifiedMoreInteresting()
+                        //QueryMode.SpecifiedLessInteresting -> serviceQuery.getSpecifiedLessInteresting()
+                        //QueryMode.SpecifiedFavorites -> serviceQuery.getSpecifiedFavorites()
+                        //...
+                    }
 
                     downloadDirectories(directories)
                 }
             }
         }
         catch (e: Exception) {
+            isDownloading = false // Unlock state on synchronous failure
             printError(e)
         }
     }
@@ -531,7 +572,7 @@ class MainActivity : AppCompatActivity() {
                     info.text =
                         "Progress: " + it.progress + "%" + System.lineSeparator() + System.lineSeparator() +
                                 "Storing in the following locations:" + System.lineSeparator() + System.lineSeparator() +
-                                directories.map { "\"${getShortPath(it.targetPath)}\"" }
+                                directories.map { "\"${it.targetPath}\"" }
                                     .joinToString(System.lineSeparator() + "-----------------" + System.lineSeparator())
                 }
             },
@@ -548,15 +589,12 @@ class MainActivity : AppCompatActivity() {
             info.text =
                 "Download completed!" + System.lineSeparator() + System.lineSeparator() +
                         "Files were stored in:" + System.lineSeparator() + System.lineSeparator() +
-                        directories.map { "\"${getShortPath(it.targetPath)}\"" }
+                        directories.map { "\"${it.targetPath}\"" }
                             .joinToString(System.lineSeparator() + "-----------------" + System.lineSeparator())
 
             unlockDownload()
         }
     }
-
-    fun getShortPath(fullPath: String) =
-        fullPath.split("Pandora/").drop(1).joinToString("Pandora/")
 
     fun hideKeyboard() {
         val imm: InputMethodManager =
@@ -572,28 +610,35 @@ class MainActivity : AppCompatActivity() {
 
     fun exceptionHandler() =
         CoroutineExceptionHandler { context, throwable ->
-            runOnUiThread { unlockDownload() };
+            runOnUiThread { unlockDownload() }
             printError(throwable)
         }
 
     fun unlockDownload() {
+        isDownloading = false
         download.text = downloadLabel
         download.isEnabled = true
         update.isEnabled = true
     }
 
     fun printError(e: Throwable) {
+        // I/O logic for logger sent to background coroutine, no longer blocking UI Thread
+        GlobalScope.launch(Dispatchers.IO) {
+            logger.warn(Exception(e.message, e.cause))
+        }
         runOnUiThread {
             error.text = getErrorMessage(e.message ?: "Unknown cause", e.stackTraceToString())
-            logger.warn(Exception(e.message, e.cause))
         }
     }
 
     fun printError(e: Exception) {
+        // I/O logic for logger sent to background coroutine, no longer blocking UI Thread
+        GlobalScope.launch(Dispatchers.IO) {
+            logger.warn(e)
+        }
         runOnUiThread {
             error.setPadding(15)
             error.text = getErrorMessage(e.message ?: "Unknown cause", e.stackTraceToString())
-            logger.warn(e)
         }
     }
 

@@ -18,4 +18,12 @@
         <item name="android:textSize">11dp</item>
         <item name="android:padding">0dp</item>
     </style>
+        <!-- Base application theme. -->
+    <style name="ArgPlayerTheme" parent="Theme.MaterialComponents.DayNight">
+        <!-- Customize your theme here. -->
+        <!--item name="buttonStyle">@style/ArgPlayerButton</item-->
+    </style>
+    <!--style name="ArgPlayerButton" parent="Widget.AppCompat.Button">
+        <item name="android:background">@drawable/back_imagebutton</item>
+    </style-->
 </resources>

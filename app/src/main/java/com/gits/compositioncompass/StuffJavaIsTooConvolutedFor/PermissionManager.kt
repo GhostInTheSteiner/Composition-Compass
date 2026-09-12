@@ -1,69 +1,60 @@
 package com.gits.compositioncompass.StuffJavaIsTooConvolutedFor
 
-import android.Manifest
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
-import android.os.Environment
-import android.provider.Settings
-import androidx.activity.result.ActivityResult
-import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.app.ActivityCompat.startActivityForResult
-import androidx.core.content.ContextCompat
-import androidx.test.core.app.ApplicationProvider
-import androidx.test.core.app.ApplicationProvider.getApplicationContext
 
+//Requests access to exactly one folder (and everything under it) via the Storage Access
+//Framework, replacing the previous MANAGE_EXTERNAL_STORAGE / READ+WRITE_EXTERNAL_STORAGE
+//flow. No broad storage permission is requested or declared anymore - just consent for the
+//single folder the user picks via ACTION_OPEN_DOCUMENT_TREE. Everything under that tree is
+//then accessed through SafStorage (DocumentFile/ContentResolver), which works uniformly
+//regardless of which storage volume the folder is on.
+class PermissionManager(private val activity: AppCompatActivity) {
 
-class PermissionManager(
-    private val activity: AppCompatActivity
-) {
-//    fun requestStorage() {
-//        val launcher = activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-//            result: ActivityResult ->
-//
-//        }
-//
-//        if (!Environment.isExternalStorageManager()) {
-//            try {
-//                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
-//                intent.addCategory("android.intent.category.DEFAULT")
-//                intent.data = Uri.parse(
-//                    String.format(
-//                        "package:%s",
-//                        ApplicationProvider.getApplicationContext<Context>().getPackageName()
-//                    )
-//                )
-//                launcher.launch (intent)
-//            } catch (e: Exception) {
-//                val intent = Intent()
-//                intent.action = Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION
-//                launcher.launch(intent)
-//            }
-//        }
-//    }
-
-    fun requestStorageLegacy(): Boolean {
-        val read = { ContextCompat.checkSelfPermission(activity, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED }
-        val write = { ContextCompat.checkSelfPermission(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED }
-
-        if (read() && write())
-            return true
-
-        else {
-            ActivityCompat.requestPermissions(
-                activity,
-                arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE),
-                1
-            );
-            Thread.sleep(1000)
-            return requestStorageLegacy()
-        }
+    interface Callback {
+        fun onGranted()
+        fun onDenied()
     }
 
-    //others go here...
+    private var pendingCallback: Callback? = null
+
+    private val treePickerLauncher = activity.registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val uri = result.data?.data
+
+        if (result.resultCode == Activity.RESULT_OK && uri != null) {
+            activity.contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+            pendingCallback?.onGranted()
+        } else {
+            pendingCallback?.onDenied()
+        }
+
+        pendingCallback = null
+    }
+
+    /** Launches the SAF folder picker so the user can grant access to one directory tree. */
+    fun requestStorageAccess(callback: Callback) {
+        pendingCallback = callback
+
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
+            addCategory(Intent.CATEGORY_DEFAULT)
+            addFlags(
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                        Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+                        Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+            )
+        }
+
+        treePickerLauncher.launch(intent)
+    }
+
+    /** Synchronous check - has a folder already been picked (and is the grant still valid)? */
+    fun hasStorageAccess(): Boolean =
+        activity.contentResolver.persistedUriPermissions.any { it.isReadPermission && it.isWritePermission }
 }

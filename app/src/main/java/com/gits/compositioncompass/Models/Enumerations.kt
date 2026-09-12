@@ -29,6 +29,8 @@ enum class DownloadFolder(val folderName: String) {
 enum class QuerySource() {
     Spotify,
     LastFM,
+    Pandora,
+    PandoraRest,
     YouTube,
     File
 }

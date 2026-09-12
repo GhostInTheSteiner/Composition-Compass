@@ -6,11 +6,10 @@ import QuerySource
 import android.app.Activity
 import com.gits.compositioncompass.Downloader.YoutubeDownloader
 import android.content.SharedPreferences
-import android.os.Environment
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.ItemPicker
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.Logger
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.Notifier
-import java.io.File
+import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.SafStorage
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -28,6 +27,7 @@ import java.time.format.DateTimeFormatter
 class CompositionRoot {
 
     val options: CompositionCompassOptions
+    val storage: SafStorage
     var activity: Activity
     lateinit var preferencesReader: SharedPreferences
     lateinit var preferencesWriter: SharedPreferences.Editor
@@ -36,16 +36,15 @@ class CompositionRoot {
     lateinit var logger: Logger
     lateinit var picker: ItemPicker
 
-    private constructor(options: CompositionCompassOptions, activity: Activity) {
+    private constructor(options: CompositionCompassOptions, storage: SafStorage, activity: Activity) {
+        this.options = options
+        this.storage = storage
+        this.activity = activity
+
         initWithActivity(options, activity)
         initWithoutActivity(options)
 
         instance = this
-
-        this.options = options
-        this.activity = activity
-
-
     }
 
     //not dependant on activity (one-time only instantiation)
@@ -55,8 +54,8 @@ class CompositionRoot {
 
     //dependant on activity (need to be re-instantiated or updated once activity changes)
     private fun initWithActivity(options: CompositionCompassOptions, activity: Activity) {
-        downloader = YoutubeDownloader(options, activity)
-        logger = Logger(options, Notifier(options, activity))
+        downloader = YoutubeDownloader(options, activity, storage)
+        logger = Logger(options, storage, Notifier(options, activity))
         picker = ItemPicker(options, activity)
         preferencesReader = activity.getSharedPreferences(options.packageName, 0)
         preferencesWriter = preferencesReader.edit()
@@ -67,8 +66,10 @@ class CompositionRoot {
             when(source) {
                 QuerySource.Spotify -> SpotifyQuery(options, picker)
                 QuerySource.LastFM -> LastFMQuery(options, picker)
+                QuerySource.Pandora -> PandoraQuery(options, picker)
+                QuerySource.PandoraRest -> PandoraRestQuery(options, picker)
                 QuerySource.YouTube -> YouTubeQuery(options)
-                QuerySource.File -> FileQuery(options)
+                QuerySource.File -> FileQuery(options, storage)
             }
     }
 
@@ -79,13 +80,14 @@ class CompositionRoot {
     companion object {
         private var instance: CompositionRoot? = null
 
+        //only call once PermissionManager.hasStorageAccess() is true - MainActivity's
+        //existing init flow already guarantees that
         fun initialize(newActivity: Activity) : CompositionRoot {
             if (instance == null) {
-                val extStoragePath = Environment.getExternalStorageDirectory().absolutePath
-                val configFile = extStoragePath + "/Music/Pandora/config.ini"
-                val options = CompositionCompassOptions(configFile, newActivity)
+                val storage = SafStorage(newActivity)
+                val options = CompositionCompassOptions(newActivity, storage)
 
-                return CompositionRoot(options, newActivity)
+                return CompositionRoot(options, storage, newActivity)
             }
 
             else if (instance!!.activity != newActivity) {
