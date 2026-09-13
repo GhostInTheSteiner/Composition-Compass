@@ -231,9 +231,10 @@ class MainActivity : AppCompatActivity() {
 
         source.adapter = getSpinnerAdapter(
             //SpinnerItem(QuerySource.Spotify, "Spotify"),
-            SpinnerItem(QuerySource.LastFM, "Last.fm"),
+
             SpinnerItem(QuerySource.Pandora, "Pandora"),
             SpinnerItem(QuerySource.PandoraRest, "Pandora (REST)"),
+            SpinnerItem(QuerySource.LastFM, "Last.fm"),
             SpinnerItem(QuerySource.YouTube, "YouTube"),
             SpinnerItem(QuerySource.File, "File")
         )
@@ -473,9 +474,26 @@ class MainActivity : AppCompatActivity() {
                 class FieldData(val id: Int, val values: List<String>, val matchArtistsItems: Boolean)
                 val activeFields = mutableListOf<FieldData>()
 
+                // Track and Album already carry the artist along with them (addTrack/addAlbum both
+                // take the artist as a parameter), so if either has content, the artist must NOT
+                // also be added on its own via addArtist() - otherwise it gets added twice.
+                val trackField = supportedFields.firstOrNull { it.id == R.id.track } as? TextView
+                val albumField = supportedFields.firstOrNull { it.id == R.id.album } as? TextView
+
+                val trackHasContent = trackField != null &&
+                        (trackField.parent as TableRow).visibility == View.VISIBLE &&
+                        trackField.hasUserContent()
+                val albumHasContent = albumField != null &&
+                        (albumField.parent as TableRow).visibility == View.VISIBLE &&
+                        albumField.hasUserContent()
+
                 supportedFields.forEach {
                     val visible = (it.parent as TableRow).visibility == View.VISIBLE
                     if (visible && it.hasUserContent()) {
+                        // Skip the standalone artist entry if tracks or albums already cover it
+                        if (it.id == R.id.artist && (trackHasContent || albumHasContent))
+                            return@forEach
+
                         val values = getTextViewValues(it as TextView)
                         activeFields.add(FieldData(it.id, values, artists.lastIndex == values.lastIndex))
                     }

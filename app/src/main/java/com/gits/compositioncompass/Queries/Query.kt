@@ -122,7 +122,11 @@ abstract class Query(
     //all, so any album seed silently vanished from the folder name (always "()" for a
     //pure album-seeded station); fixed to include it alongside tracks/genres.
     protected fun getSubFolder_Station(): String {
-        val artistNames = addedArtists.map { it.initials }.joinToString("; ")
+        // addedArtists is empty in case we define artists AND tracks -> initials not available!
+        val artistNames =
+            if      (addedArtists.count() > 0) addedArtists.map { it.initials }.joinToString("; ")
+            else if (addedTracks.count() > 0)  addedTracks.flatMap { track -> track.artists.map { it.initials } }.distinct().joinToString("; ")
+            else                               "Unknown"
         val albumNames = addedAlbums.map { it.name }.joinToString(", ")
         val trackNames = addedTracks.map { it.name }.joinToString(", ")
         val genreNames = addedGenres.joinToString(", ")

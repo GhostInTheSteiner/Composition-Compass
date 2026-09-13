@@ -499,7 +499,7 @@ class PandoraQuery : IStreamingServiceQuery, Query {
         val json = JSONObject(responseText)
 
         if (json.optString("stat") != "ok")
-            throw Exception("Pandora API error " + json.optString("code") + ": " + json.optString("message"))
+            throw Exception("Pandora API error on '$method' " + json.optString("code") + ": " + json.optString("message"))
 
         json.optJSONObject("result") ?: JSONObject()
     }
