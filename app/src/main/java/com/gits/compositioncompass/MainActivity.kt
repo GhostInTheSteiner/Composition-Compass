@@ -490,8 +490,13 @@ class MainActivity : AppCompatActivity() {
                 supportedFields.forEach {
                     val visible = (it.parent as TableRow).visibility == View.VISIBLE
                     if (visible && it.hasUserContent()) {
+
+                        if (selectedMode == QueryMode.Specified) {
+                            // pass => use all fields if the specified mode is selected
+                        }
+
                         // Skip the standalone artist entry if tracks or albums already cover it
-                        if (it.id == R.id.artist && (trackHasContent || albumHasContent))
+                        else if (it.id == R.id.artist && (trackHasContent || albumHasContent))
                             return@forEach
 
                         val values = getTextViewValues(it as TextView)
