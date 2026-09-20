@@ -266,6 +266,15 @@
             </LinearLayout>
         </TableRow>
 
+        <TableRow>
+            <CheckBox
+                android:id="@+id/useTor"
+                android:layout_span="2"
+                android:text="Route Pandora through Tor (US exit)"
+                android:textColor="@color/white"
+                android:buttonTint="#229aca" />
+        </TableRow>
+
         <TableRow
             android:layout_marginTop="5dp">
 

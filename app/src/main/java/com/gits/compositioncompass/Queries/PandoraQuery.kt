@@ -494,33 +494,39 @@ class PandoraQuery : IStreamingServiceQuery, Query {
             "$key=${URLEncoder.encode(value, "UTF-8")}"
         }
 
-        //Fail closed: never contact Pandora's API without a working Tor circuit -
-        //falling back to a direct connection would leak the exact traffic this
-        //proxying exists to protect. awaitReady() only returns true once TorManager has
-        //loaded GeoIP AND restricted exits to the US (Pandora rejects non-US IPs with
-        //the generic code-12 error).
-        if (!TorManager.awaitReady())
-            throw Exception(
-                "Tor is not available; refusing to contact Pandora directly." +
-                        (TorManager.lastConfigError?.let { " Last Tor error: $it" } ?: "")
-            )
+        //Tor is optional (checkbox in MainActivity). Read the flag once so the decision
+        //can't change halfway through a request.
+        val useTor = TorManager.enabled
 
-        //Read the port once, and re-check it: tor may have gone down since awaitReady().
-        val port = TorManager.socksPort()
-        if (port < 0)
-            throw Exception("Tor went down before the request could be sent; refusing to contact Pandora directly.")
+        val proxy: Proxy =
+            if (useTor) {
+                //Fail closed: with Tor enabled, never contact Pandora's API without a
+                //working Tor circuit - falling back to a direct connection would leak the
+                //exact traffic this proxying exists to protect. awaitReady() only returns
+                //true once TorManager has loaded GeoIP AND restricted exits to the US
+                //(Pandora rejects non-US IPs with the generic code-12 error).
+                if (!TorManager.awaitReady())
+                    throw Exception(
+                        "Tor is not available; refusing to contact Pandora directly." +
+                                (TorManager.lastConfigError?.let { " Last Tor error: $it" } ?: "")
+                    )
 
-        //Per-connection SOCKS proxy -> only this API goes through Tor. The proxy address
-        //is a literal IP (no DNS involved). The *target* host (tuner.pandora.com) is
-        //handed to tor's SOCKS5 proxy unresolved by the HTTP stack and resolved at the
-        //exit node, so there is no local DNS leak. yt-dlp downloads spawn a native
-        //process with their own sockets and stay direct.
-        val torProxy = Proxy(
-            Proxy.Type.SOCKS,
-            InetSocketAddress("127.0.0.1", port)
-        )
+                //Read the port once, and re-check it: tor may have gone down since awaitReady().
+                val port = TorManager.socksPort()
+                if (port < 0)
+                    throw Exception("Tor went down before the request could be sent; refusing to contact Pandora directly.")
 
-        val connection = URL("https://$apiHost?$query").openConnection(torProxy) as HttpURLConnection
+                //Per-connection SOCKS proxy -> only this API goes through Tor. The proxy
+                //address is a literal IP (no DNS involved). The *target* host
+                //(tuner.pandora.com) is handed to tor's SOCKS5 proxy unresolved by the HTTP
+                //stack and resolved at the exit node, so there is no local DNS leak.
+                //yt-dlp downloads spawn a native process with their own sockets and stay direct.
+                Proxy(Proxy.Type.SOCKS, InetSocketAddress("127.0.0.1", port))
+            } else {
+                Proxy.NO_PROXY //user explicitly turned Tor off
+            }
+
+        val connection = URL("https://$apiHost?$query").openConnection(proxy) as HttpURLConnection
 
         val responseText = try {
             connection.requestMethod = "POST"

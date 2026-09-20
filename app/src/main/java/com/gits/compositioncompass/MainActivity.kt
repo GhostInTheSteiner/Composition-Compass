@@ -53,6 +53,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var source: Spinner
     private lateinit var download: Button
     private lateinit var update: Button
+    private lateinit var useTor: CheckBox
 
     private lateinit var preferencesReader: SharedPreferences
     private lateinit var preferencesWriter: SharedPreferences.Editor
@@ -140,14 +141,16 @@ class MainActivity : AppCompatActivity() {
         composition = CompositionRoot.initialize(this)
         logger = composition.logger
 
-        //Start the embedded Tor instance in the background. It only proxies
+        preferencesReader = composition.preferencesReader
+        preferencesWriter = composition.preferencesWriter
+
+        //Tor is optional (checkbox). The preference must be read BEFORE deciding to start it.
+        //When enabled, start the embedded Tor instance in the background. It only proxies
         //Pandora's tuner API (see PandoraQuery.callApi); yt-dlp stays direct.
         //Pandora requests block on TorManager.awaitReady(), so bootstrapping
         //in parallel with the rest of app init hides most of the startup delay.
-        TorManager.start(applicationContext)
-
-        preferencesReader = composition.preferencesReader
-        preferencesWriter = composition.preferencesWriter
+        TorManager.enabled = preferencesReader.getBoolean("useTor", true)
+        if (TorManager.enabled) TorManager.start(applicationContext)
 
         jobsDownload = listOf()
 
@@ -156,20 +159,37 @@ class MainActivity : AppCompatActivity() {
 
         // DEBUG: Tor diagnostics. Remove once the exit country is confirmed to be US.
         // Started after prepareView() so `info` is initialized before it is touched.
-        GlobalScope.launch(Dispatchers.IO + exceptionHandler()) {
-            if (TorManager.awaitReady()) {
-                val report = TorManager.checkTor()
-                val debugConfig = TorManager.debugConfig()
-                logger.warn(Exception(report))
-                logger.warn(Exception(debugConfig))
-                runOnUiThread { info.text = report + "\n\n" + debugConfig }
-            } else {
-                // awaitReady() timed out: show WHY (e.g. GeoIP failed to load)
-                val msg = "Tor not ready. Last error: ${TorManager.lastConfigError}"
-                logger.warn(Exception(msg))
-                runOnUiThread { info.text = msg }
+        // Skipped when Tor is disabled, otherwise it would wait on Tor for the full timeout.
+        if (TorManager.enabled) {
+            GlobalScope.launch(Dispatchers.IO + exceptionHandler()) {
+                if (TorManager.awaitReady()) {
+                    val report = TorManager.checkTor()
+                    val debugConfig = TorManager.debugConfig()
+                    logger.warn(Exception(report))
+                    logger.warn(Exception(debugConfig))
+                    runOnUiThread { info.text = report + "\n\n" + debugConfig }
+                } else {
+                    // awaitReady() timed out: show WHY (e.g. GeoIP failed to load)
+                    val msg = "Tor not ready. Last error: ${TorManager.lastConfigError}"
+                    logger.warn(Exception(msg))
+                    runOnUiThread { info.text = msg }
+                }
             }
         }
+    }
+
+    // Checkbox handler: persists the choice and starts/stops the embedded Tor instance.
+    private fun setTorEnabled(enabled: Boolean) {
+        preferencesWriter.putBoolean("useTor", enabled)
+        preferencesWriter.apply()
+
+        TorManager.enabled = enabled
+        if (enabled) TorManager.start(applicationContext) // idempotent
+        else TorManager.stop(applicationContext)          // unbinds; tor shuts down
+
+        info.text =
+            if (enabled) "Tor enabled: Pandora traffic goes through Tor (US exits)."
+            else "Tor disabled: Pandora traffic connects directly."
     }
 
     private fun requestConfig() {
@@ -232,6 +252,10 @@ class MainActivity : AppCompatActivity() {
 
         download = findViewById(R.id.download)
         update = findViewById(R.id.update)
+
+        useTor = findViewById(R.id.useTor)
+        useTor.isChecked = preferencesReader.getBoolean("useTor", true) // set BEFORE the listener
+        useTor.setOnCheckedChangeListener { _, checked -> setTorEnabled(checked) }
 
         queryParameters = listOf(artist, track, album, genre, searchQuery, file, favorites)
 

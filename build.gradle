@@ -14,6 +14,10 @@ buildscript {
     }
 }
 
+allprojects {
+    buildDir = "${System.getProperty("user.home")}/.gradle-builds/${rootProject.name}/${project.name}"
+}
+
 task clean(type: Delete) {
     delete rootProject.buildDir
 }

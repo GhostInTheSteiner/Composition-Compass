@@ -53,6 +53,12 @@ object TorManager {
     private const val CONFIG_RETRIES = 20
     private const val CONFIG_RETRY_DELAY_MS = 500L
 
+    //Whether Pandora traffic should be routed through Tor. Read on every request by
+    //PandoraQuery.callApi; toggled by the checkbox in MainActivity. When true, the
+    //fail-closed behaviour applies; when false, requests connect directly.
+    @Volatile
+    var enabled: Boolean = true
+
     @Volatile
     private var torService: TorService? = null
 
