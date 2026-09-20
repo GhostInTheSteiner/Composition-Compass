@@ -5,6 +5,8 @@ dependencyResolutionManagement {
         mavenCentral()
         jcenter() // Warning: this repository is going to shut down soon
         maven { url 'https://jitpack.io' }
+        // Guardian Project repo - hosts the tor-android binaries
+        maven { url 'https://raw.githubusercontent.com/guardianproject/gpmaven/master' }
     }
 }
 rootProject.name = "CompositionCompass"

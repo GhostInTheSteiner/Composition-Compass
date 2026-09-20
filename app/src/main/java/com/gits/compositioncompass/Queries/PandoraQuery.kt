@@ -16,6 +16,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.json.JSONObject
 import toList
+import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.TorManager
+import java.net.InetSocketAddress
+import java.net.Proxy
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
@@ -84,6 +87,10 @@ class PandoraQuery : IStreamingServiceQuery, Query {
 
     private val apiHost = "tuner.pandora.com/services/json/"
     private val apiVersion = "5"
+
+    //Tor circuits are slow; be generous, but never hang forever.
+    private val connectTimeoutMs = 60_000
+    private val readTimeoutMs = 60_000
 
     constructor(options: CompositionCompassOptions, picker: ItemPicker) : super(options, picker) {
         this.mode = QueryMode.SimilarTracks
@@ -487,14 +494,49 @@ class PandoraQuery : IStreamingServiceQuery, Query {
             "$key=${URLEncoder.encode(value, "UTF-8")}"
         }
 
-        val connection = URL("https://$apiHost?$query").openConnection() as HttpURLConnection
-        connection.requestMethod = "POST"
-        connection.doOutput = true
-        connection.setRequestProperty("Content-Type", "text/plain")
-        connection.outputStream.use { it.write(bodyString.toByteArray(Charsets.UTF_8)) }
+        //Fail closed: never contact Pandora's API without a working Tor circuit -
+        //falling back to a direct connection would leak the exact traffic this
+        //proxying exists to protect. awaitReady() only returns true once TorManager has
+        //loaded GeoIP AND restricted exits to the US (Pandora rejects non-US IPs with
+        //the generic code-12 error).
+        if (!TorManager.awaitReady())
+            throw Exception(
+                "Tor is not available; refusing to contact Pandora directly." +
+                        (TorManager.lastConfigError?.let { " Last Tor error: $it" } ?: "")
+            )
 
-        val responseText = readResponseBody(connection)
-        connection.disconnect()
+        //Read the port once, and re-check it: tor may have gone down since awaitReady().
+        val port = TorManager.socksPort()
+        if (port < 0)
+            throw Exception("Tor went down before the request could be sent; refusing to contact Pandora directly.")
+
+        //Per-connection SOCKS proxy -> only this API goes through Tor. The proxy address
+        //is a literal IP (no DNS involved). The *target* host (tuner.pandora.com) is
+        //handed to tor's SOCKS5 proxy unresolved by the HTTP stack and resolved at the
+        //exit node, so there is no local DNS leak. yt-dlp downloads spawn a native
+        //process with their own sockets and stay direct.
+        val torProxy = Proxy(
+            Proxy.Type.SOCKS,
+            InetSocketAddress("127.0.0.1", port)
+        )
+
+        val connection = URL("https://$apiHost?$query").openConnection(torProxy) as HttpURLConnection
+
+        val responseText = try {
+            connection.requestMethod = "POST"
+            connection.doOutput = true
+            connection.connectTimeout = connectTimeoutMs
+            connection.readTimeout = readTimeoutMs
+            connection.setRequestProperty("Content-Type", "text/plain")
+            //Avoids the legacy okhttp stack reusing a stale pooled connection
+            //("unexpected end of stream" / "Broken pipe" on the first request).
+            connection.setRequestProperty("Connection", "close")
+            connection.outputStream.use { it.write(bodyString.toByteArray(Charsets.UTF_8)) }
+
+            readResponseBody(connection)
+        } finally {
+            connection.disconnect()
+        }
 
         val json = JSONObject(responseText)
 

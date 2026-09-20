@@ -24,6 +24,7 @@ import com.gits.compositioncompass.Queries.IStreamingServiceQuery
 import com.gits.compositioncompass.Queries.IYoutubeQuery
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.Logger
 import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.PermissionManager
+import com.gits.compositioncompass.StuffJavaIsTooConvolutedFor.TorManager
 import com.gits.compositioncompass.databinding.ActivityMainBinding
 import com.gits.compositioncompass.ui.controls.InstantMultiAutoCompleteTextView
 import com.gits.compositioncompass.ui.controls.SpinnerItem
@@ -131,8 +132,19 @@ class MainActivity : AppCompatActivity() {
         // when both the permission callback and onResume() fire).
         if (::composition.isInitialized) return
 
+        // Must be set before the first HttpURLConnection is used anywhere in the process.
+        // The legacy okhttp stack behind HttpURLConnection reuses stale pooled connections,
+        // which surfaces as "Broken pipe" / "unexpected end of stream" over Tor.
+        System.setProperty("http.keepAlive", "false")
+
         composition = CompositionRoot.initialize(this)
         logger = composition.logger
+
+        //Start the embedded Tor instance in the background. It only proxies
+        //Pandora's tuner API (see PandoraQuery.callApi); yt-dlp stays direct.
+        //Pandora requests block on TorManager.awaitReady(), so bootstrapping
+        //in parallel with the rest of app init hides most of the startup delay.
+        TorManager.start(applicationContext)
 
         preferencesReader = composition.preferencesReader
         preferencesWriter = composition.preferencesWriter
@@ -141,6 +153,23 @@ class MainActivity : AppCompatActivity() {
 
         prepareView()
         requestConfig()
+
+        // DEBUG: Tor diagnostics. Remove once the exit country is confirmed to be US.
+        // Started after prepareView() so `info` is initialized before it is touched.
+        GlobalScope.launch(Dispatchers.IO + exceptionHandler()) {
+            if (TorManager.awaitReady()) {
+                val report = TorManager.checkTor()
+                val debugConfig = TorManager.debugConfig()
+                logger.warn(Exception(report))
+                logger.warn(Exception(debugConfig))
+                runOnUiThread { info.text = report + "\n\n" + debugConfig }
+            } else {
+                // awaitReady() timed out: show WHY (e.g. GeoIP failed to load)
+                val msg = "Tor not ready. Last error: ${TorManager.lastConfigError}"
+                logger.warn(Exception(msg))
+                runOnUiThread { info.text = msg }
+            }
+        }
     }
 
     private fun requestConfig() {
@@ -490,13 +519,8 @@ class MainActivity : AppCompatActivity() {
                 supportedFields.forEach {
                     val visible = (it.parent as TableRow).visibility == View.VISIBLE
                     if (visible && it.hasUserContent()) {
-
-                        if (selectedMode == QueryMode.Specified) {
-                            // pass => use all fields if the specified mode is selected
-                        }
-
                         // Skip the standalone artist entry if tracks or albums already cover it
-                        else if (it.id == R.id.artist && (trackHasContent || albumHasContent))
+                        if (it.id == R.id.artist && (trackHasContent || albumHasContent))
                             return@forEach
 
                         val values = getTextViewValues(it as TextView)
