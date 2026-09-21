@@ -14,17 +14,6 @@ Of course, you can sort songs out by pressing two buttons on your screen. **But 
 
 [![Screenshot_20220612-102005_Samsung Notes](https://user-images.githubusercontent.com/28263040/173224863-2830cb48-7434-463f-82ed-7558c6267fc6.jpg)](https://user-images.githubusercontent.com/28263040/173224863-2830cb48-7434-463f-82ed-7558c6267fc6.jpg)
 
-## Terms of use
-
-By using this project or its source code, for any purpose and in any shape or form, you grant your **implicit agreement** to all the following statements:
-
-- You **condemn Russia and its military aggression against Ukraine**
-- You **recognize that Russia is an occupant that unlawfully invaded a sovereign state**
-- You **support Ukraine's territorial integrity**
-- You **reject false narratives perpetuated by Russian state propaganda**
-
-To learn more about the war and how you can help, [click here](https://www.comebackalive.in.ua).
-
 ## Background
 
 Composition Compass is based on an equally named Tasker project:
@@ -33,31 +22,33 @@ Composition Compass is based on an equally named Tasker project:
 
 ## Setup
 
-**Note: You need to have at least one text editor installed on your system! I recommend `Acode` or `Markor` for a nicely rendered view of the config file.**
-
-0. Create a Pandora account, unless you already have one. A Last.fm account is optional and only needed if you want to fetch track information from there.
+0. Create a Pandora account, unless you already have one. A Last.fm account is optional and only needed if you want to fetch track information from there or display the artist biography in the player.
 
 1. Obtain your Pandora partner credentials. Pandora doesn't publish an official developer API, so the app talks to the same private interface the official apps use. That interface requires a set of "partner" values (partner username and password, device model, an encryption key and a decryption key), which identify the client and are **not** tied to your account. They aren't shipped with this project. Open-source clients like [pydora](https://github.com/mcrute/pydora) and [pianobar](https://6xq.net/pianobar/) document where users source theirs.  
 **Note: Your Pandora username and password are separate from these partner values. You need both.**
 
-2. *(Optional)* Obtain your LastFM API key. You can do so by visiting the following link and creating an app: <https://www.last.fm/api/account/create>  
+2. *(Optional)* Obtain a LastFM API key. You can do so by creating a LastFM account and visiting the following link and creating an app: <https://www.last.fm/api/account/create>  
 **Note: This key is NOT identical with your LastFM username or password. It's a special key required for access to the API.**
 
-3. Install the `composition-compass.apk` from the releases page. On first launch it'll open the config file, where you need to insert your Pandora credentials (see [Pandora integration](#pandora-integration) below) and, if you use it, your Last.fm API key. **Remember to save the file!**
+3. Install the `composition-compass.apk` from the releases page. On first launch it'll ask you for a base directory, where it'll store config and all downloads.
+  
+4. Once started, open the config page (by pressing the "Open config" button) - here you'll you need to insert your Pandora credentials (see [Pandora integration](#pandora-integration) below) and, if you use it, your Last.fm API key.
 
-4. Restart the Composition Compass app. If it doesn't detect the changes to the config, force close the app and restart.
+5. Restart the Composition Compass app. If it doesn't detect the changes to the config, force close the app and restart.
 
-5. You're done!
+6. You're done!
 
 ## Pandora integration
 
-Pandora is the main recommendation source of the downloader. Composition Compass uses Pandora's undocumented JSON-RPC "tuner" API, the same one used by the official apps and reimplemented by [pianobar](https://6xq.net/pianobar/) and [pydora](https://github.com/mcrute/pydora). Pandora doesn't offer "give me similar tracks" as an endpoint, so the app builds one out of Pandora's stations: it seeds a station with what you entered, then reads the tracks Pandora would play next.
+Pandora is the main recommendation source of the downloader. Composition Compass uses Pandora's undocumented JSON-RPC "tuner" API, the same one used by the official apps and reimplemented by [pianobar](https://6xq.net/pianobar/) and [pydora](https://github.com/mcrute/pydora). Pandora doesn't offer "give me similar tracks" as an endpoint, so the app builds one out of Pandora's stations: it seeds a station with what you entered, then reads the configured number of tracks Pandora would play next.
 
 **Note: This is an unofficial integration. Pandora can change or block the interface at any time, and you're responsible for using it in line with Pandora's terms.**
 
-### Configuration
+### Configuration under the hood
 
-Every option is read from `config.ini`, which the app generates and re-reads on every launch. Add these lines:
+Usually you don't need to touch this file - the below is explained only for backup and documentation purposes.
+
+Every option is read from `config.ini`, which the app generates and re-reads on every launch:
 
 ```
 pandoraUsername=you@example.com
