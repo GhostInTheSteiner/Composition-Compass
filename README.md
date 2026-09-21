@@ -77,7 +77,7 @@ pandoraEncryptionKey=...
 - Pandora's search only knows songs, artists and genre stations, so there is **no real album search**. An album is approximated as the songs found by searching for its title and artist together.
 - Sampling is capped at 40 playlist calls (around 160 tracks), regardless of the sample sizes in the config. Those defaults are tuned for services with much higher throughput and would otherwise hit Pandora far harder than is reasonable.
 - Genres you enter are used to name folders and don't seed a Pandora genre station on their own.
-- Only the API calls go to Pandora. The audio always comes from YouTube. As all of this is already heavily against Pandora's ToS, I don't want to condone illegal music downloads through any other way than Youtube (which noone really gives a shit about).
+- Only the API calls go to Pandora. The audio always comes from YouTube. As all of this is already heavily against Pandora's ToS, I don't want to condone illegal music downloads through any other way than YouTube (which noone really gives a shit about).
 
 ### Regions, and using Tor
 
