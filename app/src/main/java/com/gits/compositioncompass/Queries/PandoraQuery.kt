@@ -58,13 +58,20 @@ class PandoraQuery : IStreamingServiceQuery, Query {
     private var mode: QueryMode
     private val cryptor: PandoraCryptor
 
-    //partner/session state - populated by prepare()
-    private var partnerAuthToken: String? = null
-    private var partnerId: String? = null
-    private var userAuthToken: String? = null
-    private var userId: String? = null
-    private var serverSyncTime: Long = 0
-    private var startTime: Long = 0
+    //partner/session state - populated by prepare(). Volatile because prepare() can be
+    //entered from several threads (autocomplete + download), and callApi reads these.
+    @Volatile private var partnerAuthToken: String? = null
+    @Volatile private var partnerId: String? = null
+    @Volatile private var userAuthToken: String? = null
+    @Volatile private var userId: String? = null
+    @Volatile private var serverSyncTime: Long = 0
+    @Volatile private var startTime: Long = 0
+
+    //MainActivity fires prepare() on EVERY keystroke in the autocomplete fields, and again
+    //from download(), all on separate coroutines. Without this lock two logins interleave:
+    //login A finishes and sets userAuthToken, then login B's userLogin goes out carrying
+    //userAuthToken instead of partnerAuthToken -> Pandora error 9 (parameter missing).
+    private val loginMutex = Mutex()
 
     //shared seed station that accumulates all addArtist / addTrack / addAlbum / addGenre calls
     private var seedStationToken: String? = null
@@ -114,10 +121,26 @@ class PandoraQuery : IStreamingServiceQuery, Query {
     }
 
     //needs to be called before any other functions!
+    //Safe to call concurrently: only one caller performs the login, the rest wait and
+    //then see the finished session.
     override suspend fun prepare() {
-        if (userAuthToken == null) {
-            partnerLogin()
-            userLogin()
+        if (userAuthToken != null) return //fast path, no lock needed
+
+        loginMutex.withLock {
+            if (userAuthToken != null) return //another caller finished while we waited
+
+            try {
+                partnerLogin()
+                userLogin()
+            } catch (e: Exception) {
+                //don't leave a half-initialised session behind: the next prepare()
+                //must start again from a clean partnerLogin
+                partnerAuthToken = null
+                partnerId = null
+                userAuthToken = null
+                userId = null
+                throw e
+            }
         }
     }
 
@@ -477,15 +500,22 @@ class PandoraQuery : IStreamingServiceQuery, Query {
         if (requiresAuth) {
             body.put("syncTime", currentSyncTime())
 
-            val authToken = userAuthToken ?: partnerAuthToken
-            if (userAuthToken != null)
-                body.put("userAuthToken", userAuthToken)
-            else if (partnerAuthToken != null)
-                body.put("partnerAuthToken", partnerAuthToken)
+            //auth.userLogin is the call that CREATES the user session, so it must always
+            //authenticate with the partner token, never with a userAuthToken that may
+            //already exist. (Pandora answers error 9 "parameter missing" otherwise.)
+            val isUserLogin = method == "auth.userLogin"
+            val userToken = if (isUserLogin) null else userAuthToken
+            val partnerToken = partnerAuthToken
+
+            val authToken = userToken ?: partnerToken
+            if (userToken != null)
+                body.put("userAuthToken", userToken)
+            else if (partnerToken != null)
+                body.put("partnerAuthToken", partnerToken)
 
             authToken?.let { queryParams += "auth_token" to it }
             partnerId?.let { queryParams += "partner_id" to it }
-            userId?.let { queryParams += "user_id" to it }
+            if (!isUserLogin) userId?.let { queryParams += "user_id" to it }
         }
 
         val bodyString = if (encryptBody) cryptor.encrypt(body.toString()) else body.toString()
@@ -547,8 +577,38 @@ class PandoraQuery : IStreamingServiceQuery, Query {
         val json = JSONObject(responseText)
 
         if (json.optString("stat") != "ok")
-            throw Exception("Pandora API error on '$method' " + json.optString("code") + ": " + json.optString("message"))
+            throw Exception(
+                "Pandora API error on '$method' " + json.optString("code") + ": " + json.optString("message") +
+                        "\n[debug " + requestSummary(method, body, bodyString, encryptBody, requiresAuth) + "]"
+            )
 
         json.optJSONObject("result") ?: JSONObject()
+    }
+
+    //DEBUG: describes the request that was just sent WITHOUT leaking any secrets
+    //(no values, only key names, lengths and formats). Helps tell apart:
+    // - empty username/password in the config  (usernameLen / passwordLen = 0)
+    // - a missing token                        (keys lacks partnerAuthToken / userAuthToken)
+    // - a broken encryption step               (cipher not lowercase hex, or length not a multiple of 16)
+    private fun requestSummary(
+        method: String,
+        body: JSONObject,
+        sent: String,
+        encrypted: Boolean,
+        requiresAuth: Boolean
+    ): String {
+        val keys = body.keys().asSequence().toList().sorted()
+        val cipherOk = !encrypted || (sent.isNotEmpty() && sent.length % 16 == 0 && sent.all { it in '0'..'9' || it in 'a'..'f' })
+
+        return "method=$method" +
+                " encrypted=$encrypted" +
+                " keys=$keys" +
+                " plainLen=${body.toString().length}" +
+                " sentLen=${sent.length}" +
+                " cipherFormatOk=$cipherOk" +
+                (if (method == "auth.userLogin")
+                    " usernameLen=${body.optString("username").length} passwordLen=${body.optString("password").length}"
+                else "") +
+                (if (requiresAuth) " syncTime=${body.optLong("syncTime")} serverSyncTime=$serverSyncTime" else "")
     }
 }

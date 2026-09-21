@@ -156,26 +156,6 @@ class MainActivity : AppCompatActivity() {
 
         prepareView()
         requestConfig()
-
-        // DEBUG: Tor diagnostics. Remove once the exit country is confirmed to be US.
-        // Started after prepareView() so `info` is initialized before it is touched.
-        // Skipped when Tor is disabled, otherwise it would wait on Tor for the full timeout.
-        if (TorManager.enabled) {
-            GlobalScope.launch(Dispatchers.IO + exceptionHandler()) {
-                if (TorManager.awaitReady()) {
-                    val report = TorManager.checkTor()
-                    val debugConfig = TorManager.debugConfig()
-                    logger.warn(Exception(report))
-                    logger.warn(Exception(debugConfig))
-                    runOnUiThread { info.text = report + "\n\n" + debugConfig }
-                } else {
-                    // awaitReady() timed out: show WHY (e.g. GeoIP failed to load)
-                    val msg = "Tor not ready. Last error: ${TorManager.lastConfigError}"
-                    logger.warn(Exception(msg))
-                    runOnUiThread { info.text = msg }
-                }
-            }
-        }
     }
 
     // Checkbox handler: persists the choice and starts/stops the embedded Tor instance.
@@ -188,7 +168,7 @@ class MainActivity : AppCompatActivity() {
         else TorManager.stop(applicationContext)          // unbinds; tor shuts down
 
         info.text =
-            if (enabled) "Tor enabled: Pandora traffic goes through Tor (US exits)."
+            if (enabled) "Tor enabled: Pandora traffic goes through Tor (US exit)."
             else "Tor disabled: Pandora traffic connects directly."
     }
 
