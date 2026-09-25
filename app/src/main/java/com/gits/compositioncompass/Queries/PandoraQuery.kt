@@ -82,6 +82,14 @@ class PandoraQuery : IStreamingServiceQuery, Query {
     //without this lock, two concurrent seeds can both see it as null, both call
     //createStation(), and whichever assignment lands last silently wins, orphaning the
     //other seed's station (it's created, but never queried again).
+    //
+    //Also guards the throwaway single-purpose stations created by fetchTopTracks() and
+    //sampleAlbumFromArtistStation(). In Specified mode with both an artist and an album
+    //filled in, MainActivity launches those two fields as separate coroutines, so both
+    //helpers can call station.createStation/station.getPlaylist within moments of each
+    //other. Pandora's undocumented API returned a generic "code 0" error under that
+    //overlap (station.getPlaylist right after station.createStation) - serializing every
+    //station lifecycle behind one lock avoids putting two of them in flight at once.
     private val seedMutex = Mutex()
 
     //Pandora returns roughly 4 tracks per station.getPlaylist call. Sampling a
@@ -91,6 +99,17 @@ class PandoraQuery : IStreamingServiceQuery, Query {
     //and would otherwise hammer Pandora's API far more than is reasonable.
     private val maxPlaylistCalls = 40
     private val tracksPerPlaylistCall = 4
+
+    //Cap on playlist calls when sampling a throwaway single-artist station for
+    //fetchTopTracks() (see addArtist). Kept low: this runs once per addArtist() call
+    //in Specified/SpecifiedMoreInteresting mode, not once per download.
+    private val topTracksSampleCalls = 8
+
+    //Same idea, but for fetchAlbum()'s station sampling (see addAlbum). Higher than
+    //topTracksSampleCalls: a full album is a much smaller slice of what an artist
+    //station plays than "any track by this artist" is, so it needs more samples to
+    //have a decent chance of surfacing the whole album.
+    private val albumTracksSampleCalls = 20
 
     private val apiHost = "tuner.pandora.com/services/json/"
     private val apiVersion = "5"
@@ -199,15 +218,61 @@ class PandoraQuery : IStreamingServiceQuery, Query {
     override suspend fun addArtist(name: String): Boolean {
         val artist = searchArtist(name).firstOrNull() ?: return false
         addSeed(artist.id)
+
+        //Query.getSpecified()'s artist-only branch reads artist.topTracks, and so does
+        //SpecifiedMoreInteresting ("Liked Artists") indirectly, since it calls
+        //getSpecified() after adding each artist. Every other mode only needs the seed
+        //added above, so skip the extra station + sampling there - it would otherwise
+        //run on every addArtist() call for Similar Tracks/Artists/Albums too.
+        val topTracks =
+            if (mode == QueryMode.Specified || mode == QueryMode.SpecifiedMoreInteresting)
+                fetchTopTracks(artist)
+            else
+                listOf()
+
         addedArtists.add(
             ArtistItem(
                 id = artist.id,
                 name = artist.name,
-                topTracks = listOf(),
+                topTracks = topTracks,
                 popularity = artist.popularity
             )
         )
         return true
+    }
+
+    //Pandora has no "top tracks" endpoint (unlike Spotify/Last.fm), so this approximates
+    //one the same way getSimilarArtists() approximates similar-artist tracks elsewhere in
+    //this file: seed a station with just this artist and sample what it actually plays.
+    //An artist station isn't 100% the seed artist - Pandora mixes in similar artists too -
+    //so results are filtered down to tracks actually credited to this artist.
+    //
+    //The station is deleted afterwards. Unlike seedStationToken (which accumulates the
+    //user's real seeds for the rest of this query and is meant to be sampled from), this
+    //is a one-off lookup station that shouldn't linger in the user's Pandora account.
+    private suspend fun fetchTopTracks(artist: ArtistItem): List<TrackItem> = seedMutex.withLock {
+        val stationToken = try {
+            createStation(artist.id, "artist")
+        } catch (e: Exception) {
+            return@withLock listOf() //no top tracks is better than failing the whole addArtist() call
+        }
+
+        try {
+            val tracks = mutableListOf<TrackItem>()
+            var calls = 0
+
+            while (tracks.size < resultsSimilarArtists_Tracks && calls < topTracksSampleCalls) {
+                tracks += getPlaylist(stationToken)
+                    .map { playlistItemToTrack(it) }
+                    .filter { it.artists.any { a -> a.name.equals(artist.name, ignoreCase = true) } }
+                calls++
+            }
+
+            filterExceptions(tracks).distinctBy { it.name }.take(resultsSimilarArtists_Tracks)
+        } finally {
+            //Best-effort cleanup; a failed delete shouldn't fail the download.
+            runCatching { callApi("station.deleteStation", mapOf("stationToken" to stationToken)) }
+        }
     }
 
     override suspend fun addTrack(name: String, artist: String): Boolean {
@@ -226,13 +291,77 @@ class PandoraQuery : IStreamingServiceQuery, Query {
     }
 
     override suspend fun addAlbum(name: String, artist: String): Boolean {
-        val album = searchAlbumApproximate(name, artist).firstOrNull() ?: return false
+        val album = fetchAlbum(name, artist) ?: return false
         album.tracks
             .distinctBy { it.id }
             .filter { it.id.isNotEmpty() }
             .forEach { addSeed(it.id) }
         addedAlbums.add(album)
         return true
+    }
+
+    //Pandora has no per-album lookup (unlike Spotify/Last.fm), so this combines two
+    //approximations and merges their results, the same way fetchTopTracks() fills in
+    //for the missing "top tracks" endpoint:
+    // 1. searchAlbumApproximate(): a music.search for "<album> <artist>". Fast, but
+    //    Pandora ranks by text relevance to the search string, not "every track on
+    //    this album" - it can miss legitimate tracks, especially on longer albums,
+    //    or surface an unrelated same-named track instead.
+    // 2. sampleAlbumFromArtistStation(): seeds a throwaway single-artist station (the
+    //    same technique fetchTopTracks() uses) and samples its playlist, keeping only
+    //    tracks whose reported albumName matches. This can surface tracks the text
+    //    search missed, though it depends on Pandora actually rotating that album.
+    //Neither is a real album listing, so completeness still isn't guaranteed - see the
+    //README's "Limitations" section.
+    private suspend fun fetchAlbum(name: String, artist: String): AlbumItem? {
+        val searched = searchAlbumApproximate(name, artist).firstOrNull()
+        val sampled = sampleAlbumFromArtistStation(name, artist)
+
+        //dedupe by title: searchAlbumApproximate's music.search tokens and the sampled
+        //station's trackTokens live in different Pandora token namespaces, so the same
+        //song can carry two different ids - deduping by id would let it through twice
+        //and download it twice.
+        val tracks = ((searched?.tracks ?: listOf()) + sampled)
+            .distinctBy { it.name.trim().lowercase() }
+
+        if (tracks.isEmpty()) return null
+
+        return AlbumItem(
+            id = searched?.id ?: UUID.randomUUID().toString(),
+            name = name,
+            tracks = tracks,
+            artists = listOf(ArtistItem(id = "", name = artist)),
+            popularity = 0
+        )
+    }
+
+    private suspend fun sampleAlbumFromArtistStation(albumName: String, artistName: String): List<TrackItem> {
+        val artistItem = searchArtist(artistName).firstOrNull() ?: return listOf()
+
+        return seedMutex.withLock {
+            val stationToken = try {
+                createStation(artistItem.id, "artist")
+            } catch (e: Exception) {
+                return@withLock listOf() //fall back to whatever searchAlbumApproximate() found
+            }
+
+            try {
+                val tracks = mutableListOf<TrackItem>()
+                var calls = 0
+
+                while (calls < albumTracksSampleCalls) {
+                    tracks += getPlaylist(stationToken)
+                        .map { playlistItemToTrack(it) }
+                        .filter { it.album?.name?.equals(albumName, ignoreCase = true) == true }
+                    calls++
+                }
+
+                filterExceptions(tracks).distinctBy { it.name.trim().lowercase() }
+            } finally {
+                //Best-effort cleanup; a failed delete shouldn't fail the download.
+                runCatching { callApi("station.deleteStation", mapOf("stationToken" to stationToken)) }
+            }
+        }
     }
 
     override suspend fun addGenre(name: String): Boolean {
@@ -579,7 +708,10 @@ class PandoraQuery : IStreamingServiceQuery, Query {
         if (json.optString("stat") != "ok")
             throw Exception(
                 "Pandora API error on '$method' " + json.optString("code") + ": " + json.optString("message") +
-                        "\n[debug " + requestSummary(method, body, bodyString, encryptBody, requiresAuth) + "]"
+                        "\n[debug " + requestSummary(method, body, bodyString, encryptBody, requiresAuth) + "]" +
+                        //raw response from Pandora, not our request - safe to log in full, no secrets in it.
+                        //Truncated defensively in case of an unexpectedly large error body.
+                        "\n[response " + responseText.take(1000) + "]"
             )
 
         json.optJSONObject("result") ?: JSONObject()
