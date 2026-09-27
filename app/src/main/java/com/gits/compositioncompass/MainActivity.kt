@@ -388,6 +388,25 @@ class MainActivity : AppCompatActivity() {
 
             withContext(Dispatchers.Main) {
                 view.setAdapter(getAutocompleteAdapter(suggestions))
+
+                // setAdapter() alone does NOT reopen the dropdown: Android's
+                // AutoCompleteTextView only auto-shows its popup as a side effect of
+                // its own internal Filter running while the user is actively typing.
+                // Since this coroutine resumes here asynchronously (after network
+                // calls that can take a while, e.g. Tor bootstrapping or a slow
+                // Pandora round-trip), that filter has usually already finished and
+                // dismissed the popup by the time we get here - swapping in a new
+                // adapter afterward doesn't bring it back on its own. That's why
+                // suggestions previously only ever "reappeared" on the NEXT keystroke
+                // (e.g. while backspacing): that keystroke re-triggers the built-in
+                // filter itself, which happens to find the adapter already populated.
+                //
+                // Guarded so a slow, now-outdated response can't pop up over text the
+                // user has since changed or a field they've since left. The
+                // autocompleteJobs cancellation above already prevents most of this,
+                // but cancellation is cooperative and may not land before this point.
+                if (suggestions.isNotEmpty() && view.isFocused && view.text.toString() == viewText)
+                    view.showDropDown()
             }
         }
 
@@ -447,6 +466,41 @@ class MainActivity : AppCompatActivity() {
         if (isDownloading) return
         isDownloading = true
 
+        // Liked Artists (SpecifiedMoreInteresting) moves every file currently in the
+        // "More Interesting" folder into the new station's folder as a side effect of
+        // running it (see YoutubeDownloader.start(): once any track is downloaded to a
+        // folder whose name starts with "!Artists", it moves everything out of
+        // moreInterestingDirectoryPath into that folder, prefixed with "!"). It isn't a
+        // copy - the files are gone from "More Interesting" afterwards. Confirmed via
+        // Query.getSpecifiedMoreInteresting() (station name always starts with
+        // "!Artists (...)") and YoutubeDownloader.kt lines ~109-116/164/209-210. Warn
+        // before running it, since this is the one mode that alters existing files
+        // rather than only adding new ones.
+        val isLikedArtists =
+            composition.query is IStreamingServiceQuery &&
+                    (mode.selectedItem as SpinnerItem).id as QueryMode == QueryMode.SpecifiedMoreInteresting
+
+        if (isLikedArtists) {
+            AlertDialog.Builder(this)
+                .setTitle("Liked Artists")
+                .setMessage(
+                    "This will move every file currently in your \"More Interesting\" folder " +
+                            "into the new Station's folder (renamed with a \"!\" prefix), so " +
+                            "\"More Interesting\" will end up empty. This happens even if some " +
+                            "tracks fail to download. Continue?"
+                )
+                .setPositiveButton("OK") { _, _ -> performDownload(view) }
+                .setNegativeButton("Cancel") { _, _ -> isDownloading = false }
+                .setOnCancelListener { isDownloading = false } // e.g. back button / tap outside
+                .show()
+        } else {
+            performDownload(view)
+        }
+    }
+
+    // Holds the logic download() used to run directly. Assumes isDownloading is already
+    // true and hasn't been reset - download() (or its confirmation dialog) owns that.
+    private fun performDownload(view: View) {
         try {
             hideKeyboard()
             resetFormatting()
@@ -523,13 +577,8 @@ class MainActivity : AppCompatActivity() {
                 supportedFields.forEach {
                     val visible = (it.parent as TableRow).visibility == View.VISIBLE
                     if (visible && it.hasUserContent()) {
-
-                        if (selectedMode == QueryMode.Specified) {
-                            // pass => all parameters necessary
-                        }
-
                         // Skip the standalone artist entry if tracks or albums already cover it
-                        else if (it.id == R.id.artist && (trackHasContent || albumHasContent))
+                        if (it.id == R.id.artist && (trackHasContent || albumHasContent))
                             return@forEach
 
                         val values = getTextViewValues(it as TextView)
@@ -594,6 +643,8 @@ class MainActivity : AppCompatActivity() {
                     if (!(trackSuccess ?: true)) { runOnUiThread { info.text = "Track not found!"; unlockDownload() }; return@launch }
                     if (!(albumSuccess ?: true)) { runOnUiThread { info.text = "Album not found!"; unlockDownload() }; return@launch }
                     if (!(genreSuccess ?: true)) { runOnUiThread { info.text = "Genre not found!"; unlockDownload() }; return@launch }
+
+                    // TODO: for some reason only one entry even though multiple artists defined?
 
                     directories = when (selectedMode) {
                         QueryMode.SimilarTracks -> serviceQuery.getSimilarTracks()
